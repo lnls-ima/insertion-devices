@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[    331405,       7748]
-NotebookOptionsPosition[    326989,       7594]
-NotebookOutlinePosition[    327337,       7609]
-CellTagsIndexPosition[    327294,       7606]
+NotebookDataLength[    358289,       8314]
+NotebookOptionsPosition[    353627,       8152]
+NotebookOutlinePosition[    353975,       8167]
+CellTagsIndexPosition[    353932,       8164]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -619,7 +619,9 @@ Cell["Delta", "Section",
 Cell[CellGroupData[{
 
 Cell["IDDelta", "Subsection",
- CellChangeTimes->{{3.766754518453103*^9, 3.766754525359883*^9}}],
+ CellChangeTimes->{{3.766754518453103*^9, 3.766754525359883*^9}, {
+  3.767535210522156*^9, 3.7675352108346806`*^9}, {3.7675366603372955`*^9, 
+  3.7675366604779315`*^9}, {3.7675367242998896`*^9, 3.7675367254405985`*^9}}],
 
 Cell[BoxData[{
  RowBox[{
@@ -655,8 +657,572 @@ magnetization error[T]}. \\nThe errors will be add to the default values of \
 position and magnetization of the blocks.\>\""}], ";"}], 
   "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
  RowBox[{
+  RowBox[{"IDDelta", " ", "=", " ", "IDDeltaV1"}], ";"}]}], "Input",
+ CellChangeTimes->{{3.767536639038783*^9, 3.767536653055511*^9}},
+ Background->RGBColor[0.87, 0.94, 1]]
+}, Closed]],
+
+Cell[CellGroupData[{
+
+Cell["IDDeltaV1", "Subsection",
+ CellChangeTimes->{{3.766754518453103*^9, 3.766754525359883*^9}, {
+  3.767535210522156*^9, 3.7675352108346806`*^9}}],
+
+Cell[BoxData[{
+ RowBox[{
   RowBox[{
-   RowBox[{"IDDelta", "[", 
+   RowBox[{
+    RowBox[{"IDDeltaV1", "::", "usage"}], "=", 
+    "\"\<IDDeltaV1[\[Lambda]u, Np, Br, Gap, \\\"\[Delta]P\\\":0, \
+\\\"\[Delta]GV\\\":0, \\\"\[Delta]GH\\\":0, \\\"\[Delta]CP\\\":0, \
+\\\"BlockGap\\\":0, \\\"Termination\\\":\\\"None\\\", \\\"PosMagErrorsBRC\\\"\
+\[Rule] {}, \\\"PosMagErrorsBLC\\\"\[Rule] {}, \\\"PosMagErrorsULC\\\"\[Rule] \
+{}, \\\"PosMagErrorsURC\\\"\[Rule] {}]: Returns the ID model. \\n\\nArgs: \\n\
+\[Lambda]u [mm] is the ID period, \\nNp is the number of periods, \\nBr [T] \
+is the remanent magnetization of the permanent magnet blocks, \\nGap [mm] is \
+the length of the minimum gap between the cassettes. \\n\\nOptional args: \\n\
+\[Delta]P [mm], \[Delta]GV [mm], \[Delta]GH [mm] and \[Delta]CP [mm] are four \
+types of longitudinal movements between the cassettes, \[Delta]P is the phase \
+adjustement, \[Delta]GV and \[Delta]GH control the amplitude of the \
+longitudinal field component and \[Delta]CP is the inclined-polarization \
+adjustment, \\nBlockGap [mm] is the longitudinal gap between the blocks, \
+\\nTermination is the termination type (one of the following: None, \
+OneBlockSym, OneBlockAntiSym, ThreeBlocksSym, ThreeBlocksAntiSym), \
+\\nPosMagErrorsBRC is a list of positions and magnetization errors for the BR \
+cassette, \\nPosMagErrorsBLC is a list of positions and magnetization errors \
+for the BL cassette, \\nPosMagErrorsULC is a list of positions and \
+magnetization errors for the UL cassette, \\nPosMagErrorsURC is a list of \
+positions and magnetization errors for the UR cassette. \\n\\nPosition and \
+magnetization errors: \\nThe list of position and magnetization errors must \
+be empty or have a number of elements igual to the number of blocks on each \
+cassette. Each element is a list itself with the following format: \
+\\n{horizontal position error[mm], vertical position error[mm], horizontal \
+magnetization error[T], longitudinal magnetization error[T], vertical \
+magnetization error[T]}. \\nThe errors will be add to the default values of \
+position and magnetization of the blocks.\>\""}], ";"}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"IDDeltaV1", "[", 
+    RowBox[{
+    "\[Lambda]u_", ",", " ", "Np_", ",", " ", "Br_", ",", " ", "Gap_", ",", 
+     " ", 
+     RowBox[{"OptionsPattern", "[", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"\"\<\[Delta]P\>\"", "\[Rule]", " ", "0"}], ",", " ", 
+        RowBox[{"\"\<\[Delta]GV\>\"", "\[Rule]", " ", "0"}], ",", " ", 
+        RowBox[{"\"\<\[Delta]GH\>\"", "\[Rule]", " ", "0"}], ",", " ", 
+        RowBox[{"\"\<\[Delta]CP\>\"", "\[Rule]", " ", "0"}], ",", " ", 
+        RowBox[{"\"\<BlockGap\>\"", "->", "0"}], ",", "  ", 
+        RowBox[{"\"\<Termination\>\"", "\[Rule]", " ", "\"\<None\>\""}], ",", 
+        " ", 
+        RowBox[{"\"\<PosMagErrorsBRC\>\"", "\[Rule]", " ", 
+         RowBox[{"{", "}"}]}], ",", " ", 
+        RowBox[{"\"\<PosMagErrorsBLC\>\"", "\[Rule]", " ", 
+         RowBox[{"{", "}"}]}], ",", " ", 
+        RowBox[{"\"\<PosMagErrorsULC\>\"", "\[Rule]", " ", 
+         RowBox[{"{", "}"}]}], ",", " ", 
+        RowBox[{"\"\<PosMagErrorsURC\>\"", "\[Rule]", " ", 
+         RowBox[{"{", "}"}]}]}], "}"}], "]"}]}], "]"}], " ", ":=", " ", 
+   RowBox[{"Module", "[", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+      "f", ",", " ", "Blocka", " ", ",", " ", "Blockb", ",", "Blocks", ",", 
+       " ", "BRCBlockList", ",", " ", "BLCBlockList", ",", " ", 
+       "ULCBlockList", ",", " ", "URCBlockList", ",", " ", 
+       "\[IndentingNewLine]", "PosMagErrorsBRC", " ", ",", " ", 
+       "PosMagErrorsBLC", ",", " ", "PosMagErrorsULC", " ", ",", " ", 
+       "PosMagErrorsURC", ",", "\[IndentingNewLine]", "\[Delta]P", ",", " ", 
+       "\[Delta]GV", ",", " ", "\[Delta]GH", ",", " ", "\[Delta]CP", ",", " ",
+        "Termination", ",", "\[IndentingNewLine]", " ", "BlockGap", ",", " ", 
+       "\[Delta]BRC", ",", " ", "BRC", ",", " ", "\[Delta]BLC", ",", " ", 
+       "BLC", ",", " ", "\[Delta]ULC", ",", " ", "ULC", ",", " ", 
+       "\[Delta]URC", ",", " ", "URC", ",", " ", "Delta", ",", " ", "t0", ",",
+        " ", "t1"}], "}"}], ",", "\[IndentingNewLine]", 
+     RowBox[{"(*", 
+      RowBox[{
+       RowBox[{
+       "The", " ", "insertion", " ", "device", " ", "is", " ", "created", " ",
+         "rotated", " ", "by", " ", 
+        RowBox[{"\[Pi]", "/", "4"}], " ", "about", " ", "the", " ", "y"}], 
+       "-", 
+       RowBox[{
+       "axis", " ", "to", " ", "simplified", " ", "the", " ", "magnetization",
+         " ", 
+        RowBox[{"functions", ".", " ", "The"}], " ", "entire", " ", "device", 
+        " ", "is", " ", "rotated", " ", "to", " ", "the", " ", "correct", " ",
+         "position", " ", "at", " ", "the", " ", "end", " ", "of", " ", "the",
+         " ", 
+        RowBox[{"function", "."}]}]}], "*)"}], "\[IndentingNewLine]", 
+     "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"t0", "=", 
+       RowBox[{"AbsoluteTime", "[", "]"}]}], ";", "\[IndentingNewLine]", 
+      "\[IndentingNewLine]", 
+      RowBox[{"(*", 
+       RowBox[{"Delete", " ", "previous", " ", "Radia", " ", "objects"}], 
+       "*)"}], "\[IndentingNewLine]", 
+      RowBox[{"radUtiDelAll", "[", "]"}], ";", "\[IndentingNewLine]", 
+      "\[IndentingNewLine]", 
+      RowBox[{"(*", 
+       RowBox[{"Check", " ", "arguments"}], "*)"}], "\[IndentingNewLine]", 
+      RowBox[{"If", " ", "[", 
+       RowBox[{
+        RowBox[{"\[Lambda]u", " ", "\[LessEqual]", " ", "0"}], ",", " ", 
+        RowBox[{"Return", "[", "]"}]}], "]"}], ";", "\[IndentingNewLine]", 
+      RowBox[{"If", " ", "[", 
+       RowBox[{
+        RowBox[{"Np", " ", "\[LessEqual]", " ", "0"}], ",", " ", 
+        RowBox[{"Return", "[", "]"}]}], "]"}], ";", "\[IndentingNewLine]", 
+      RowBox[{"If", " ", "[", 
+       RowBox[{
+        RowBox[{"Br", " ", "\[LessEqual]", " ", "0"}], ",", " ", 
+        RowBox[{"Return", "[", "]"}]}], "]"}], ";", "\[IndentingNewLine]", 
+      RowBox[{"If", " ", "[", 
+       RowBox[{
+        RowBox[{"Gap", " ", "\[LessEqual]", " ", "0"}], ",", " ", 
+        RowBox[{"Return", "[", "]"}]}], "]"}], ";", "\[IndentingNewLine]", 
+      "\[IndentingNewLine]", 
+      RowBox[{"(*", 
+       RowBox[{"Gap", " ", "between", " ", "blocks"}], "*)"}], 
+      "\[IndentingNewLine]", " ", 
+      RowBox[{"BlockGap", " ", "=", " ", 
+       RowBox[{"OptionValue", "[", "\"\<BlockGap\>\"", "]"}]}], ";", 
+      "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"(*", 
+       RowBox[{"Cassettes", " ", "longitudinal", " ", 
+        RowBox[{"displacement", " ", "[", "mm", "]"}]}], "*)"}], 
+      "\[IndentingNewLine]", 
+      RowBox[{"\[Delta]P", " ", "=", " ", 
+       RowBox[{"OptionValue", "[", "\"\<\[Delta]P\>\"", "]"}]}], ";", " ", 
+      RowBox[{"(*", 
+       RowBox[{"Phase", " ", "adjustment"}], "*)"}], "\[IndentingNewLine]", 
+      RowBox[{"\[Delta]GV", " ", "=", " ", 
+       RowBox[{"OptionValue", "[", "\"\<\[Delta]GV\>\"", "]"}]}], ";", " ", 
+      RowBox[{"(*", 
+       RowBox[{
+        RowBox[{
+        "Vertical", " ", "field", " ", "amplitude", " ", "to", " ", 
+         "longitudinal", " ", "field", " ", "amplitude"}], ",", " ", 
+        RowBox[{
+        "also", " ", "decreases", " ", "horizontal", " ", "field", " ", 
+         "amplitude"}]}], "*)"}], "\[IndentingNewLine]", 
+      RowBox[{"\[Delta]GH", " ", "=", " ", 
+       RowBox[{"OptionValue", "[", "\"\<\[Delta]GH\>\"", "]"}]}], ";", 
+      RowBox[{"(*", 
+       RowBox[{
+        RowBox[{
+        "Horizontal", " ", "field", " ", "amplitude", " ", "to", " ", 
+         "longitudinal", " ", "field", " ", "amplitude"}], ",", " ", 
+        RowBox[{
+        "also", " ", "decreases", " ", "vertical", " ", "field", " ", 
+         "amplitude"}]}], "*)"}], "\[IndentingNewLine]", 
+      RowBox[{"\[Delta]CP", " ", "=", " ", 
+       RowBox[{"OptionValue", "[", "\"\<\[Delta]CP\>\"", "]"}]}], ";", 
+      RowBox[{"(*", 
+       RowBox[{"Inclined", " ", "polarization", " ", "adjustment"}], "*)"}], 
+      "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"(*", 
+       RowBox[{"Termination", " ", "Type"}], "*)"}], "\[IndentingNewLine]", 
+      RowBox[{"Termination", " ", "=", " ", 
+       RowBox[{"OptionValue", "[", "\"\<Termination\>\"", "]"}]}], ";", 
+      "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"(*", 
+       RowBox[{"Position", " ", "and", " ", "magnetization", " ", "errors"}], 
+       "*)"}], "\[IndentingNewLine]", 
+      RowBox[{"PosMagErrorsBRC", " ", "=", " ", 
+       RowBox[{"OptionValue", "[", "\"\<PosMagErrorsBRC\>\"", "]"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"PosMagErrorsBLC", " ", "=", " ", 
+       RowBox[{"OptionValue", "[", "\"\<PosMagErrorsBLC\>\"", "]"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"PosMagErrorsULC", " ", "=", " ", 
+       RowBox[{"OptionValue", "[", "\"\<PosMagErrorsULC\>\"", "]"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"PosMagErrorsURC", " ", "=", " ", 
+       RowBox[{"OptionValue", "[", "\"\<PosMagErrorsURC\>\"", "]"}]}], ";", 
+      "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"(*", 
+       RowBox[{
+        RowBox[{
+        "Counterclockwise", " ", "rotation", " ", "of", " ", "errors", " ", 
+         "by", " ", 
+         RowBox[{"\[Pi]", "/", "4"}], " ", "around", " ", "the", " ", "y"}], 
+        "-", "axis"}], "*)"}], "\[IndentingNewLine]", 
+      RowBox[{"PosMagErrorsBRC", " ", "=", " ", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"Flatten", "[", 
+          RowBox[{"{", 
+           RowBox[{
+            RowBox[{"Dot", "[", 
+             RowBox[{
+              RowBox[{"RotationMatrix", "[", 
+               RowBox[{
+                RowBox[{"-", "\[Pi]"}], "/", "4"}], "]"}], ",", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "1", "]"}], "]"}], ",", " ", 
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "2", "]"}], "]"}]}], "}"}]}], "]"}], ",", 
+            RowBox[{"Dot", "[", 
+             RowBox[{
+              RowBox[{"RotationMatrix", "[", 
+               RowBox[{
+                RowBox[{"\[Pi]", "/", "4"}], ",", " ", 
+                RowBox[{"{", 
+                 RowBox[{"0", ",", " ", "1", ",", " ", "0"}], "}"}]}], "]"}], 
+              ",", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "3", "]"}], "]"}], ",", " ", 
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "4", "]"}], "]"}], ",", " ", 
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "5", "]"}], "]"}]}], "}"}]}], "]"}]}], "}"}], 
+          "]"}], "&"}], "/@", " ", "PosMagErrorsBRC"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"PosMagErrorsBLC", " ", "=", " ", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"Flatten", "[", 
+          RowBox[{"{", 
+           RowBox[{
+            RowBox[{"Dot", "[", 
+             RowBox[{
+              RowBox[{"RotationMatrix", "[", 
+               RowBox[{
+                RowBox[{"-", "\[Pi]"}], "/", "4"}], "]"}], ",", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "1", "]"}], "]"}], ",", " ", 
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "2", "]"}], "]"}]}], "}"}]}], "]"}], ",", 
+            RowBox[{"Dot", "[", 
+             RowBox[{
+              RowBox[{"RotationMatrix", "[", 
+               RowBox[{
+                RowBox[{"\[Pi]", "/", "4"}], ",", " ", 
+                RowBox[{"{", 
+                 RowBox[{"0", ",", " ", "1", ",", " ", "0"}], "}"}]}], "]"}], 
+              ",", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "3", "]"}], "]"}], ",", " ", 
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "4", "]"}], "]"}], ",", " ", 
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "5", "]"}], "]"}]}], "}"}]}], "]"}]}], "}"}], 
+          "]"}], "&"}], "/@", " ", "PosMagErrorsBLC"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"PosMagErrorsULC", " ", "=", " ", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"Flatten", "[", 
+          RowBox[{"{", 
+           RowBox[{
+            RowBox[{"Dot", "[", 
+             RowBox[{
+              RowBox[{"RotationMatrix", "[", 
+               RowBox[{
+                RowBox[{"-", "\[Pi]"}], "/", "4"}], "]"}], ",", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "1", "]"}], "]"}], ",", " ", 
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "2", "]"}], "]"}]}], "}"}]}], "]"}], ",", 
+            RowBox[{"Dot", "[", 
+             RowBox[{
+              RowBox[{"RotationMatrix", "[", 
+               RowBox[{
+                RowBox[{"\[Pi]", "/", "4"}], ",", " ", 
+                RowBox[{"{", 
+                 RowBox[{"0", ",", " ", "1", ",", " ", "0"}], "}"}]}], "]"}], 
+              ",", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "3", "]"}], "]"}], ",", " ", 
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "4", "]"}], "]"}], ",", " ", 
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "5", "]"}], "]"}]}], "}"}]}], "]"}]}], "}"}], 
+          "]"}], "&"}], "/@", " ", "PosMagErrorsULC"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"PosMagErrorsURC", " ", "=", " ", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"Flatten", "[", 
+          RowBox[{"{", 
+           RowBox[{
+            RowBox[{"Dot", "[", 
+             RowBox[{
+              RowBox[{"RotationMatrix", "[", 
+               RowBox[{
+                RowBox[{"-", "\[Pi]"}], "/", "4"}], "]"}], ",", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "1", "]"}], "]"}], ",", " ", 
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "2", "]"}], "]"}]}], "}"}]}], "]"}], ",", 
+            RowBox[{"Dot", "[", 
+             RowBox[{
+              RowBox[{"RotationMatrix", "[", 
+               RowBox[{
+                RowBox[{"\[Pi]", "/", "4"}], ",", " ", 
+                RowBox[{"{", 
+                 RowBox[{"0", ",", " ", "1", ",", " ", "0"}], "}"}]}], "]"}], 
+              ",", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "3", "]"}], "]"}], ",", " ", 
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "4", "]"}], "]"}], ",", " ", 
+                RowBox[{"#", "[", 
+                 RowBox[{"[", "5", "]"}], "]"}]}], "}"}]}], "]"}]}], "}"}], 
+          "]"}], "&"}], "/@", " ", "PosMagErrorsURC"}]}], ";", 
+      "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"(*", 
+       RowBox[{"Block", " ", "vertices"}], "*)"}], "\[IndentingNewLine]", 
+      RowBox[{"f", " ", "=", " ", 
+       RowBox[{"Gap", "/", "7"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"Blocks", " ", "=", " ", 
+       RowBox[{"f", "*", " ", 
+        RowBox[{"{", 
+         RowBox[{"{", 
+          RowBox[{
+           RowBox[{"{", 
+            RowBox[{
+             RowBox[{"-", "2.25"}], ",", " ", "3.5"}], "}"}], ",", " ", 
+           RowBox[{"{", 
+            RowBox[{
+             RowBox[{"-", "11.25"}], ",", " ", "13"}], "}"}], ",", " ", 
+           RowBox[{"{", 
+            RowBox[{
+             RowBox[{"-", "11.25"}], ",", "28.5"}], "}"}], ",", 
+           RowBox[{"{", 
+            RowBox[{"11.25", ",", "28.5"}], "}"}], ",", " ", 
+           RowBox[{"{", 
+            RowBox[{"11.25", ",", " ", "13"}], "}"}], ",", " ", 
+           RowBox[{"{", 
+            RowBox[{"2.25", ",", " ", "3.5"}], "}"}]}], "}"}], "}"}]}]}], ";",
+       "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"(*", 
+       RowBox[{
+       "Block", " ", "vertices", " ", "for", " ", "each", " ", "cassette", 
+        " ", 
+        RowBox[{"(", 
+         RowBox[{
+         "cross", " ", "section", " ", "in", " ", "the", " ", "yz", " ", 
+          "plane"}], ")"}]}], "*)"}], "\[IndentingNewLine]", 
+      RowBox[{"BLCBlockList", " ", "=", "Blocks"}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"ULCBlockList", " ", "=", " ", 
+       RowBox[{
+        RowBox[{
+         RowBox[{
+          RowBox[{
+           RowBox[{"Dot", "[", 
+            RowBox[{
+             RowBox[{"RotationMatrix", "[", 
+              RowBox[{"\[Pi]", "/", "2"}], "]"}], ",", "#"}], "]"}], "&"}], "/@",
+           "#"}], "&"}], "/@", "BLCBlockList"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"URCBlockList", " ", "=", " ", 
+       RowBox[{
+        RowBox[{
+         RowBox[{
+          RowBox[{
+           RowBox[{"Dot", "[", 
+            RowBox[{
+             RowBox[{"RotationMatrix", "[", 
+              RowBox[{"\[Pi]", "/", "2"}], "]"}], ",", "#"}], "]"}], "&"}], "/@",
+           "#"}], "&"}], "/@", "ULCBlockList"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"BRCBlockList", " ", "=", " ", 
+       RowBox[{
+        RowBox[{
+         RowBox[{
+          RowBox[{
+           RowBox[{"Dot", "[", 
+            RowBox[{
+             RowBox[{"RotationMatrix", "[", 
+              RowBox[{"\[Pi]", "/", "2"}], "]"}], ",", "#"}], "]"}], "&"}], "/@",
+           "#"}], "&"}], "/@", "URCBlockList"}]}], ";", "\[IndentingNewLine]",
+       "\[IndentingNewLine]", 
+      RowBox[{"(*", "Cassettes", "*)"}], "\[IndentingNewLine]", 
+      RowBox[{"\[Delta]BRC", " ", "=", 
+       RowBox[{
+       "\[Delta]GV", " ", "+", " ", "\[Delta]P", "+", "\[Delta]CP"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"BRC", " ", "=", 
+       RowBox[{"auxIDCassette", "[", 
+        RowBox[{
+        "\[Lambda]u", ",", " ", "Np", ",", " ", "Br", ",", " ", "\[Delta]BRC",
+          ",", "BRCBlockList", ",", " ", "BlockGap", ",", " ", 
+         RowBox[{"\"\<PointingUp\>\"", "\[Rule]", "False"}], ",", " ", 
+         RowBox[{"\"\<FirstBlock\>\"", "\[Rule]", " ", "\"\<Down\>\""}], ",", 
+         " ", 
+         RowBox[{
+         "\"\<FieldDirection\>\"", "\[Rule]", " ", "\"\<Horizontal\>\""}], 
+         ",", 
+         RowBox[{"\"\<Termination\>\"", "\[Rule]", " ", "Termination"}], ",", 
+         RowBox[{
+         "\"\<PosMagErrors\>\"", "\[Rule]", " ", "PosMagErrorsBRC"}]}], 
+        "]"}]}], ";", "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"\[Delta]BLC", " ", "=", 
+       RowBox[{"\[Delta]GH", " ", "+", " ", "\[Delta]GV"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"BLC", " ", "=", " ", 
+       RowBox[{"auxIDCassette", "[", 
+        RowBox[{
+        "\[Lambda]u", ",", " ", "Np", ",", " ", "Br", ",", "\[Delta]BLC", ",",
+          " ", "BLCBlockList", ",", " ", "BlockGap", ",", " ", 
+         RowBox[{"\"\<PointingUp\>\"", "\[Rule]", " ", "False"}], ",", 
+         RowBox[{"\"\<FirstBlock\>\"", "\[Rule]", " ", "\"\<Down\>\""}], ",", 
+         " ", 
+         RowBox[{
+         "\"\<FieldDirection\>\"", "\[Rule]", " ", "\"\<Vertical\>\""}], ",", 
+         " ", 
+         RowBox[{"\"\<Termination\>\"", "\[Rule]", " ", "Termination"}], ",", 
+         RowBox[{
+         "\"\<PosMagErrors\>\"", "\[Rule]", " ", "PosMagErrorsBLC"}]}], 
+        "]"}]}], ";", "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"\[Delta]ULC", " ", "=", " ", 
+       RowBox[{"\[Delta]GH", "+", " ", "\[Delta]P", "-", "\[Delta]CP"}]}], 
+      ";", "\[IndentingNewLine]", 
+      RowBox[{"ULC", " ", "=", " ", 
+       RowBox[{"auxIDCassette", "[", 
+        RowBox[{
+        "\[Lambda]u", ",", " ", "Np", ",", " ", "Br", ",", "\[Delta]ULC", ",",
+          " ", "ULCBlockList", ",", " ", "BlockGap", ",", " ", 
+         RowBox[{"\"\<PointingUp\>\"", "\[Rule]", " ", "True"}], ",", 
+         RowBox[{"\"\<FirstBlock\>\"", "\[Rule]", " ", "\"\<Down\>\""}], ",", 
+         " ", 
+         RowBox[{
+         "\"\<FieldDirection\>\"", "\[Rule]", " ", "\"\<Horizontal\>\""}], 
+         ",", " ", 
+         RowBox[{"\"\<Termination\>\"", "\[Rule]", " ", "Termination"}], ",", 
+         RowBox[{
+         "\"\<PosMagErrors\>\"", "\[Rule]", " ", "PosMagErrorsULC"}]}], 
+        "]"}]}], ";", "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"\[Delta]URC", " ", "=", " ", "0.0"}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"URC", " ", "=", " ", 
+       RowBox[{"auxIDCassette", "[", 
+        RowBox[{
+        "\[Lambda]u", ",", " ", "Np", ",", " ", "Br", ",", "\[Delta]URC", ",",
+          " ", "URCBlockList", ",", " ", "BlockGap", ",", " ", 
+         RowBox[{"\"\<PointingUp\>\"", "\[Rule]", " ", "True"}], ",", 
+         RowBox[{"\"\<FirstBlock\>\"", "\[Rule]", " ", "\"\<Down\>\""}], ",", 
+         RowBox[{
+         "\"\<FieldDirection\>\"", "\[Rule]", " ", "\"\<Vertical\>\""}], ",", 
+         RowBox[{"\"\<Termination\>\"", "\[Rule]", " ", "Termination"}], ",", 
+         RowBox[{
+         "\"\<PosMagErrors\>\"", "\[Rule]", " ", "PosMagErrorsURC"}]}], 
+        "]"}]}], ";", "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"(*", 
+       RowBox[{"Insertion", " ", "device"}], "*)"}], "\[IndentingNewLine]", 
+      RowBox[{"Delta", " ", "=", " ", 
+       RowBox[{"radObjCnt", "[", 
+        RowBox[{"{", 
+         RowBox[{"BRC", ",", " ", "BLC", ",", " ", "ULC", ",", " ", "URC"}], 
+         "}"}], "]"}]}], ";", "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"(*", 
+       RowBox[{
+        RowBox[{
+        "Counterclockwise", " ", "rotation", " ", "of", " ", "insertion", " ",
+          "device", " ", "by"}], " ", "-", 
+        RowBox[{
+         RowBox[{"\[Pi]", "/", "4"}], " ", "around", " ", "the", " ", "y"}], 
+        "-", "axis"}], "*)"}], "\[IndentingNewLine]", 
+      RowBox[{"Delta", "=", " ", 
+       RowBox[{"radTrfOrnt", "[", 
+        RowBox[{"Delta", ",", 
+         RowBox[{"radTrfRot", "[", 
+          RowBox[{
+           RowBox[{"{", 
+            RowBox[{"0", ",", "0", ",", "0"}], "}"}], ",", 
+           RowBox[{"{", 
+            RowBox[{"0", ",", "1", ",", "0"}], "}"}], ",", 
+           RowBox[{
+            RowBox[{"-", "\[Pi]"}], "/", "4"}]}], "]"}]}], "]"}]}], ";", 
+      "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"t1", "=", 
+       RowBox[{"AbsoluteTime", "[", "]"}]}], ";", "\[IndentingNewLine]", 
+      RowBox[{"Print", "[", 
+       RowBox[{"\"\<IDDelta: elapsed time = \>\"", ",", 
+        RowBox[{"(", 
+         RowBox[{"t1", "-", "t0"}], ")"}], ",", "\"\< s\>\""}], "]"}], ";", 
+      "\[IndentingNewLine]", "\[IndentingNewLine]", 
+      RowBox[{"Return", "[", "Delta", "]"}], ";"}]}], "\[IndentingNewLine]", 
+    "]"}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.7667551788345585`*^9, 3.766755219697137*^9}, {
+   3.7667552608722496`*^9, 3.766755336956355*^9}, {3.7667553842569494`*^9, 
+   3.766755392727988*^9}, {3.7667554904075484`*^9, 3.7667554958142147`*^9}, {
+   3.766755533035892*^9, 3.766755536817438*^9}, {3.7667555822585154`*^9, 
+   3.766755653420355*^9}, {3.766756597123891*^9, 3.7667567178365045`*^9}, {
+   3.766758273756778*^9, 3.7667582858827343`*^9}, {3.766758881931342*^9, 
+   3.766758895901193*^9}, {3.7667589294194484`*^9, 3.766759099497465*^9}, {
+   3.7667594411382713`*^9, 3.766759474594048*^9}, 3.766759676703664*^9, {
+   3.7667597589931507`*^9, 3.7667597604151382`*^9}, {3.767445913038151*^9, 
+   3.7674459154914675`*^9}, {3.7674480119644413`*^9, 3.767448037403933*^9}, {
+   3.767517216023782*^9, 3.76751735632812*^9}, {3.767517388002474*^9, 
+   3.7675175908758945`*^9}, {3.767517710921748*^9, 3.7675177169357166`*^9}, {
+   3.767535010122141*^9, 3.767535166481933*^9}, {3.7675352448098354`*^9, 
+   3.7675352531246276`*^9}, {3.7675365969260893`*^9, 3.767536601504578*^9}},
+ Background->RGBColor[0.87, 0.94, 1]]
+}, Closed]],
+
+Cell[CellGroupData[{
+
+Cell["IDDeltaV0", "Subsection",
+ CellChangeTimes->{{3.766754518453103*^9, 3.766754525359883*^9}, {
+  3.767534951344644*^9, 3.767534995136586*^9}}],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"IDDeltaV0", "::", "usage"}], "=", 
+    "\"\<IDDeltaV0[\[Lambda]u, Np, Br, Gap, \\\"\[Delta]P\\\":0, \
+\\\"\[Delta]GV\\\":0, \\\"\[Delta]GH\\\":0, \\\"\[Delta]CP\\\":0, \
+\\\"BlockGap\\\":0, \\\"Termination\\\":\\\"None\\\", \\\"PosMagErrorsBRC\\\"\
+\[Rule] {}, \\\"PosMagErrorsBLC\\\"\[Rule] {}, \\\"PosMagErrorsULC\\\"\[Rule] \
+{}, \\\"PosMagErrorsURC\\\"\[Rule] {}]: Returns the ID model. \\n\\nArgs: \\n\
+\[Lambda]u [mm] is the ID period, \\nNp is the number of periods, \\nBr [T] \
+is the remanent magnetization of the permanent magnet blocks, \\nGap [mm] is \
+the length of the minimum gap between the cassettes. \\n\\nOptional args: \\n\
+\[Delta]P [mm], \[Delta]GV [mm], \[Delta]GH [mm] and \[Delta]CP [mm] are four \
+types of longitudinal movements between the cassettes, \[Delta]P is the phase \
+adjustement, \[Delta]GV and \[Delta]GH control the amplitude of the \
+longitudinal field component and \[Delta]CP is the inclined-polarization \
+adjustment, \\nBlockGap [mm] is the longitudinal gap between the blocks, \
+\\nTermination is the termination type (one of the following: None, \
+OneBlockSym, OneBlockAntiSym, ThreeBlocksSym, ThreeBlocksAntiSym), \
+\\nPosMagErrorsBRC is a list of positions and magnetization errors for the BR \
+cassette, \\nPosMagErrorsBLC is a list of positions and magnetization errors \
+for the BL cassette, \\nPosMagErrorsULC is a list of positions and \
+magnetization errors for the UL cassette, \\nPosMagErrorsURC is a list of \
+positions and magnetization errors for the UR cassette. \\n\\nPosition and \
+magnetization errors: \\nThe list of position and magnetization errors must \
+be empty or have a number of elements igual to the number of blocks on each \
+cassette. Each element is a list itself with the following format: \
+\\n{horizontal position error[mm], vertical position error[mm], horizontal \
+magnetization error[T], longitudinal magnetization error[T], vertical \
+magnetization error[T]}. \\nThe errors will be add to the default values of \
+position and magnetization of the blocks.\>\""}], ";"}], 
+  "\[IndentingNewLine]"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"IDDeltaV0", "[", 
     RowBox[{
     "\[Lambda]u_", ",", " ", "Np_", ",", " ", "Br_", ",", " ", "Gap_", ",", 
      " ", 
@@ -958,7 +1524,6 @@ position and magnetization of the blocks.\>\""}], ";"}],
           RowBox[{"{", 
            RowBox[{
             RowBox[{"-", "11.2662"}], ",", " ", "12.4245"}], "}"}], ",", " ", 
-          
           RowBox[{"{", 
            RowBox[{
             RowBox[{"-", "7.73071"}], ",", "15.96"}], "}"}], ",", 
@@ -1051,7 +1616,6 @@ position and magnetization of the blocks.\>\""}], ";"}],
          "\"\<FieldDirection\>\"", "\[Rule]", " ", "\"\<Horizontal\>\""}], 
          ",", 
          RowBox[{"\"\<Termination\>\"", "\[Rule]", " ", "Termination"}], ",", 
-         
          RowBox[{
          "\"\<PosMagErrors\>\"", "\[Rule]", " ", "PosMagErrorsBRC"}]}], 
         "]"}]}], ";", "\[IndentingNewLine]", "\[IndentingNewLine]", 
@@ -1070,7 +1634,6 @@ position and magnetization of the blocks.\>\""}], ";"}],
          "\"\<FieldDirection\>\"", "\[Rule]", " ", "\"\<Vertical\>\""}], ",", 
          " ", 
          RowBox[{"\"\<Termination\>\"", "\[Rule]", " ", "Termination"}], ",", 
-         
          RowBox[{
          "\"\<PosMagErrors\>\"", "\[Rule]", " ", "PosMagErrorsBLC"}]}], 
         "]"}]}], ";", "\[IndentingNewLine]", "\[IndentingNewLine]", 
@@ -1089,7 +1652,6 @@ position and magnetization of the blocks.\>\""}], ";"}],
          "\"\<FieldDirection\>\"", "\[Rule]", " ", "\"\<Horizontal\>\""}], 
          ",", " ", 
          RowBox[{"\"\<Termination\>\"", "\[Rule]", " ", "Termination"}], ",", 
-         
          RowBox[{
          "\"\<PosMagErrors\>\"", "\[Rule]", " ", "PosMagErrorsULC"}]}], 
         "]"}]}], ";", "\[IndentingNewLine]", "\[IndentingNewLine]", 
@@ -1102,12 +1664,9 @@ position and magnetization of the blocks.\>\""}], ";"}],
           " ", "URCBlockList", ",", " ", "BlockGap", ",", " ", 
          RowBox[{"\"\<PointingUp\>\"", "\[Rule]", " ", "True"}], ",", 
          RowBox[{"\"\<FirstBlock\>\"", "\[Rule]", " ", "\"\<Down\>\""}], ",", 
-         
          RowBox[{
          "\"\<FieldDirection\>\"", "\[Rule]", " ", "\"\<Vertical\>\""}], ",", 
-         
          RowBox[{"\"\<Termination\>\"", "\[Rule]", " ", "Termination"}], ",", 
-         
          RowBox[{
          "\"\<PosMagErrors\>\"", "\[Rule]", " ", "PosMagErrorsURC"}]}], 
         "]"}]}], ";", "\[IndentingNewLine]", "\[IndentingNewLine]", 
@@ -1158,7 +1717,8 @@ position and magnetization of the blocks.\>\""}], ";"}],
    3.7667597589931507`*^9, 3.7667597604151382`*^9}, {3.767445913038151*^9, 
    3.7674459154914675`*^9}, {3.7674480119644413`*^9, 3.767448037403933*^9}, {
    3.767517216023782*^9, 3.76751735632812*^9}, {3.767517388002474*^9, 
-   3.7675175908758945`*^9}, {3.767517710921748*^9, 3.7675177169357166`*^9}},
+   3.7675175908758945`*^9}, {3.767517710921748*^9, 3.7675177169357166`*^9}, {
+   3.7675352221793385`*^9, 3.7675352299784536`*^9}},
  Background->RGBColor[0.87, 0.94, 1]]
 }, Closed]],
 
@@ -7321,7 +7881,6 @@ Cell[BoxData[
    RowBox[{"(*", 
     RowBox[{"Longitudinal", " ", 
      RowBox[{"range", " ", "[", "mm", "]"}]}], "*)"}], "\[IndentingNewLine]", 
-   
    RowBox[{
     RowBox[{"Lstep", " ", "=", " ", "0.1"}], ";"}], "\[IndentingNewLine]", 
    RowBox[{
@@ -7349,7 +7908,6 @@ Cell[BoxData[
    RowBox[{"(*", 
     RowBox[{"Horizontal", " ", 
      RowBox[{"range", " ", "[", "mm", "]"}]}], "*)"}], "\[IndentingNewLine]", 
-   
    RowBox[{
     RowBox[{"Hstep", " ", "=", "1"}], ";"}], "\[IndentingNewLine]", 
    RowBox[{
@@ -7369,7 +7927,6 @@ Cell[BoxData[
    RowBox[{"(*", 
     RowBox[{"Vertical", " ", 
      RowBox[{"range", " ", "[", "mm", "]"}]}], "*)"}], "\[IndentingNewLine]", 
-   
    RowBox[{
     RowBox[{"Vstep", " ", "=", "1"}], ";"}], "\[IndentingNewLine]", 
    RowBox[{
@@ -7443,7 +8000,7 @@ Cell[BoxData[{
   RowBox[{"Device", "=", " ", 
    RowBox[{"IDAPU", "[", 
     RowBox[{
-    "\[Lambda]u", ",", " ", "1", ",", " ", "Br", ",", " ", "Gap", ",", " ", 
+    "\[Lambda]u", ",", " ", "Np", ",", " ", "Br", ",", " ", "Gap", ",", " ", 
      RowBox[{"\"\<BlockGap\>\"", "\[Rule]", "  ", "BlockGap"}], ",", " ", 
      RowBox[{"\"\<Termination\>\"", "\[Rule]", "Termination"}]}], "]"}]}], 
   ";"}], "\[IndentingNewLine]", 
@@ -7471,7 +8028,8 @@ Cell[BoxData[{
    3.7675164127600746`*^9}, {3.7675166641905713`*^9, 3.76751668312772*^9}, {
    3.767519489021409*^9, 3.7675194900423107`*^9}, {3.7675202783535748`*^9, 
    3.767520299970541*^9}, {3.7675206735582247`*^9, 3.767520757517961*^9}, {
-   3.7675209412092533`*^9, 3.7675209481437798`*^9}},
+   3.7675209412092533`*^9, 3.7675209481437798`*^9}, 3.767535190614373*^9, {
+   3.7675368955204487`*^9, 3.767536896020481*^9}},
  Background->RGBColor[0.87, 0.94, 1]]
 }, Open  ]],
 
@@ -7632,122 +8190,130 @@ Cell[15458, 356, 11755, 253, 1168, "Input"]
 Cell[CellGroupData[{
 Cell[27262, 615, 94, 1, 70, "Section"],
 Cell[CellGroupData[{
-Cell[27381, 620, 95, 1, 49, "Subsection"],
-Cell[27479, 623, 24514, 538, 1719, "Input"]
+Cell[27381, 620, 249, 3, 49, "Subsection"],
+Cell[27633, 625, 2344, 36, 256, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[52030, 1166, 110, 1, 41, "Subsection"],
-Cell[52143, 1169, 26135, 590, 1719, "Input"]
+Cell[30014, 666, 148, 2, 41, "Subsection"],
+Cell[30165, 670, 23714, 510, 1681, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[78315, 1764, 130, 2, 41, "Subsection"],
-Cell[78448, 1768, 33324, 764, 2137, "Input"]
+Cell[53916, 1185, 146, 2, 41, "Subsection"],
+Cell[54065, 1189, 24503, 532, 1719, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[111809, 2537, 185, 3, 41, "Subsection"],
-Cell[111997, 2542, 26191, 584, 1928, "Input"]
+Cell[78605, 1726, 110, 1, 41, "Subsection"],
+Cell[78718, 1729, 26135, 590, 1719, "Input"]
+}, Closed]],
+Cell[CellGroupData[{
+Cell[104890, 2324, 130, 2, 41, "Subsection"],
+Cell[105023, 2328, 33324, 764, 2137, "Input"]
+}, Closed]],
+Cell[CellGroupData[{
+Cell[138384, 3097, 185, 3, 41, "Subsection"],
+Cell[138572, 3102, 26191, 584, 1928, "Input"]
 }, Closed]]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[138237, 3132, 88, 1, 70, "Section"],
+Cell[164812, 3692, 88, 1, 70, "Section"],
 Cell[CellGroupData[{
-Cell[138350, 3137, 106, 1, 49, "Subsection"],
-Cell[138459, 3140, 16289, 347, 1453, "Input"]
+Cell[164925, 3697, 106, 1, 49, "Subsection"],
+Cell[165034, 3700, 16289, 347, 1453, "Input"]
 }, Closed]]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[154797, 3493, 149, 2, 70, "Section"],
+Cell[181372, 4053, 149, 2, 70, "Section"],
 Cell[CellGroupData[{
-Cell[154971, 3499, 70, 1, 49, "Subsection"],
-Cell[155044, 3502, 4389, 97, 465, "Input"]
+Cell[181546, 4059, 70, 1, 49, "Subsection"],
+Cell[181619, 4062, 4389, 97, 465, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[159470, 3604, 144, 2, 41, "Subsection"],
-Cell[159617, 3608, 4579, 105, 446, "Input"]
+Cell[186045, 4164, 144, 2, 41, "Subsection"],
+Cell[186192, 4168, 4579, 105, 446, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[164233, 3718, 78, 1, 41, "Subsection"],
-Cell[164314, 3721, 12178, 278, 541, "Input"]
+Cell[190808, 4278, 78, 1, 41, "Subsection"],
+Cell[190889, 4281, 12178, 278, 541, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[176529, 4004, 82, 1, 41, "Subsection"],
-Cell[176614, 4007, 5938, 139, 579, "Input"]
+Cell[203104, 4564, 82, 1, 41, "Subsection"],
+Cell[203189, 4567, 5938, 139, 579, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[182589, 4151, 100, 1, 41, "Subsection"],
-Cell[182692, 4154, 9392, 207, 921, "Input"]
+Cell[209164, 4711, 100, 1, 41, "Subsection"],
+Cell[209267, 4714, 9392, 207, 921, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[192121, 4366, 133, 2, 41, "Subsection"],
-Cell[192257, 4370, 8771, 189, 883, "Input"]
+Cell[218696, 4926, 133, 2, 41, "Subsection"],
+Cell[218832, 4930, 8771, 189, 883, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[201065, 4564, 135, 2, 41, "Subsection"],
-Cell[201203, 4568, 12114, 292, 1168, "Input"]
+Cell[227640, 5124, 135, 2, 41, "Subsection"],
+Cell[227778, 5128, 12114, 292, 1168, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[213354, 4865, 187, 2, 41, "Subsection"],
-Cell[213544, 4869, 7794, 181, 541, "Input"]
+Cell[239929, 5425, 187, 2, 41, "Subsection"],
+Cell[240119, 5429, 7794, 181, 541, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[221375, 5055, 207, 3, 41, "Subsection"],
-Cell[221585, 5060, 7763, 180, 541, "Input"]
+Cell[247950, 5615, 207, 3, 41, "Subsection"],
+Cell[248160, 5620, 7763, 180, 541, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[229385, 5245, 280, 4, 41, "Subsection"],
-Cell[229668, 5251, 15271, 392, 807, "Input"]
+Cell[255960, 5805, 280, 4, 41, "Subsection"],
+Cell[256243, 5811, 15271, 392, 807, "Input"]
 }, Closed]]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[244988, 5649, 95, 1, 70, "Section"],
+Cell[271563, 6209, 95, 1, 70, "Section"],
 Cell[CellGroupData[{
-Cell[245108, 5654, 103, 1, 49, "Subsection"],
-Cell[245214, 5657, 29020, 677, 2441, "Input"]
+Cell[271683, 6214, 103, 1, 49, "Subsection"],
+Cell[271789, 6217, 29020, 677, 2441, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[274271, 6339, 112, 1, 41, "Subsection"],
-Cell[274386, 6342, 33730, 746, 2175, "Input"]
+Cell[300846, 6899, 112, 1, 41, "Subsection"],
+Cell[300961, 6902, 33730, 746, 2175, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[308153, 7093, 109, 1, 41, "Subsection"],
-Cell[308265, 7096, 1470, 40, 104, "Input"]
+Cell[334728, 7653, 109, 1, 41, "Subsection"],
+Cell[334840, 7656, 1470, 40, 104, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[309772, 7141, 141, 2, 41, "Subsection"],
-Cell[309916, 7145, 2916, 84, 237, "Input"]
+Cell[336347, 7701, 141, 2, 41, "Subsection"],
+Cell[336491, 7705, 2916, 84, 237, "Input"]
 }, Closed]],
 Cell[CellGroupData[{
-Cell[312869, 7234, 79, 1, 41, "Subsection"],
-Cell[312951, 7237, 1113, 28, 142, "Input"],
-Cell[314067, 7267, 94, 1, 30, "Input"]
+Cell[339444, 7794, 79, 1, 41, "Subsection"],
+Cell[339526, 7797, 1113, 28, 142, "Input"],
+Cell[340642, 7827, 94, 1, 30, "Input"]
 }, Closed]]
 }, Open  ]]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[314222, 7275, 180, 2, 72, "Chapter"],
+Cell[340797, 7835, 180, 2, 72, "Chapter"],
 Cell[CellGroupData[{
-Cell[314427, 7281, 148, 2, 70, "Section"],
-Cell[314578, 7285, 5904, 145, 617, "Input"]
+Cell[341002, 7841, 148, 2, 70, "Section"],
+Cell[341153, 7845, 5892, 142, 617, "Input"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[320519, 7435, 192, 3, 70, "Section"],
-Cell[320714, 7440, 1883, 34, 104, "Input"]
+Cell[347082, 7992, 192, 3, 70, "Section"],
+Cell[347277, 7997, 1958, 35, 104, "Input"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[322634, 7479, 153, 2, 70, "Section"],
-Cell[322790, 7483, 382, 9, 46, "Input"]
+Cell[349272, 8037, 153, 2, 70, "Section"],
+Cell[349428, 8041, 382, 9, 46, "Input"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[323209, 7497, 97, 1, 70, "Section"],
-Cell[323309, 7500, 821, 17, 66, "Input"]
+Cell[349847, 8055, 97, 1, 70, "Section"],
+Cell[349947, 8058, 821, 17, 66, "Input"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[324167, 7522, 200, 3, 70, "Section"],
-Cell[324370, 7527, 1079, 22, 66, "Input"]
+Cell[350805, 8080, 200, 3, 70, "Section"],
+Cell[351008, 8085, 1079, 22, 66, "Input"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[325486, 7554, 199, 3, 70, "Section"],
-Cell[325688, 7559, 1273, 31, 85, "Input"]
+Cell[352124, 8112, 199, 3, 70, "Section"],
+Cell[352326, 8117, 1273, 31, 85, "Input"]
 }, Open  ]]
 }, Closed]]
 }

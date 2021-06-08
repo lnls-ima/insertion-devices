@@ -1,0 +1,43 @@
+﻿Procedimento (Cortesia de Fernando H. de Sá):
+
+ 1- Faça download do pacote radia:
+   https://github.com/ochubar/Radia/archive/master.zip
+ 
+ 2- Unzipe o arquivo escolhendo "extrair tudo";
+ 3- Entre na pasta Radia-master\Radia-master\env\radia_python
+ 4- Verifique a versão do python:
+    1- Abra um terminal;
+    2- Digite: python --version;
+    3- Se a versão for 3.6.*, 3.7.* ou 3.8.*:
+       - já existe um arquivo pre-compilado do Radia;
+    4- Caso contrário é necessário compilar o projeto;
+ 5- Exclua o arquivo "radia.pyd" que está nessa pasta;
+ 6- Mude o nome do arquivo "radia_py3_A_x64.pyd" para "radia.pyd":
+           ("A" é o segundo dígito da versão do python);
+ 7- Tente executar os exemplos que estão nessa pasta:
+    1- Abra um terminal;
+    2- Vá para a pasta "Radia-master\Radia-master\env\radia_python";
+    3- Digite "python RADIA_Example01.py";
+    4- Verifique se ele rodou sem erros;
+    5- Rode outros exemplos para testar.
+ 8- Agora vamos "instalar" o radia no sistema:
+ 9- Copie os arquivos abaixo para "C:\Arquivos de Programas\Python3A\Lib\site-packages\":
+    - radia.pyd
+    - uti_io.py
+    - uti_mag.py
+    - uti_math.py
+    - uti_plot.py
+    - uti_plot_com.py
+    - uti_plot_matplotlib.py
+    Os arquivos "uti_*.py" não são necessários para rodar o pacote radia,
+    Eles são apenas utilitários para fazer algumas contas e plotar gráficos.
+    Eles são usados pelos exemplos que vêm com o radia.
+    (O "A" no caminho da pasta é o segundo dígito da versão do python);
+ 10- Teste a instalação no sistema:
+    1- abra um terminal em na pasta home do seu usuário;
+    2- abra um "ipython";
+    3- tente importar o radia: "import radia as rad"
+    4- Se não der erro está tudo certo;
+    5- Você também pode testar a instalação copiando um dos arquivos de exemplo do radia para a pasta home e tentando rodar ele.
+
+ 

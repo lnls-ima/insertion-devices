@@ -1,8 +1,10 @@
 
 import time as _time
 import numpy as _np
+from numpy.lib.function_base import percentile
 from scipy import integrate as _integrate
 from scipy import optimize as _optimize
+from scipy.signal import hilbert as _hilbert
 import radia as _rad
 
 from . import utils as _utils
@@ -131,21 +133,37 @@ def get_field(radia_object, component='b', x=0, y=0, z=0):
     return _np.array(field)
 
 
-def get_field_amplitude(radia_object, field, period_length, nr_periods, x=0, y=0):
+def get_field_amplitude(
+        radia_object, field, period_length,
+        nr_periods, x=0, y=0, method='sine'):
     if radia_object is None:
         return None
 
+    if method not in ('sine', 'hilbert'):
+        raise ValueError('Invalid value for method argument.')
+
+    if nr_periods > 1:
+        zmin = -period_length*(nr_periods - 1)/2
+        zmax = period_length*(nr_periods - 1)/2
+        zpts = 101*(nr_periods-1)
+    else:
+        zmin = -period_length/2
+        zmax = period_length/2
+        zpts = 101
+
     z, b = _np.transpose(_rad.FldLst(
         radia_object, field,
-        [x, y, -period_length], [x, y, period_length],
-        201, "arg", -period_length))
+        [x, y, zmin], [x, y, zmax],
+        zpts, "arg", zmin))
+    bamp_init = _np.max(_np.abs(b))
 
-    bamp = _np.max(_np.abs(b))
-
-    if nr_periods >= 5:
+    if method == 'sine':
         p = _optimize.curve_fit(
-            _utils.fit_cosine, z, b, p0=[bamp, 2*_np.pi/period_length, 0])[0]
+            _utils.fit_cosine, z, b, p0=[bamp_init, 2*_np.pi/period_length, 0])[0]
         bamp = p[0]
+    elif method == 'hilbert':
+        bhilbert = _hilbert(b)
+        bamp = _np.mean(_np.abs(bhilbert))
 
     return bamp
 
@@ -351,20 +369,20 @@ def save_fieldmap_spectra(
     if len(xlist) == 1:
         xstep = 0
     else:
-        xstep = xlist[1] - xlist[0]  
+        xstep = xlist[1] - xlist[0]
 
     if len(ylist) == 1:
         ystep = 0
     else:
-        ystep = ylist[1] - ylist[0]  
+        ystep = ylist[1] - ylist[0]
 
     if len(zlist) == 1:
         zstep = 0
     else:
-        zstep = zlist[1] - zlist[0]  
+        zstep = zlist[1] - zlist[0]
 
     header_data = [xstep, ystep, zstep, nx, ny, nz]
-    header = '{0:g} {1:g} {2:g} {3:d} {4:d} {5:d}\n'.format(*header_data)    
+    header = '{0:g} {1:g} {2:g} {3:d} {4:d} {5:d}\n'.format(*header_data)
 
     with open(filename, 'w') as fieldmap:
         fieldmap.write(header)

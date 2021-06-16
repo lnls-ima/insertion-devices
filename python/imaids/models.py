@@ -935,7 +935,7 @@ class Delta22(Delta):
             block_shape='default', nr_periods=53,
             period_length=22, gap=7, mr=1.37,
             block_subdivision='default',
-            rectangular_shape=False, block_distance=0.05,
+            rectangular_shape=False, block_distance=0.1,
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='delta_22', **kwargs):

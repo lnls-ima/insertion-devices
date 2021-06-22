@@ -159,7 +159,8 @@ def get_field_amplitude(
 
     if method == 'sine':
         p = _optimize.curve_fit(
-            _utils.fit_cosine, z, b, p0=[bamp_init, 2*_np.pi/period_length, 0])[0]
+            _utils.fit_cosine, z, b,
+            p0=[bamp_init, 2*_np.pi/period_length, 0])[0]
         bamp = p[0]
     elif method == 'hilbert':
         bhilbert = _hilbert(b)

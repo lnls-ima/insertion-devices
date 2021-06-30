@@ -355,18 +355,6 @@ class Delta(PMDevice):
         if vertical_pos_err_dict is None:
             vertical_pos_err_dict = {}
 
-        name = 'csd'
-        csd = _cassettes.PMCassette(
-            upper_cassette=True, name=name,
-            init_radia_object=False, **self.cassette_properties)
-        csd.create_radia_object(
-            magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
-        csd.shift([0, -self._gap/2, 0])
-        csd.rotate([0, 0, 0], [0, 0, 1], _np.pi)
-        self._cassettes[name] = csd
-
         name = 'cse'
         cse = _cassettes.PMCassette(
             upper_cassette=True, name=name,
@@ -376,20 +364,20 @@ class Delta(PMDevice):
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
         cse.shift([0, -self._gap/2, 0])
-        cse.rotate([0, 0, 0], [0, 0, 1], -_np.pi/2)
+        cse.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = cse
 
-        name = 'cid'
-        cid = _cassettes.PMCassette(
-            upper_cassette=False, name=name,
+        name = 'csd'
+        csd = _cassettes.PMCassette(
+            upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
-        cid.create_radia_object(
+        csd.create_radia_object(
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
-        cid.shift([0, -self._gap/2, 0])
-        cid.rotate([0, 0, 0], [0, 0, 1], _np.pi/2)
-        self._cassettes[name] = cid
+        csd.shift([0, -self._gap/2, 0])
+        csd.rotate([0, 0, 0], [0, 0, 1], -_np.pi/2)
+        self._cassettes[name] = csd
 
         name = 'cie'
         cie = _cassettes.PMCassette(
@@ -400,7 +388,19 @@ class Delta(PMDevice):
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
         cie.shift([0, -self._gap/2, 0])
+        cie.rotate([0, 0, 0], [0, 0, 1], _np.pi/2)
         self._cassettes[name] = cie
+
+        name = 'cid'
+        cid = _cassettes.PMCassette(
+            upper_cassette=False, name=name,
+            init_radia_object=False, **self.cassette_properties)
+        cid.create_radia_object(
+            magnetization_list=magnetization_dict.get(name),
+            horizontal_pos_err=horizontal_pos_err_dict.get(name),
+            vertical_pos_err=vertical_pos_err_dict.get(name))
+        cid.shift([0, -self._gap/2, 0])
+        self._cassettes[name] = cid
 
         self._radia_object = _rad.ObjCnt(
             [c.radia_object for c in [csd, cse, cid, cie]])
@@ -514,18 +514,6 @@ class AppleX(PMDevice):
         if vertical_pos_err_dict is None:
             vertical_pos_err_dict = {}
 
-        name = 'csd'
-        csd = _cassettes.PMCassette(
-            upper_cassette=True, name=name,
-            init_radia_object=False, **self.cassette_properties)
-        csd.create_radia_object(
-            magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
-        csd.shift([0, -self._gap/2, 0])
-        csd.rotate([0, 0, 0], [0, 0, 1], _np.pi)
-        self._cassettes[name] = csd
-
         name = 'cse'
         cse = _cassettes.PMCassette(
             upper_cassette=True, name=name,
@@ -535,20 +523,20 @@ class AppleX(PMDevice):
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
         cse.shift([0, -self._gap/2, 0])
-        cse.rotate([0, 0, 0], [0, 0, 1], -_np.pi/2)
+        cse.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = cse
 
-        name = 'cid'
-        cid = _cassettes.PMCassette(
-            upper_cassette=False, name=name,
+        name = 'csd'
+        csd = _cassettes.PMCassette(
+            upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
-        cid.create_radia_object(
+        csd.create_radia_object(
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
-        cid.shift([0, -self._gap/2, 0])
-        cid.rotate([0, 0, 0], [0, 0, 1], _np.pi/2)
-        self._cassettes[name] = cid
+        csd.shift([0, -self._gap/2, 0])
+        csd.rotate([0, 0, 0], [0, 0, 1], -_np.pi/2)
+        self._cassettes[name] = csd
 
         name = 'cie'
         cie = _cassettes.PMCassette(
@@ -559,7 +547,19 @@ class AppleX(PMDevice):
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
         cie.shift([0, -self._gap/2, 0])
+        cie.rotate([0, 0, 0], [0, 0, 1], _np.pi/2)
         self._cassettes[name] = cie
+
+        name = 'cid'
+        cid = _cassettes.PMCassette(
+            upper_cassette=False, name=name,
+            init_radia_object=False, **self.cassette_properties)
+        cid.create_radia_object(
+            magnetization_list=magnetization_dict.get(name),
+            horizontal_pos_err=horizontal_pos_err_dict.get(name),
+            vertical_pos_err=vertical_pos_err_dict.get(name))
+        cid.shift([0, -self._gap/2, 0])
+        self._cassettes[name] = cid
 
         self._radia_object = _rad.ObjCnt(
             [c.radia_object for c in [csd, cse, cid, cie]])
@@ -664,22 +664,9 @@ class AppleII(PMDevice):
         mirror_block_shape = [
             [(-1)*pts[0], pts[1]] for shp in self._block_shape for pts in shp]
 
-        name = 'csd'
-        csd = _cassettes.PMCassette(
-            block_shape=mirror_block_shape,
-            upper_cassette=True, name=name,
-            init_radia_object=False, **self.cassette_properties)
-        csd.create_radia_object(
-            magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
-        csd.shift([0, -self._gap/2, 0])
-        csd.rotate([0, 0, 0], [0, 0, 1], _np.pi)
-        self._cassettes[name] = csd
-
         name = 'cse'
         cse = _cassettes.PMCassette(
-            block_shape=self._block_shape,
+            block_shape=mirror_block_shape,
             upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
         cse.create_radia_object(
@@ -690,21 +677,22 @@ class AppleII(PMDevice):
         cse.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = cse
 
-        name = 'cid'
-        cid = _cassettes.PMCassette(
+        name = 'csd'
+        csd = _cassettes.PMCassette(
             block_shape=self._block_shape,
-            upper_cassette=False, name=name,
+            upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
-        cid.create_radia_object(
+        csd.create_radia_object(
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
-        cid.shift([0, -self._gap/2, 0])
-        self._cassettes[name] = cid
+        csd.shift([0, -self._gap/2, 0])
+        csd.rotate([0, 0, 0], [0, 0, 1], _np.pi)
+        self._cassettes[name] = csd
 
         name = 'cie'
         cie = _cassettes.PMCassette(
-            block_shape=mirror_block_shape,
+            block_shape=self._block_shape,
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         cie.create_radia_object(
@@ -713,6 +701,18 @@ class AppleII(PMDevice):
             vertical_pos_err=vertical_pos_err_dict.get(name))
         cie.shift([0, -self._gap/2, 0])
         self._cassettes[name] = cie
+
+        name = 'cid'
+        cid = _cassettes.PMCassette(
+            block_shape=mirror_block_shape,
+            upper_cassette=False, name=name,
+            init_radia_object=False, **self.cassette_properties)
+        cid.create_radia_object(
+            magnetization_list=magnetization_dict.get(name),
+            horizontal_pos_err=horizontal_pos_err_dict.get(name),
+            vertical_pos_err=vertical_pos_err_dict.get(name))
+        cid.shift([0, -self._gap/2, 0])
+        self._cassettes[name] = cid
 
         self._radia_object = _rad.ObjCnt(
             [c.radia_object for c in [csd, cse, cid, cie]])

@@ -1,13 +1,20 @@
 
 import time as _time
 import numpy as _np
-from numpy.lib.function_base import percentile
 from scipy import integrate as _integrate
 from scipy import optimize as _optimize
 from scipy.signal import hilbert as _hilbert
 import radia as _rad
 
 from . import utils as _utils
+
+
+def calc_beam_parameters(energy):
+    electron_rest_energy, light_speed = _utils.get_constants()
+    gamma = energy*1e9/electron_rest_energy
+    beta = _np.sqrt(1 - 1/((energy*1e9/electron_rest_energy)**2))
+    brho = energy*1e9/light_speed
+    return beta, gamma, brho
 
 
 def calc_field_integrals(radia_object, zmin, zmax, znpts, x=0, y=0):
@@ -25,8 +32,67 @@ def calc_field_integrals(radia_object, zmin, zmax, znpts, x=0, y=0):
     return _np.array([ibx, iby, ibz]), _np.array([iibx, iiby, iibz])
 
 
-def calc_phase_error():
-    raise NotImplementedError
+def calc_phase_error(
+        radia_object, period_length, nr_periods,
+        energy, r0, zmax, rkstep, skip_poles=1):
+    x = r0[0]
+    y = r0[1]
+    zmin = r0[2]
+    trajectory = calc_trajectory(radia_object, energy, r0, zmax, rkstep)
+
+    bx_amp = get_field_amplitude(
+        radia_object, 'bx', period_length, nr_periods, x=x, y=y)
+    by_amp = get_field_amplitude(
+        radia_object, 'by', period_length, nr_periods, x=x, y=y)
+
+    wavelength = calc_radiation_wavelength(
+        energy, bx_amp, by_amp, period_length)
+
+    z = _np.linspace(zmin, zmax, int((zmax - zmin)/rkstep + 1))
+    by = get_field(radia_object, component='by', x=0, y=0, z=z)
+    idx = _utils.find_peaks_and_valleys(by)
+
+    ph = calc_radiation_phase(
+        energy, trajectory, wavelength, z)
+    z_poles = z[idx]
+    phase_poles = ph[idx]
+
+    if skip_poles != 0:
+        z_poles = z_poles[skip_poles:-skip_poles]
+        phase_poles = phase_poles[skip_poles:-skip_poles]
+
+    coeffs = _np.polynomial.polynomial.polyfit(z_poles, phase_poles, 1)
+    phase_fit = _np.polynomial.polynomial.polyval(z_poles, coeffs)
+    phase_error = phase_poles - phase_fit
+
+    phase_error_rms = _np.sqrt(_np.mean(phase_error**2))
+
+    return phase_error_rms
+
+
+def calc_trajectory_length(trajectory):
+    traj_pos = trajectory[:, 0:3]
+    traj_diff = _np.diff(traj_pos, axis=0)
+    traj_len = _np.append(
+        0, _np.cumsum(_np.sqrt(_np.sum(traj_diff**2, axis=1))))
+    traj_z = traj_pos[:, 2]
+    return traj_z, traj_len
+
+
+def calc_radiation_phase(
+        energy, trajectory, wavelength, z):
+    beta, *_ = calc_beam_parameters(energy)
+    traj_z, traj_len = calc_trajectory_length(trajectory)
+    traj_len_at_z = _np.interp(z, traj_z, traj_len)
+    return (2*_np.pi/(wavelength*1000))*(traj_len_at_z/beta - (z - z[0]))
+
+
+def calc_radiation_wavelength(
+        energy, bx_amp, by_amp, period_length, harmonic=1):
+    _, gamma, _ = calc_beam_parameters(energy)
+    kh, kv = calc_deflection_parameter(bx_amp, by_amp, period_length)
+    wl = (period_length/1000/(2*harmonic*(gamma**2)))*(1 + (kh**2 + kv**2)/2)
+    return wl
 
 
 def calc_trajectory(
@@ -34,14 +100,11 @@ def calc_trajectory(
     if radia_object is None:
         return None
 
-    electron_rest_energy, light_speed = _utils.get_constants()
-
     r1 = _np.zeros(6, dtype=float)
     r2 = _np.zeros(6, dtype=float)
     r3 = _np.zeros(6, dtype=float)
 
-    beta = _np.sqrt(1 - 1/((energy*1e9/electron_rest_energy)**2))
-    brho = energy*1e9/light_speed
+    beta, _, brho = calc_beam_parameters(energy)
     a = 1/brho/beta
 
     # from mm to m

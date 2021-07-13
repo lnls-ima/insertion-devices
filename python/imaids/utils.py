@@ -1,6 +1,5 @@
 
 import numpy as _np
-from scipy.signal import find_peaks as _find_peaks
 
 
 def depth(lst):
@@ -30,13 +29,3 @@ def rotation_matrix(axis, theta):
         [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc],
         ])
     return matrix
-
-
-def find_peaks_and_valleys(data, prominence=0.05):
-    peaks, _ = _find_peaks(data, prominence=prominence)
-    valleys, _ = _find_peaks(data*(-1), prominence=prominence)
-    return sorted(_np.append(peaks, valleys))
-
-
-def fit_cosine(z, bamp, freq, phase):
-    return bamp*_np.cos(freq*z + phase)

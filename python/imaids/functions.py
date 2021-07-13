@@ -3,10 +3,32 @@ import time as _time
 import numpy as _np
 from scipy import integrate as _integrate
 from scipy import optimize as _optimize
-from scipy.signal import hilbert as _hilbert
+from scipy import signal as _signal
 import radia as _rad
 
 from . import utils as _utils
+
+
+def find_peaks_and_valleys(data, prominence=0.05):
+    peaks, _ = _signal.find_peaks(data, prominence=prominence)
+    valleys, _ = _signal.find_peaks(data*(-1), prominence=prominence)
+    return sorted(_np.append(peaks, valleys))
+
+
+def find_zeros(pos, data):
+    s = _np.sign(data)
+    idxb = (s[0:-1] + s[1:] == 0).nonzero()[0]
+    idxa = idxb + 1
+    posb = pos[idxb]
+    posa = pos[idxa]
+    datab = data[idxb]
+    dataa = data[idxa]
+    pos = (dataa*posb - datab*posa)/(dataa - datab)
+    return pos[:-1]
+
+
+def cosine_function(z, bamp, freq, phase):
+    return bamp*_np.cos(freq*z + phase)
 
 
 def calc_beam_parameters(energy):
@@ -17,82 +39,91 @@ def calc_beam_parameters(energy):
     return beta, gamma, brho
 
 
-def calc_field_integrals(radia_object, zmin, zmax, znpts, x=0, y=0):
-    posz, bx, by, bz = _np.transpose(_rad.FldLst(
-        radia_object, "b", [x, y, zmin], [x, y, zmax], znpts, "arg", zmin))
+def calc_field_integrals(
+        radia_object, z_list, x=0, y=0, field_list=None):
+    if radia_object is None:
+        return None, None
 
-    posz_m = _np.array(posz)/1000
-    ibx = _integrate.cumtrapz(bx, posz_m, initial=0)
-    iby = _integrate.cumtrapz(by, posz_m, initial=0)
-    ibz = _integrate.cumtrapz(bz, posz_m, initial=0)
-    iibx = _integrate.cumtrapz(ibx, posz_m)
-    iiby = _integrate.cumtrapz(iby, posz_m)
-    iibz = _integrate.cumtrapz(ibz, posz_m)
+    if field_list is not None:
+        if len(field_list) != len(z_list):
+            raise ValueError(
+                'Inconsistent length between field and position lists.')
+    else:
+        field_list = get_field(radia_object, x=x, y=y, z=z_list)
 
-    return _np.array([ibx, iby, ibz]), _np.array([iibx, iiby, iibz])
+    bx, by, bz = _np.transpose(field_list)
 
+    z_list_m = _np.array(z_list)/1000
+    ibx = _integrate.cumtrapz(bx, z_list_m, initial=0)
+    iby = _integrate.cumtrapz(by, z_list_m, initial=0)
+    ibz = _integrate.cumtrapz(bz, z_list_m, initial=0)
+    iibx = _integrate.cumtrapz(ibx, z_list_m, initial=0)
+    iiby = _integrate.cumtrapz(iby, z_list_m, initial=0)
+    iibz = _integrate.cumtrapz(ibz, z_list_m, initial=0)
 
-def calc_phase_error(
-        radia_object, period_length, nr_periods,
-        energy, r0, zmax, rkstep, skip_poles=1):
-    x = r0[0]
-    y = r0[1]
-    zmin = r0[2]
-    trajectory = calc_trajectory(radia_object, energy, r0, zmax, rkstep)
+    ib = _np.transpose([ibx, iby, ibz])*1e6
+    iib = _np.transpose([iibx, iiby, iibz])*1e5
 
-    bx_amp = get_field_amplitude(
-        radia_object, 'bx', period_length, nr_periods, x=x, y=y)
-    by_amp = get_field_amplitude(
-        radia_object, 'by', period_length, nr_periods, x=x, y=y)
-
-    wavelength = calc_radiation_wavelength(
-        energy, bx_amp, by_amp, period_length)
-
-    z = _np.linspace(zmin, zmax, int((zmax - zmin)/rkstep + 1))
-    by = get_field(radia_object, component='by', x=0, y=0, z=z)
-    idx = _utils.find_peaks_and_valleys(by)
-
-    ph = calc_radiation_phase(
-        energy, trajectory, wavelength, z)
-    z_poles = z[idx]
-    phase_poles = ph[idx]
-
-    if skip_poles != 0:
-        z_poles = z_poles[skip_poles:-skip_poles]
-        phase_poles = phase_poles[skip_poles:-skip_poles]
-
-    coeffs = _np.polynomial.polynomial.polyfit(z_poles, phase_poles, 1)
-    phase_fit = _np.polynomial.polynomial.polyval(z_poles, coeffs)
-    phase_error = phase_poles - phase_fit
-
-    phase_error_rms = _np.sqrt(_np.mean(phase_error**2))
-
-    return phase_error_rms
+    return ib, iib
 
 
-def calc_trajectory_length(trajectory):
-    traj_pos = trajectory[:, 0:3]
-    traj_diff = _np.diff(traj_pos, axis=0)
-    traj_len = _np.append(
-        0, _np.cumsum(_np.sqrt(_np.sum(traj_diff**2, axis=1))))
-    traj_z = traj_pos[:, 2]
-    return traj_z, traj_len
+def calc_field_amplitude(
+        radia_object, period_length,
+        nr_periods, x=0, y=0, z_list=None,
+        field_list=None, npts_per_period=101):
+    if radia_object is None:
+        return None, None, None, None
 
+    if nr_periods > 1:
+        zmin = -period_length*(nr_periods - 1)/2
+        zmax = period_length*(nr_periods - 1)/2
+        znpts = npts_per_period*(nr_periods-1)
+    else:
+        zmin = -period_length/2
+        zmax = period_length/2
+        znpts = npts_per_period
 
-def calc_radiation_phase(
-        energy, trajectory, wavelength, z):
-    beta, *_ = calc_beam_parameters(energy)
-    traj_z, traj_len = calc_trajectory_length(trajectory)
-    traj_len_at_z = _np.interp(z, traj_z, traj_len)
-    return (2*_np.pi/(wavelength*1000))*(traj_len_at_z/beta - (z - z[0]))
+    if z_list is not None and field_list is not None:
+        if len(field_list) != len(z_list):
+            raise ValueError(
+                'Inconsistent length between field and position lists.')
 
+        z_list = _np.array(z_list)
+        field_list = _np.array(field_list)
 
-def calc_radiation_wavelength(
-        energy, bx_amp, by_amp, period_length, harmonic=1):
-    _, gamma, _ = calc_beam_parameters(energy)
-    kh, kv = calc_deflection_parameter(bx_amp, by_amp, period_length)
-    wl = (period_length/1000/(2*harmonic*(gamma**2)))*(1 + (kh**2 + kv**2)/2)
-    return wl
+        cond = (z_list >= zmin) & (z_list <= zmax)
+        z_list = z_list[cond]
+        field_list = field_list[cond]
+
+    else:
+        z_list = _np.linspace(zmin, zmax, znpts)
+        field_list = get_field(radia_object, x=x, y=y, z=z_list)
+
+    bx, by, bz = _np.transpose(field_list)
+    bx_amp_init = _np.max(_np.abs(bx))
+    by_amp_init = _np.max(_np.abs(by))
+    bz_amp_init = _np.max(_np.abs(bz))
+
+    px = _optimize.curve_fit(
+        cosine_function, z_list, bx,
+        p0=[bx_amp_init, 2*_np.pi/period_length, 0])[0]
+    bx_amp = _np.abs(px[0])
+    bx_phase = px[2]
+
+    py = _optimize.curve_fit(
+        cosine_function, z_list, by,
+        p0=[by_amp_init, 2*_np.pi/period_length, 0])[0]
+    by_amp = _np.abs(py[0])
+    by_phase = py[2]
+
+    pz = _optimize.curve_fit(
+        cosine_function, z_list, bz,
+        p0=[bz_amp_init, 2*_np.pi/period_length, 0])[0]
+    bz_amp = _np.abs(pz[0])
+
+    bxy_phase = (bx_phase - by_phase) % _np.pi
+
+    return bx_amp, by_amp, bz_amp, bxy_phase
 
 
 def calc_trajectory(
@@ -158,6 +189,62 @@ def calc_trajectory(
     return trajectory
 
 
+def calc_deflection_parameter(bx_amp, by_amp, period_length):
+    kh = 0.934*by_amp*(period_length/10)
+    kv = 0.934*bx_amp*(period_length/10)
+    return kh, kv
+
+
+def calc_trajectory_length(trajectory):
+    traj_pos = trajectory[:, 0:3]
+    traj_diff = _np.diff(traj_pos, axis=0)
+    traj_len = _np.append(
+        0, _np.cumsum(_np.sqrt(_np.sum(traj_diff**2, axis=1))))
+    return traj_len
+
+
+def calc_radiation_phase(
+        energy, trajectory, wavelength):
+    beta, *_ = calc_beam_parameters(energy)
+    traj_z = trajectory[:, 2]
+    traj_len = calc_trajectory_length(trajectory)
+    return (2*_np.pi/(wavelength))*(traj_len/beta - (traj_z - traj_z[0]))
+
+
+def calc_radiation_wavelength(
+        energy, bx_amp, by_amp, period_length, harmonic=1):
+    _, gamma, _ = calc_beam_parameters(energy)
+    kh, kv = calc_deflection_parameter(bx_amp, by_amp, period_length)
+    wl = (period_length/(2*harmonic*(gamma**2)))*(1 + (kh**2 + kv**2)/2)
+    return wl
+
+
+def calc_phase_error(
+        energy, trajectory, wavelength,
+        skip_poles=1, zmin=None, zmax=None):
+    z_list = find_zeros(trajectory[:, 2], trajectory[:, 3])
+
+    if zmin is not None:
+        z_list = z_list[z_list >= zmin]
+
+    if zmax is not None:
+        z_list = z_list[z_list <= zmax]
+
+    if skip_poles != 0:
+        z_list = z_list[skip_poles:-skip_poles]
+
+    phase = calc_radiation_phase(energy, trajectory, wavelength)
+    phase_poles = _np.interp(z_list, trajectory[:, 2], phase)
+
+    coeffs = _np.polynomial.polynomial.polyfit(z_list, phase_poles, 1)
+    phase_fit = _np.polynomial.polynomial.polyval(z_list, coeffs)
+    phase_error = phase_poles - phase_fit
+
+    phase_error_rms = _np.sqrt(_np.mean(phase_error**2))
+
+    return z_list, phase_error, phase_error_rms
+
+
 def draw(radia_object):
     if radia_object is None:
         return False
@@ -167,13 +254,7 @@ def draw(radia_object):
     return True
 
 
-def calc_deflection_parameter(bx_amp, by_amp, period_length):
-    kh = 0.934*by_amp*(period_length/10)
-    kv = 0.934*bx_amp*(period_length/10)
-    return kh, kv
-
-
-def get_field(radia_object, component='b', x=0, y=0, z=0):
+def get_field(radia_object, x=0, y=0, z=0):
     if isinstance(x, (float, int)):
         x = [x]
     if isinstance(y, (float, int)):
@@ -185,51 +266,15 @@ def get_field(radia_object, component='b', x=0, y=0, z=0):
         raise ValueError('Invalid position arguments.')
 
     if len(x) > 1:
-        field = [_rad.Fld(radia_object, component, [xi, y, z]) for xi in x]
+        field = [_rad.Fld(radia_object, 'b', [xi, y, z]) for xi in x]
     elif len(y) > 1:
-        field = [_rad.Fld(radia_object, component, [x, yi, z]) for yi in y]
+        field = [_rad.Fld(radia_object, 'b', [x, yi, z]) for yi in y]
     elif len(z) > 1:
-        field = [_rad.Fld(radia_object, component, [x, y, zi]) for zi in z]
+        field = [_rad.Fld(radia_object, 'b', [x, y, zi]) for zi in z]
     else:
-        field = [_rad.Fld(radia_object, component, [x, y, z])]
+        field = [_rad.Fld(radia_object, 'b', [x, y, z])]
 
     return _np.array(field)
-
-
-def get_field_amplitude(
-        radia_object, field, period_length,
-        nr_periods, x=0, y=0, method='sine'):
-    if radia_object is None:
-        return None
-
-    if method not in ('sine', 'hilbert'):
-        raise ValueError('Invalid value for method argument.')
-
-    if nr_periods > 1:
-        zmin = -period_length*(nr_periods - 1)/2
-        zmax = period_length*(nr_periods - 1)/2
-        zpts = 101*(nr_periods-1)
-    else:
-        zmin = -period_length/2
-        zmax = period_length/2
-        zpts = 101
-
-    z, b = _np.transpose(_rad.FldLst(
-        radia_object, field,
-        [x, y, zmin], [x, y, zmax],
-        zpts, "arg", zmin))
-    bamp_init = _np.max(_np.abs(b))
-
-    if method == 'sine':
-        p = _optimize.curve_fit(
-            _utils.fit_cosine, z, b,
-            p0=[bamp_init, 2*_np.pi/period_length, 0])[0]
-        bamp = p[0]
-    elif method == 'hilbert':
-        bhilbert = _hilbert(b)
-        bamp = _np.mean(_np.abs(bhilbert))
-
-    return bamp
 
 
 def get_file_header_delta(

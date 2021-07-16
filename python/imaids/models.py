@@ -607,7 +607,7 @@ class DeltaSabia(Delta):
     def __init__(
             self,
             block_shape='default', nr_periods=21,
-            period_length=52.5, gap=13.6, mr=1.37,
+            period_length=52.5, gap=13.6, mr=1.39,
             block_subdivision='default',
             rectangular_shape=False, block_distance=0.125,
             start_blocks_length='default', start_blocks_distance='default',
@@ -651,26 +651,26 @@ class DeltaSabia(Delta):
             name=name, **kwargs)
 
 
-class Delta22(Delta):
-    """Delta 22."""
+class DeltaCarnauba(Delta):
+    """Delta Carnauba."""
 
     def __init__(
             self,
             block_shape='default', nr_periods=53,
-            period_length=22, gap=7, mr=1.37,
+            period_length=22, gap=7, mr=1.39,
             block_subdivision='default',
             rectangular_shape=False, block_distance=0.1,
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
-            name='delta_22', **kwargs):
+            name='delta_carnauba', **kwargs):
 
         if block_shape == 'default':
             block_shape = _blocks.PMBlock.get_predefined_shape(
-                'delta_22')
+                'delta_carnauba')
 
         if block_subdivision == 'default':
             block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
-                'delta_22')
+                'delta_carnauba')
 
         block_len = period_length/4 - block_distance
         lenghts = [
@@ -701,46 +701,13 @@ class Delta22(Delta):
             name=name, **kwargs)
 
 
-class TestUndulatorSabia(APU):
-    """APU with the same blocks as Delta Sabia."""
-
-    def __init__(
-            self,
-            block_shape='default', nr_periods=3,
-            period_length=52.5, gap=13.6, mr=1.37,
-            block_subdivision='default',
-            rectangular_shape=False, block_distance=0.125,
-            start_blocks_length=None, start_blocks_distance=None,
-            end_blocks_length=None, end_blocks_distance=None,
-            name='test_undulator_sabia', **kwargs):
-
-        if block_shape == 'default':
-            block_shape = _blocks.PMBlock.get_predefined_shape(
-                'delta_sabia')
-
-        if block_subdivision == 'default':
-            block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
-                'delta_sabia')
-
-        super().__init__(
-            block_shape, nr_periods, period_length, gap, mr,
-            block_subdivision=block_subdivision,
-            rectangular_shape=rectangular_shape,
-            block_distance=block_distance,
-            start_blocks_length=start_blocks_length,
-            start_blocks_distance=start_blocks_distance,
-            end_blocks_length=end_blocks_length,
-            end_blocks_distance=end_blocks_distance,
-            name=name, **kwargs)
-
-
 class AppleXSabia(AppleX):
     """AppleX for Sirius Sabia beamline."""
 
     def __init__(
             self,
             block_shape='default', nr_periods=21,
-            period_length=52.5, gap=13.6, mr=1.37,
+            period_length=52.5, gap=13.6, mr=1.39,
             block_subdivision='default',
             rectangular_shape=False, block_distance=0.125,
             start_blocks_length='default', start_blocks_distance='default',
@@ -784,26 +751,26 @@ class AppleXSabia(AppleX):
             name=name, **kwargs)
 
 
-class AppleX22(AppleX):
-    """AppleX 22."""
+class AppleXCarnauba(AppleX):
+    """AppleX Carnauba."""
 
     def __init__(
             self,
             block_shape='default', nr_periods=53,
-            period_length=22, gap=7, mr=1.37,
+            period_length=22, gap=7, mr=1.39,
             block_subdivision='default',
-            rectangular_shape=False, block_distance=0.05,
+            rectangular_shape=False, block_distance=0.1,
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
-            name='applex_22', **kwargs):
+            name='applex_carnauba', **kwargs):
 
         if block_shape == 'default':
             block_shape = _blocks.PMBlock.get_predefined_shape(
-                'delta_22')
+                'delta_carnauba')
 
         if block_subdivision == 'default':
             block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
-                'delta_22')
+                'delta_carnauba')
 
         block_len = period_length/4 - block_distance
         lenghts = [
@@ -839,7 +806,7 @@ class AppleIISabia(AppleII):
 
     def __init__(
             self, block_shape='default',
-            nr_periods=21, period_length=52.5, gap=13.6, mr=1.37,
+            nr_periods=21, period_length=52.5, gap=13.6, mr=1.39,
             block_subdivision='default',
             rectangular_shape=True, block_distance=0.125,
             start_blocks_length='default', start_blocks_distance='default',
@@ -853,6 +820,55 @@ class AppleIISabia(AppleII):
         if block_subdivision == 'default':
             block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
                 'apple_sabia')
+
+        block_len = period_length/4 - block_distance
+        lenghts = [block_len/4, block_len/2, 3*block_len/4, block_len]
+        distances = [block_len/2, block_len/4, 0, block_distance]
+
+        if start_blocks_length == 'default':
+            start_blocks_length = lenghts
+
+        if start_blocks_distance == 'default':
+            start_blocks_distance = distances
+
+        if end_blocks_length == 'default':
+            end_blocks_length = lenghts[::-1]
+
+        if end_blocks_distance == 'default':
+            end_blocks_distance = distances[::-1]
+
+        super().__init__(
+            block_shape, nr_periods, period_length, gap, mr,
+            block_subdivision=block_subdivision,
+            rectangular_shape=rectangular_shape,
+            block_distance=block_distance,
+            start_blocks_length=start_blocks_length,
+            start_blocks_distance=start_blocks_distance,
+            end_blocks_length=end_blocks_length,
+            end_blocks_distance=end_blocks_distance,
+            name=name, **kwargs)
+
+
+class AppleIICarnauba(AppleII):
+    """AppleII with same parameters as DeltaCarnauba."""
+
+    def __init__(
+            self,
+            block_shape='default', nr_periods=53,
+            period_length=22, gap=7, mr=1.39,
+            block_subdivision='default',
+            rectangular_shape=False, block_distance=0.1,
+            start_blocks_length='default', start_blocks_distance='default',
+            end_blocks_length='default', end_blocks_distance='default',
+            name='apple_sabia', **kwargs):
+
+        if block_shape == 'default':
+            block_shape = _blocks.PMBlock.get_predefined_shape(
+                'apple_carnauba')
+
+        if block_subdivision == 'default':
+            block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
+                'apple_carnauba')
 
         block_len = period_length/4 - block_distance
         lenghts = [block_len/4, block_len/2, 3*block_len/4, block_len]
@@ -921,6 +937,39 @@ class Kyma22(APU):
 
         if end_blocks_distance == 'default':
             end_blocks_distance = distances[0:-1][::-1]
+
+        super().__init__(
+            block_shape, nr_periods, period_length, gap, mr,
+            block_subdivision=block_subdivision,
+            rectangular_shape=rectangular_shape,
+            block_distance=block_distance,
+            start_blocks_length=start_blocks_length,
+            start_blocks_distance=start_blocks_distance,
+            end_blocks_length=end_blocks_length,
+            end_blocks_distance=end_blocks_distance,
+            name=name, **kwargs)
+
+
+class TestUndulatorSabia(APU):
+    """APU with the same blocks as Delta Sabia."""
+
+    def __init__(
+            self,
+            block_shape='default', nr_periods=3,
+            period_length=52.5, gap=13.6, mr=1.39,
+            block_subdivision='default',
+            rectangular_shape=False, block_distance=0.125,
+            start_blocks_length=None, start_blocks_distance=None,
+            end_blocks_length=None, end_blocks_distance=None,
+            name='test_undulator_sabia', **kwargs):
+
+        if block_shape == 'default':
+            block_shape = _blocks.PMBlock.get_predefined_shape(
+                'delta_sabia')
+
+        if block_subdivision == 'default':
+            block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
+                'delta_sabia')
 
         super().__init__(
             block_shape, nr_periods, period_length, gap, mr,

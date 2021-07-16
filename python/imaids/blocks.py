@@ -135,7 +135,7 @@ class PMBlock():
                 [21.5, -50], [22.5, -49], [22.5, -42.4], [17.8, -38.4]]
             block_shape = [block_shape_a, block_shape_b, block_shape_c]
 
-        elif device_name == 'delta_22':
+        elif device_name == 'delta_carnauba':
             block_shape_a = [
                 [-2.625, 0.0], [-11.25, -9.65], [-11.25, -14.6],
                 [-8.9, -16.6], [8.9, -16.6], [11.25, -14.6],
@@ -146,11 +146,15 @@ class PMBlock():
                 [-8.9, -19.2], [-11.25, -21.2], [-11.25, -24.5],
                 [-10.75, -25.0], [10.75, -25.0], [11.25, -24.5],
                 [11.25, -21.2], [8.9, -19.2]]
-                
+
             block_shape = [block_shape_a, block_shape_b, block_shape_c]
 
         elif device_name == 'apple_sabia':
             block_shape_a = [[0.1, 0], [50, 0], [50, -50], [0.1, -50]]
+            block_shape = [block_shape_a]
+
+        elif device_name == 'apple_carnauba':
+            block_shape_a = [[0.1, 0], [25, 0], [25, -25], [0.1, -25]]
             block_shape = [block_shape_a]
 
         elif device_name == 'kyma_22':
@@ -179,7 +183,7 @@ class PMBlock():
             block_subdivision = [
                 block_subdivision_a, block_subdivision_b, block_subdivision_c]
 
-        elif device_name == 'delta_22':
+        elif device_name == 'delta_carnauba':
             block_subdivision_a = [3, 3, 2]
             block_subdivision_b = [1, 1, 1]
             block_subdivision_c = [1, 1, 1]
@@ -187,6 +191,10 @@ class PMBlock():
                 block_subdivision_a, block_subdivision_b, block_subdivision_c]
 
         elif device_name == 'apple_sabia':
+            block_subdivision_a = [3, 3, 3]
+            block_subdivision = [block_subdivision_a]
+
+        elif device_name == 'apple_carnauba':
             block_subdivision_a = [3, 3, 3]
             block_subdivision = [block_subdivision_a]
 

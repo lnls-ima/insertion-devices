@@ -365,10 +365,24 @@ def get_file_header_applex(
 
 
 def get_filename(
-        date, device_name, polarization_name, xrange, yrange, zrange, kh, kv,
+        date, device_name, polarization_name,
+        x_list, y_list, z_list, kh, kv,
         file_extension='.fld', displacement_name=''):
 
     filename = '{0:s}'.format(date)
+
+    if isinstance(x_list, (float, int)):
+        x_list = [x_list]
+
+    if isinstance(y_list, (float, int)):
+        y_list = [y_list]
+
+    if isinstance(z_list, (float, int)):
+        z_list = [z_list]
+
+    x_list = _np.round(x_list, decimals=8)
+    y_list = _np.round(y_list, decimals=8)
+    z_list = _np.round(z_list, decimals=8)
 
     if device_name != '':
         filename += '_' + device_name
@@ -381,14 +395,14 @@ def get_filename(
     if displacement_name != '':
         filename += '_' + displacement_name
 
-    if xrange[0] != xrange[1]:
-        filename += '_X={0:g}_{1:g}mm'.format(xrange[0], xrange[1])
+    if len(x_list) > 1:
+        filename += '_X={0:g}_{1:g}mm'.format(x_list[0], x_list[-1])
 
-    if yrange[0] != yrange[1]:
-        filename += '_Y={0:g}_{1:g}mm'.format(yrange[0], yrange[1])
+    if len(y_list) > 1:
+        filename += '_Y={0:g}_{1:g}mm'.format(y_list[0], y_list[-1])
 
-    if zrange[0] != zrange[1]:
-        filename += '_Z={0:g}_{1:g}mm'.format(zrange[0], zrange[1])
+    if len(z_list) > 1:
+        filename += '_Z={0:g}_{1:g}mm'.format(z_list[0], z_list[-1])
 
     filename += file_extension
 
@@ -407,25 +421,25 @@ def newton_lorentz_equation(a, r, b):
 
 
 def save_fieldmap(
-        radia_object, filename, xlist, ylist, zlist, header=None):
+        radia_object, filename, x_list, y_list, z_list, header=None):
 
     t0 = _time.time()
 
     if header is None:
         header = []
 
-    if isinstance(xlist, (float, int)):
-        xlist = [xlist]
+    if isinstance(x_list, (float, int)):
+        x_list = [x_list]
 
-    if isinstance(ylist, (float, int)):
-        ylist = [ylist]
+    if isinstance(y_list, (float, int)):
+        y_list = [y_list]
 
-    if isinstance(zlist, (float, int)):
-        zlist = [zlist]
+    if isinstance(z_list, (float, int)):
+        z_list = [z_list]
 
-    xlist = _np.round(xlist, decimals=8)
-    ylist = _np.round(ylist, decimals=8)
-    zlist = _np.round(zlist, decimals=8)
+    x_list = _np.round(x_list, decimals=8)
+    y_list = _np.round(y_list, decimals=8)
+    z_list = _np.round(z_list, decimals=8)
 
     with open(filename, 'w') as fieldmap:
         for line in header:
@@ -440,9 +454,9 @@ def save_fieldmap(
 
         line_fmt = '{0:g}\t{1:g}\t{2:g}\t{3:g}\t{4:g}\t{5:g}\n'
 
-        for z in zlist:
-            for y in ylist:
-                for x in xlist:
+        for z in z_list:
+            for y in y_list:
+                for x in x_list:
                     bx, by, bz = _rad.Fld(radia_object, "b", [x, y, z])
                     line = line_fmt.format(x, y, z, bx, by, bz)
                     fieldmap.write(line)
@@ -454,41 +468,41 @@ def save_fieldmap(
 
 
 def save_fieldmap_spectra(
-        radia_object, filename, xlist, ylist, zlist):
+        radia_object, filename, x_list, y_list, z_list):
 
     t0 = _time.time()
 
-    if isinstance(xlist, (float, int)):
-        xlist = [xlist]
+    if isinstance(x_list, (float, int)):
+        x_list = [x_list]
 
-    if isinstance(ylist, (float, int)):
-        ylist = [ylist]
+    if isinstance(y_list, (float, int)):
+        y_list = [y_list]
 
-    if isinstance(zlist, (float, int)):
-        zlist = [zlist]
+    if isinstance(z_list, (float, int)):
+        z_list = [z_list]
 
-    xlist = _np.round(xlist, decimals=8)
-    ylist = _np.round(ylist, decimals=8)
-    zlist = _np.round(zlist, decimals=8)
+    x_list = _np.round(x_list, decimals=8)
+    y_list = _np.round(y_list, decimals=8)
+    z_list = _np.round(z_list, decimals=8)
 
-    nx = len(xlist)
-    ny = len(ylist)
-    nz = len(zlist)
+    nx = len(x_list)
+    ny = len(y_list)
+    nz = len(z_list)
 
-    if len(xlist) == 1:
+    if len(x_list) == 1:
         xstep = 0
     else:
-        xstep = xlist[1] - xlist[0]
+        xstep = x_list[1] - x_list[0]
 
-    if len(ylist) == 1:
+    if len(y_list) == 1:
         ystep = 0
     else:
-        ystep = ylist[1] - ylist[0]
+        ystep = y_list[1] - y_list[0]
 
-    if len(zlist) == 1:
+    if len(z_list) == 1:
         zstep = 0
     else:
-        zstep = zlist[1] - zlist[0]
+        zstep = z_list[1] - z_list[0]
 
     header_data = [xstep, ystep, zstep, nx, ny, nz]
     header = '{0:g} {1:g} {2:g} {3:d} {4:d} {5:d}\n'.format(*header_data)
@@ -498,9 +512,9 @@ def save_fieldmap_spectra(
 
         line_fmt = '{0:g}\t{1:g}\t{2:g}\n'
 
-        for x in xlist:
-            for y in ylist:
-                for z in zlist:
+        for x in x_list:
+            for y in y_list:
+                for z in z_list:
                     bx, by, bz = _rad.Fld(radia_object, "b", [x, y, z])
                     line = line_fmt.format(bx, by, bz)
                     fieldmap.write(line)
@@ -512,33 +526,31 @@ def save_fieldmap_spectra(
 
 
 def save_kickmap(
-        radia_object, filename, energy, xrange, yrange, zrange, nx, ny, zstep):
+        radia_object, filename, energy, x_list, y_list, zmin, zmax, rkstep):
     t0 = _time.time()
 
     _, light_speed = _utils.get_constants()
     brho = energy*1e9/light_speed
 
-    xmin = xrange[0]
-    xmax = xrange[1]
+    if isinstance(x_list, (float, int)):
+        x_list = [x_list]
 
-    ymin = yrange[0]
-    ymax = yrange[1]
+    if isinstance(y_list, (float, int)):
+        y_list = [y_list]
 
-    zmin = zrange[0]
-    zmax = zrange[1]
+    x_list = _np.round(x_list, decimals=8)
+    y_list = _np.round(y_list, decimals=8)
 
-    xstep = (xmax - xmin)/(nx - 1) if xmax != xmin else 0
-    ystep = (ymax - ymin)/(ny - 1) if ymax != ymin else 0
-
-    x_list = []
-    for i in range(nx):
-        x_list.append(xmin + xstep*i)
-
-    y_list = []
-    for j in range(ny):
-        y_list.append(ymin + ystep*j)
+    nx = len(x_list)
+    ny = len(y_list)
 
     y_list_rev = y_list[::-1]
+
+    extension = filename.split('.')[-1]
+    filename_tmp = filename.replace(extension, 'tmp')
+    with open(filename_tmp, '+a') as tmp:
+        line = '\t'.join(['x', 'y', 'kx', 'ky', 'xf', 'yf'])
+        tmp.write(line + '\n')
 
     kickx_map = _np.zeros([ny, nx])
     kicky_map = _np.zeros([ny, nx])
@@ -550,7 +562,7 @@ def save_kickmap(
         for i in range(nx):
             xi = x_list[i]
             traj = calc_trajectory(
-                radia_object, energy, [xi, yi, zmin, 0, 0, 1], zmax, zstep)
+                radia_object, energy, [xi, yi, zmin, 0, 0, 1], zmax, rkstep)
             xf = traj[-1, 0]
             yf = traj[-1, 1]
             xl = traj[-1, 3]
@@ -558,14 +570,17 @@ def save_kickmap(
             zl = traj[-1, 5]
             kickx = (xl/zl)*(brho**2)
             kicky = (yl/zl)*(brho**2)
-
             kickx_map[j, i] = kickx
             kicky_map[j, i] = kicky
             finalx_map[j, i] = xf/1000
             finaly_map[j, i] = yf/1000
+            with open(filename_tmp, '+a') as tmp:
+                data = [xi, yi, kickx, kicky, xf/1000, yf/1000]
+                line = '\t'.join('{0:g}'.format(v) for v in data)
+                tmp.write(line + '\n')
 
     with open(filename, 'w') as kickmap:
-        kickmap.write('# Author:Radia User CNPEM\n#\n')
+        kickmap.write('# Author:Radia for Python User\n#\n')
         kickmap.write(
             '# Total Length of Longitudinal Interval [m]\n{0:g}\n'.format(
                 (zmax - zmin)/1000))

@@ -66,8 +66,10 @@ class Delta(_pmdevice.PMDevice):
             self,
             magnetization_dict=None,
             horizontal_pos_err_dict=None,
-            vertical_pos_err_dict=None):
-        _rad.UtiDelAll()
+            vertical_pos_err_dict=None, delete_all=True):
+        if delete_all:
+            _rad.UtiDelAll()
+
         self._cassettes = {}
 
         if magnetization_dict is None:
@@ -225,8 +227,10 @@ class AppleX(_pmdevice.PMDevice):
             self,
             magnetization_dict=None,
             horizontal_pos_err_dict=None,
-            vertical_pos_err_dict=None):
-        _rad.UtiDelAll()
+            vertical_pos_err_dict=None, delete_all=True):
+        if delete_all:
+            _rad.UtiDelAll()
+
         self._cassettes = {}
 
         if magnetization_dict is None:
@@ -369,8 +373,10 @@ class AppleII(_pmdevice.PMDevice):
             self,
             magnetization_dict=None,
             horizontal_pos_err_dict=None,
-            vertical_pos_err_dict=None):
-        _rad.UtiDelAll()
+            vertical_pos_err_dict=None, delete_all=True):
+        if delete_all:
+            _rad.UtiDelAll()
+
         self._cassettes = {}
 
         if magnetization_dict is None:
@@ -504,8 +510,10 @@ class APU(_pmdevice.PMDevice):
             self,
             magnetization_dict=None,
             horizontal_pos_err_dict=None,
-            vertical_pos_err_dict=None):
-        _rad.UtiDelAll()
+            vertical_pos_err_dict=None, delete_all=True):
+        if delete_all:
+            _rad.UtiDelAll()
+
         self._cassettes = {}
 
         if magnetization_dict is None:

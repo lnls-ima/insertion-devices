@@ -1,4 +1,5 @@
 
+import time as _time
 import numpy as _np
 import radia as _rad
 
@@ -178,6 +179,47 @@ class Delta(_pmdevice.PMDevice):
         self._dgh = dgh
         return True
 
+    def get_fieldmap_header(
+            self, kh, kv, field_phase, polarization_name):
+        if polarization_name == '':
+            polarization_name = '--'
+
+        timestamp = _time.strftime('%Y-%m-%d_%H-%M-%S', _time.localtime())
+
+        device_name = self.name
+        if device_name == '':
+            device_name = '--'
+
+        pos_csd = self.dgv
+        pos_cse = self.dgv + self.dgh + self.dp + self.dcp
+        pos_cie = self.dgh
+        pos_cid = self.dp - self.dcp
+
+        k = (kh**2 + kv**2)**(1/2)
+
+        header = []
+        header.append('timestamp:\t{0:s}\n'.format(timestamp))
+        header.append('magnet_name:\t{0:s}\n'.format(device_name))
+        header.append('gap[mm]:\t{0:g}\n'.format(self.gap))
+        header.append('period_length[mm]:\t{0:g}\n'.format(self.period_length))
+        header.append('magnet_length[mm]:\t{0:g}\n'.format(self.device_length))
+        header.append('dP[mm]:\t{0:g}\n'.format(self.dp))
+        header.append('dCP[mm]:\t{0:g}\n'.format(self.dcp))
+        header.append('dGV[mm]:\t{0:g}\n'.format(self.dgv))
+        header.append('dGH[mm]:\t{0:g}\n'.format(self.dgh))
+        header.append('posCSD[mm]:\t{0:g}\n'.format(pos_csd))
+        header.append('posCSE[mm]:\t{0:g}\n'.format(pos_cse))
+        header.append('posCID[mm]:\t{0:g}\n'.format(pos_cid))
+        header.append('posCIE[mm]:\t{0:g}\n'.format(pos_cie))
+        header.append('polarization:\t{0:s}\n'.format(polarization_name))
+        header.append('field_phase[deg]:\t{0:.0f}\n'.format(field_phase))
+        header.append('K_Horizontal:\t{0:.1f}\n'.format(kh))
+        header.append('K_Vertical:\t{0:.1f}\n'.format(kv))
+        header.append('K:\t{0:.1f}\n'.format(k))
+        header.append('\n')
+
+        return header
+
 
 class AppleX(_pmdevice.PMDevice):
     """AppleX model."""
@@ -330,6 +372,46 @@ class AppleX(_pmdevice.PMDevice):
         self._dcp = dcp
         self._dg = dg
         return True
+
+    def get_fieldmap_header(
+            self, kh, kv, field_phase, polarization_name):
+        if polarization_name == '':
+            polarization_name = '--'
+
+        timestamp = _time.strftime('%Y-%m-%d_%H-%M-%S', _time.localtime())
+
+        device_name = self.name
+        if device_name == '':
+            device_name = '--'
+
+        pos_csd = 0
+        pos_cse = self.dp + self.dcp
+        pos_cie = 0
+        pos_cid = self.dp - self.dcp
+
+        k = (kh**2 + kv**2)**(1/2)
+
+        header = []
+        header.append('timestamp:\t{0:s}\n'.format(timestamp))
+        header.append('magnet_name:\t{0:s}\n'.format(device_name))
+        header.append('gap[mm]:\t{0:g}\n'.format(self.gap))
+        header.append('period_length[mm]:\t{0:g}\n'.format(self.period_length))
+        header.append('magnet_length[mm]:\t{0:g}\n'.format(self.device_length))
+        header.append('dP[mm]:\t{0:g}\n'.format(self.dp))
+        header.append('dCP[mm]:\t{0:g}\n'.format(self.dcp))
+        header.append('dG[mm]:\t{0:g}\n'.format(self.dg))
+        header.append('posCSD[mm]:\t{0:g}\n'.format(pos_csd))
+        header.append('posCSE[mm]:\t{0:g}\n'.format(pos_cse))
+        header.append('posCID[mm]:\t{0:g}\n'.format(pos_cid))
+        header.append('posCIE[mm]:\t{0:g}\n'.format(pos_cie))
+        header.append('polarization:\t{0:s}\n'.format(polarization_name))
+        header.append('field_phase[deg]:\t{0:.0f}\n'.format(field_phase))
+        header.append('K_Horizontal:\t{0:.1f}\n'.format(kh))
+        header.append('K_Vertical:\t{0:.1f}\n'.format(kv))
+        header.append('K:\t{0:.1f}\n'.format(k))
+        header.append('\n')
+
+        return header
 
 
 class AppleII(_pmdevice.PMDevice):
@@ -868,7 +950,7 @@ class AppleIICarnauba(AppleII):
             rectangular_shape=False, block_distance=0.1,
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
-            name='apple_sabia', **kwargs):
+            name='apple_carnauba', **kwargs):
 
         if block_shape == 'default':
             block_shape = _blocks.PMBlock.get_predefined_shape(
@@ -958,7 +1040,7 @@ class Kyma22(APU):
             name=name, **kwargs)
 
 
-class TestUndulatorSabia(APU):
+class MiniPlanarSabia(APU):
     """APU with the same blocks as Delta Sabia."""
 
     def __init__(
@@ -969,7 +1051,7 @@ class TestUndulatorSabia(APU):
             rectangular_shape=False, block_distance=0.125,
             start_blocks_length=None, start_blocks_distance=None,
             end_blocks_length=None, end_blocks_distance=None,
-            name='test_undulator_sabia', **kwargs):
+            name='mini_planar_sabia', **kwargs):
 
         if block_shape == 'default':
             block_shape = _blocks.PMBlock.get_predefined_shape(

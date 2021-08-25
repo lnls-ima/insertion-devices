@@ -5,11 +5,11 @@ import numpy as _np
 import radia as _rad
 
 from . import utils as _utils
-from . import functions as _functions
 from . import blocks as _blocks
+from . import fieldsource as _fieldsource
 
 
-class PMCassette():
+class PMCassette(_fieldsource.FieldSource):
     """Permanent magnet cassette."""
 
     def __init__(
@@ -65,18 +65,6 @@ class PMCassette():
         self._radia_object = None
         if init_radia_object:
             self.create_radia_object()
-
-    def __str__(self):
-        """Printable string representation of the object."""
-        fmtstr = '{0:<18s} : {1}\n'
-        r = ''
-        for key, value in self.__dict__.items():
-            if key.startswith('_'):
-                name = key[1:]
-            else:
-                name = key
-            r += fmtstr.format(name, str(value))
-        return r
 
     @property
     def block_shape(self):
@@ -162,11 +150,6 @@ class PMCassette():
     def vertical_pos_err(self):
         """Vertical position errors [mm]."""
         return _deepcopy(self._vertical_pos_err)
-
-    @property
-    def radia_object(self):
-        """Number of the radia object."""
-        return self._radia_object
 
     @property
     def nr_start_blocks(self):
@@ -282,10 +265,6 @@ class PMCassette():
 
         self.shift([0, 0, -(position_list[0] + position_list[-1])/2])
 
-    def draw(self):
-        """Draw the radia object."""
-        return _functions.draw(self._radia_object)
-
     def get_ideal_magnetization_list(self):
         """
         List of magnetization vector without amplitude and angular errors.
@@ -391,15 +370,3 @@ class PMCassette():
             _json.dump(data, f)
 
         return True
-
-    def shift(self, value):
-        """Shift radia object."""
-        if self._radia_object is not None:
-            self._radia_object = _rad.TrfOrnt(
-                self._radia_object, _rad.TrfTrsl(value))
-
-    def rotate(self, point, vector, angle):
-        """Rotate radia object."""
-        if self._radia_object is not None:
-            self._radia_object = _rad.TrfOrnt(
-                self._radia_object, _rad.TrfRot(point, vector, angle))

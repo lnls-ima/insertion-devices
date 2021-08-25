@@ -1,13 +1,14 @@
 
+import time as _time
 from copy import deepcopy as _deepcopy
 import json as _json
-import radia as _rad
 
 from . import functions as _functions
+from . import fieldsource as _fieldsource
 
 
-class PMDevice():
-    """Permanent magnet insertion device base class."""
+class PMDevice(_fieldsource.FieldSource):
+    """Permanent magnet insertion device."""
 
     def __init__(
             self, block_shape, nr_periods,
@@ -114,9 +115,13 @@ class PMDevice():
         return _deepcopy(self._end_blocks_distance)
 
     @property
-    def radia_object(self):
-        """Number of the radia object."""
-        return self._radia_object
+    def device_length(self):
+        """device length."""
+        start_len = sum(self.start_blocks_distance) + sum(
+            self.start_blocks_length)
+        end_len = sum(self.end_blocks_distance) + sum(
+            self.end_blocks_length)
+        return start_len + self.nr_periods*self.period_length + end_len
 
     @property
     def cassettes(self):
@@ -196,30 +201,6 @@ class PMDevice():
             self._radia_object, self._period_length,
             self._nr_periods, *args, **kwargs)
 
-    def calc_field_integrals(self, *args, **kwargs):
-        return _functions.calc_field_integrals(
-            self._radia_object, *args, **kwargs)
-
-    def calc_trajectory(self, *args, **kwargs):
-        return _functions.calc_trajectory(
-            self._radia_object, *args, **kwargs)
-
-    def draw(self):
-        return _functions.draw(self._radia_object)
-
-    def get_field(self, *args, **kwargs):
-        return _functions.get_field(self._radia_object, *args, **kwargs)
-
-    def save_fieldmap(self, *args, **kwargs):
-        return _functions.save_fieldmap(self._radia_object, *args, **kwargs)
-
-    def save_fieldmap_spectra(self, *args, **kwargs):
-        return _functions.save_fieldmap_spectra(
-            self._radia_object, *args, **kwargs)
-
-    def save_kickmap(self, *args, **kwargs):
-        return _functions.save_kickmap(self._radia_object, *args, **kwargs)
-
     def save_state(self, filename):
         horizontal_pos_err_dict = {}
         vertical_pos_err_dict = {}
@@ -254,13 +235,30 @@ class PMDevice():
 
         return True
 
-    def solve(self, *args, **kwargs):
-        return _functions.solve(self._radia_object, *args, **kwargs)
+    def get_fieldmap_header(
+            self, kh, kv, field_phase, polarization_name):
+        if polarization_name == '':
+            polarization_name = '--'
 
-    def shift(self, value):
-        self._radia_object = _rad.TrfOrnt(
-            self._radia_object, _rad.TrfTrsl(value))
+        timestamp = _time.strftime('%Y-%m-%d_%H-%M-%S', _time.localtime())
 
-    def rotate(self, point, vector, angle):
-        self._radia_object = _rad.TrfOrnt(
-            self._radia_object, _rad.TrfRot(point, vector, angle))
+        device_name = self.name
+        if device_name == '':
+            device_name = '--'
+
+        k = (kh**2 + kv**2)**(1/2)
+
+        header = []
+        header.append('timestamp:\t{0:s}\n'.format(timestamp))
+        header.append('magnet_name:\t{0:s}\n'.format(device_name))
+        header.append('gap[mm]:\t{0:g}\n'.format(self.gap))
+        header.append('period_length[mm]:\t{0:g}\n'.format(self.period_length))
+        header.append('magnet_length[mm]:\t{0:g}\n'.format(self.device_length))
+        header.append('polarization:\t{0:s}\n'.format(polarization_name))
+        header.append('field_phase[deg]:\t{0:.0f}\n'.format(field_phase))
+        header.append('K_Horizontal:\t{0:.1f}\n'.format(kh))
+        header.append('K_Vertical:\t{0:.1f}\n'.format(kv))
+        header.append('K:\t{0:.1f}\n'.format(k))
+        header.append('\n')
+
+        return header

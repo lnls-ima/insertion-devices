@@ -1,5 +1,6 @@
 
 import numpy as _np
+from scipy import signal as _signal
 
 
 def depth(lst):
@@ -16,6 +17,14 @@ def get_constants():
     return electron_rest_energy, light_speed
 
 
+def calc_beam_parameters(energy):
+    electron_rest_energy, light_speed = get_constants()
+    gamma = energy*1e9/electron_rest_energy
+    beta = _np.sqrt(1 - 1/((energy*1e9/electron_rest_energy)**2))
+    brho = energy*1e9/light_speed
+    return beta, gamma, brho
+
+
 def rotation_matrix(axis, theta):
     axis = _np.asarray(axis)
     axis = axis / _np.sqrt(_np.dot(axis, axis))
@@ -29,3 +38,21 @@ def rotation_matrix(axis, theta):
         [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc],
         ])
     return matrix
+
+
+def find_peaks_and_valleys(data, prominence=0.05):
+    peaks, _ = _signal.find_peaks(data, prominence=prominence)
+    valleys, _ = _signal.find_peaks(data*(-1), prominence=prominence)
+    return sorted(_np.append(peaks, valleys))
+
+
+def find_zeros(pos, data):
+    s = _np.sign(data)
+    idxb = (s[0:-1] + s[1:] == 0).nonzero()[0]
+    idxa = idxb + 1
+    posb = pos[idxb]
+    posa = pos[idxa]
+    datab = data[idxb]
+    dataa = data[idxa]
+    pos = (dataa*posb - datab*posa)/(dataa - datab)
+    return pos[:-1]

@@ -3,40 +3,60 @@ import time as _time
 import numpy as _np
 from scipy import integrate as _integrate
 from scipy import optimize as _optimize
-from scipy import signal as _signal
 import radia as _rad
 
 from . import utils as _utils
 
 
-def find_peaks_and_valleys(data, prominence=0.05):
-    peaks, _ = _signal.find_peaks(data, prominence=prominence)
-    valleys, _ = _signal.find_peaks(data*(-1), prominence=prominence)
-    return sorted(_np.append(peaks, valleys))
+def set_len_tol(absolute=1e-12, relative=1e-12):
+    return _rad.FldLenTol(absolute, relative)
 
 
-def find_zeros(pos, data):
-    s = _np.sign(data)
-    idxb = (s[0:-1] + s[1:] == 0).nonzero()[0]
-    idxa = idxb + 1
-    posb = pos[idxb]
-    posa = pos[idxa]
-    datab = data[idxb]
-    dataa = data[idxa]
-    pos = (dataa*posb - datab*posa)/(dataa - datab)
-    return pos[:-1]
+def newton_lorentz_equation(a, r, b):
+    drds = _np.zeros(6)
+    drds[0] = r[3]
+    drds[1] = r[4]
+    drds[2] = r[5]
+    drds[3] = -a*(r[4]*b[2] - r[5]*b[1])
+    drds[4] = -a*(r[5]*b[0] - r[3]*b[2])
+    drds[5] = -a*(r[3]*b[1] - r[4]*b[0])
+    return drds
 
 
-def cosine_function(z, bamp, freq, phase):
-    return bamp*_np.cos(freq*z + phase)
+def draw(radia_object):
+    if radia_object is None:
+        return False
+
+    _rad.ObjDrwAtr(radia_object, [0, 0.5, 1], 0.001)
+    _rad.ObjDrwOpenGL(radia_object)
+    return True
 
 
-def calc_beam_parameters(energy):
-    electron_rest_energy, light_speed = _utils.get_constants()
-    gamma = energy*1e9/electron_rest_energy
-    beta = _np.sqrt(1 - 1/((energy*1e9/electron_rest_energy)**2))
-    brho = energy*1e9/light_speed
-    return beta, gamma, brho
+def solve(radia_object, prec=0.00001, max_iter=1000):
+    return _rad.Solve(radia_object, prec, max_iter)
+
+
+def get_field(radia_object, x=0, y=0, z=0):
+    if isinstance(x, (float, int)):
+        x = [x]
+    if isinstance(y, (float, int)):
+        y = [y]
+    if isinstance(z, (float, int)):
+        z = [z]
+
+    if sum([len(i) > 1 for i in [x, y, z]]) > 1:
+        raise ValueError('Invalid position arguments.')
+
+    if len(x) > 1:
+        field = [_rad.Fld(radia_object, 'b', [xi, y, z]) for xi in x]
+    elif len(y) > 1:
+        field = [_rad.Fld(radia_object, 'b', [x, yi, z]) for yi in y]
+    elif len(z) > 1:
+        field = [_rad.Fld(radia_object, 'b', [x, y, zi]) for zi in z]
+    else:
+        field = [_rad.Fld(radia_object, 'b', [x, y, z])]
+
+    return _np.array(field)
 
 
 def calc_field_integrals(
@@ -65,6 +85,73 @@ def calc_field_integrals(
     iib = _np.transpose([iibx, iiby, iibz])*1e5
 
     return ib, iib
+
+
+def calc_trajectory(
+        radia_object, energy, r0, zmax, rkstep, dz=0, on_axis_field=False):
+    if radia_object is None:
+        return None
+
+    r1 = _np.zeros(6, dtype=float)
+    r2 = _np.zeros(6, dtype=float)
+    r3 = _np.zeros(6, dtype=float)
+
+    beta, _, brho = _utils.calc_beam_parameters(energy)
+    a = 1/brho/beta
+
+    # from mm to m
+    r = _np.array(r0, dtype=float)
+    r[0] = r[0]/1000
+    r[1] = r[1]/1000
+    r[2] = (r[2] + dz)/1000
+    step = rkstep/1000
+
+    trajectory = []
+    trajectory.append([
+        r[0]*1000, r[1]*1000, r[2]*1000, r[3], r[4], r[5]
+    ])
+
+    while r[2] < zmax/1000:
+        pos = [p*1000 for p in r[:3]]
+        if on_axis_field:
+            pos[0], pos[1] = 0, 0
+        b = _rad.Fld(radia_object, "b", pos)
+        drds1 = newton_lorentz_equation(a, r, b)
+        r1 = r + (step/2)*drds1
+
+        pos1 = [p*1000 for p in r1[:3]]
+        if on_axis_field:
+            pos1[0], pos1[1] = 0, 0
+        b1 = _rad.Fld(radia_object, "b", pos1)
+        drds2 = newton_lorentz_equation(a, r1, b1)
+        r2 = r + (step/2)*drds2
+
+        pos2 = [p*1000 for p in r2[:3]]
+        if on_axis_field:
+            pos2[0], pos2[1] = 0, 0
+        b2 = _rad.Fld(radia_object, "b", pos2)
+        drds3 = newton_lorentz_equation(a, r2, b2)
+        r3 = r + step*drds3
+
+        pos3 = [p*1000 for p in r3[:3]]
+        if on_axis_field:
+            pos3[0], pos3[1] = 0, 0
+        b3 = _rad.Fld(radia_object, "b", pos3)
+        drds4 = newton_lorentz_equation(a, r3, b3)
+
+        r = r + (step/6)*(drds1 + 2*drds2 + 2*drds3 + drds4)
+
+        trajectory.append([
+            r[0]*1000, r[1]*1000, r[2]*1000, r[3], r[4], r[5]
+        ])
+
+    trajectory = _np.array(trajectory)
+
+    return trajectory
+
+
+def cosine_function(z, bamp, freq, phase):
+    return bamp*_np.cos(freq*z + phase)
 
 
 def calc_field_amplitude(
@@ -126,69 +213,6 @@ def calc_field_amplitude(
     return bx_amp, by_amp, bz_amp, bxy_phase
 
 
-def calc_trajectory(
-        radia_object, energy, r0, zmax, rkstep, dz=0, on_axis_field=False):
-    if radia_object is None:
-        return None
-
-    r1 = _np.zeros(6, dtype=float)
-    r2 = _np.zeros(6, dtype=float)
-    r3 = _np.zeros(6, dtype=float)
-
-    beta, _, brho = calc_beam_parameters(energy)
-    a = 1/brho/beta
-
-    # from mm to m
-    r = _np.array(r0, dtype=float)
-    r[0] = r[0]/1000
-    r[1] = r[1]/1000
-    r[2] = (r[2] + dz)/1000
-    step = rkstep/1000
-
-    trajectory = []
-    trajectory.append([
-        r[0]*1000, r[1]*1000, r[2]*1000, r[3], r[4], r[5]
-    ])
-
-    while r[2] < zmax/1000:
-        pos = [p*1000 for p in r[:3]]
-        if on_axis_field:
-            pos[0], pos[1] = 0, 0
-        b = _rad.Fld(radia_object, "b", pos)
-        drds1 = newton_lorentz_equation(a, r, b)
-        r1 = r + (step/2)*drds1
-
-        pos1 = [p*1000 for p in r1[:3]]
-        if on_axis_field:
-            pos1[0], pos1[1] = 0, 0
-        b1 = _rad.Fld(radia_object, "b", pos1)
-        drds2 = newton_lorentz_equation(a, r1, b1)
-        r2 = r + (step/2)*drds2
-
-        pos2 = [p*1000 for p in r2[:3]]
-        if on_axis_field:
-            pos2[0], pos2[1] = 0, 0
-        b2 = _rad.Fld(radia_object, "b", pos2)
-        drds3 = newton_lorentz_equation(a, r2, b2)
-        r3 = r + step*drds3
-
-        pos3 = [p*1000 for p in r3[:3]]
-        if on_axis_field:
-            pos3[0], pos3[1] = 0, 0
-        b3 = _rad.Fld(radia_object, "b", pos3)
-        drds4 = newton_lorentz_equation(a, r3, b3)
-
-        r = r + (step/6)*(drds1 + 2*drds2 + 2*drds3 + drds4)
-
-        trajectory.append([
-            r[0]*1000, r[1]*1000, r[2]*1000, r[3], r[4], r[5]
-        ])
-
-    trajectory = _np.array(trajectory)
-
-    return trajectory
-
-
 def calc_deflection_parameter(bx_amp, by_amp, period_length):
     kh = 0.934*by_amp*(period_length/10)
     kv = 0.934*bx_amp*(period_length/10)
@@ -205,7 +229,7 @@ def calc_trajectory_length(trajectory):
 
 def calc_radiation_phase(
         energy, trajectory, wavelength):
-    beta, *_ = calc_beam_parameters(energy)
+    beta, *_ = _utils.calc_beam_parameters(energy)
     traj_z = trajectory[:, 2]
     traj_len = calc_trajectory_length(trajectory)
     return (2*_np.pi/(wavelength))*(traj_len/beta - (traj_z - traj_z[0]))
@@ -213,7 +237,7 @@ def calc_radiation_phase(
 
 def calc_radiation_wavelength(
         energy, bx_amp, by_amp, period_length, harmonic=1):
-    _, gamma, _ = calc_beam_parameters(energy)
+    _, gamma, _ = _utils.calc_beam_parameters(energy)
     kh, kv = calc_deflection_parameter(bx_amp, by_amp, period_length)
     wl = (period_length/(2*harmonic*(gamma**2)))*(1 + (kh**2 + kv**2)/2)
     return wl
@@ -222,7 +246,7 @@ def calc_radiation_wavelength(
 def calc_phase_error(
         energy, trajectory, wavelength,
         skip_poles=1, zmin=None, zmax=None):
-    z_list = find_zeros(trajectory[:, 2], trajectory[:, 3])
+    z_list = _utils.find_zeros(trajectory[:, 2], trajectory[:, 3])
 
     if zmin is not None:
         z_list = z_list[z_list >= zmin]
@@ -245,129 +269,10 @@ def calc_phase_error(
     return z_list, phase_error, phase_error_rms
 
 
-def draw(radia_object):
-    if radia_object is None:
-        return False
-
-    _rad.ObjDrwAtr(radia_object, [0, 0.5, 1], 0.001)
-    _rad.ObjDrwOpenGL(radia_object)
-    return True
-
-
-def get_field(radia_object, x=0, y=0, z=0):
-    if isinstance(x, (float, int)):
-        x = [x]
-    if isinstance(y, (float, int)):
-        y = [y]
-    if isinstance(z, (float, int)):
-        z = [z]
-
-    if sum([len(i) > 1 for i in [x, y, z]]) > 1:
-        raise ValueError('Invalid position arguments.')
-
-    if len(x) > 1:
-        field = [_rad.Fld(radia_object, 'b', [xi, y, z]) for xi in x]
-    elif len(y) > 1:
-        field = [_rad.Fld(radia_object, 'b', [x, yi, z]) for yi in y]
-    elif len(z) > 1:
-        field = [_rad.Fld(radia_object, 'b', [x, y, zi]) for zi in z]
-    else:
-        field = [_rad.Fld(radia_object, 'b', [x, y, z])]
-
-    return _np.array(field)
-
-
-def get_file_header_delta(
-        date, device_name, polarization_name, kh, kv,
-        gap, period_length, magnet_length, field_phase,
-        dp=0, dcp=0, dgv=0, dgh=0):
-    header = []
-
-    if device_name == '':
-        device_name = '--'
-
-    if polarization_name == '':
-        polarization_name = '--'
-
-    timestamp = date + _time.strftime('_%H-%M-%S', _time.localtime())
-
-    pos_csd = dgv
-    pos_cse = dgv + dgh + dp + dcp
-    pos_cie = dgh
-    pos_cid = dp - dcp
-
-    k = _np.sqrt(kh**2 + kv**2)
-
-    header.append('timestamp:\t{0:s}\n'.format(timestamp))
-    header.append('magnet_name:\t{0:s}\n'.format(device_name))
-    header.append('gap[mm]:\t{0:g}\n'.format(gap))
-    header.append('period_length[mm]:\t{0:g}\n'.format(period_length))
-    header.append('magnet_length[mm]:\t{0:g}\n'.format(magnet_length))
-    header.append('dP[mm]:\t{0:g}\n'.format(dp))
-    header.append('dCP[mm]:\t{0:g}\n'.format(dcp))
-    header.append('dGV[mm]:\t{0:g}\n'.format(dgv))
-    header.append('dGH[mm]:\t{0:g}\n'.format(dgh))
-    header.append('posCSD[mm]:\t{0:g}\n'.format(pos_csd))
-    header.append('posCSE[mm]:\t{0:g}\n'.format(pos_cse))
-    header.append('posCID[mm]:\t{0:g}\n'.format(pos_cid))
-    header.append('posCIE[mm]:\t{0:g}\n'.format(pos_cie))
-    header.append('polarization:\t{0:s}\n'.format(polarization_name))
-    header.append('field_phase[deg]:\t{0:.0f}\n'.format(field_phase))
-    header.append('K_Horizontal:\t{0:.1f}\n'.format(kh))
-    header.append('K_Vertical:\t{0:.1f}\n'.format(kv))
-    header.append('K:\t{0:.1f}\n'.format(k))
-    header.append('\n')
-
-    return header
-
-
-def get_file_header_applex(
-        date, device_name, polarization_name, kh, kv,
-        gap, period_length, magnet_length, field_phase,
-        dp=0, dcp=0, dg=0):
-    header = []
-
-    if device_name == '':
-        device_name = '--'
-
-    if polarization_name == '':
-        polarization_name = '--'
-
-    timestamp = date + _time.strftime('_%H-%M-%S', _time.localtime())
-
-    pos_csd = 0
-    pos_cse = dp + dcp
-    pos_cie = 0
-    pos_cid = dp - dcp
-
-    k = _np.sqrt(kh**2 + kv**2)
-
-    header.append('timestamp:\t{0:s}\n'.format(timestamp))
-    header.append('magnet_name:\t{0:s}\n'.format(device_name))
-    header.append('gap[mm]:\t{0:g}\n'.format(gap))
-    header.append('period_length[mm]:\t{0:g}\n'.format(period_length))
-    header.append('magnet_length[mm]:\t{0:g}\n'.format(magnet_length))
-    header.append('dP[mm]:\t{0:g}\n'.format(dp))
-    header.append('dCP[mm]:\t{0:g}\n'.format(dcp))
-    header.append('dG[mm]:\t{0:g}\n'.format(dg))
-    header.append('posCSD[mm]:\t{0:g}\n'.format(pos_csd))
-    header.append('posCSE[mm]:\t{0:g}\n'.format(pos_cse))
-    header.append('posCID[mm]:\t{0:g}\n'.format(pos_cid))
-    header.append('posCIE[mm]:\t{0:g}\n'.format(pos_cie))
-    header.append('polarization:\t{0:s}\n'.format(polarization_name))
-    header.append('field_phase[deg]:\t{0:.0f}\n'.format(field_phase))
-    header.append('K_Horizontal:\t{0:.1f}\n'.format(kh))
-    header.append('K_Vertical:\t{0:.1f}\n'.format(kv))
-    header.append('K:\t{0:.1f}\n'.format(k))
-    header.append('\n')
-
-    return header
-
-
 def get_filename(
         date, device_name, polarization_name,
         x_list, y_list, z_list, kh, kv,
-        file_extension='.fld', displacement_name=''):
+        file_extension='.fld', add_label=''):
 
     filename = '{0:s}'.format(date)
 
@@ -392,8 +297,8 @@ def get_filename(
 
     filename += '_Kh={0:.1f}_Kv={1:.1f}'.format(kh, kv)
 
-    if displacement_name != '':
-        filename += '_' + displacement_name
+    if add_label != '':
+        filename += '_' + add_label
 
     if len(x_list) > 1:
         filename += '_X={0:g}_{1:g}mm'.format(x_list[0], x_list[-1])
@@ -407,17 +312,6 @@ def get_filename(
     filename += file_extension
 
     return filename
-
-
-def newton_lorentz_equation(a, r, b):
-    drds = _np.zeros(6)
-    drds[0] = r[3]
-    drds[1] = r[4]
-    drds[2] = r[5]
-    drds[3] = -a*(r[4]*b[2] - r[5]*b[1])
-    drds[4] = -a*(r[5]*b[0] - r[3]*b[2])
-    drds[5] = -a*(r[3]*b[1] - r[4]*b[0])
-    return drds
 
 
 def save_fieldmap(
@@ -627,11 +521,3 @@ def save_kickmap(
     dt = t1 - t0
 
     return kickx_map, kicky_map, finalx_map, finaly_map, dt
-
-
-def solve(radia_object, prec=0.00001, max_iter=1000):
-    return _rad.Solve(radia_object, prec, max_iter)
-
-
-def set_len_tol(absolute=1e-12, relative=1e-12):
-    return _rad.FldLenTol(absolute, relative)

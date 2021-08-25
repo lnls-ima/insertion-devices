@@ -5,10 +5,10 @@ import numpy as _np
 import radia as _rad
 
 from . import utils as _utils
-from . import functions as _functions
+from . import fieldsource as _fieldsource
 
 
-class PMBlock():
+class PMBlock(_fieldsource.FieldSource):
     """Permanent magnet block."""
 
     def __init__(
@@ -53,18 +53,6 @@ class PMBlock():
         if init_radia_object:
             self.create_radia_object()
 
-    def __str__(self):
-        """Printable string representation of the object."""
-        fmtstr = '{0:<18s} : {1}\n'
-        r = ''
-        for key, value in self.__dict__.items():
-            if key.startswith('_'):
-                name = key[1:]
-            else:
-                name = key
-            r += fmtstr.format(name, str(value))
-        return r
-
     @property
     def shape(self):
         """Block list of shapes [mm]."""
@@ -77,7 +65,7 @@ class PMBlock():
 
     @property
     def longitudinal_position(self):
-        """Block longitudinal position [mm]."""
+        """Initial block longitudinal position [mm]."""
         return self._longitudinal_position
 
     @property
@@ -104,11 +92,6 @@ class PMBlock():
     def ksiper(self):
         """Perpendicular magnetic susceptibility."""
         return self._ksiper
-
-    @property
-    def radia_object(self):
-        """Number of the radia object."""
-        return self._radia_object
 
     @staticmethod
     def get_predefined_shape(device_name):
@@ -261,10 +244,6 @@ class PMBlock():
                 subblock_list.append(subblock)
             self._radia_object = _rad.ObjCnt(subblock_list)
 
-    def draw(self):
-        """Draw the radia object."""
-        return _functions.draw(self._radia_object)
-
     def save_state(self, filename):
         """Save state to file."""
         data = {
@@ -283,10 +262,3 @@ class PMBlock():
             _json.dump(data, f)
 
         return True
-
-    def shift(self, value):
-        """Shift the radia object."""
-        if self._radia_object is not None:
-            self._radia_object = _rad.TrfOrnt(
-                self._radia_object, _rad.TrfTrsl(value))
-            self._longitudinal_position += value[2]

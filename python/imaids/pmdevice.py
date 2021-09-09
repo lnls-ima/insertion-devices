@@ -148,6 +148,15 @@ class PMDevice(_fieldsource.FieldSource):
         return props
 
     @property
+    def block_names_dict(self):
+        name_dict = {}
+
+        for key, value in self._cassettes.items():
+            name_dict[key] = value.block_names
+
+        return name_dict
+
+    @property
     def magnetization_dict(self):
         mag_dict = {}
 
@@ -181,12 +190,14 @@ class PMDevice(_fieldsource.FieldSource):
         with open(filename) as f:
             kwargs = _json.load(f)
 
+        block_names_dict = kwargs.pop('block_names_dict', None)
         magnetization_dict = kwargs.pop('magnetization_dict', None)
         horizontal_pos_err_dict = kwargs.pop('horizontal_pos_err_dict', None)
         vertical_pos_err_dict = kwargs.pop('vertical_pos_err_dict', None)
 
         device = cls(init_radia_object=False, **kwargs)
         device.create_radia_object(
+            block_names_dict=block_names_dict,
             magnetization_dict=magnetization_dict,
             horizontal_pos_err_dict=horizontal_pos_err_dict,
             vertical_pos_err_dict=vertical_pos_err_dict)
@@ -225,6 +236,7 @@ class PMDevice(_fieldsource.FieldSource):
             'end_blocks_length': self._end_blocks_length,
             'end_blocks_distance': self._end_blocks_distance,
             'name': self.name,
+            'block_names_dict': self.block_names_dict,
             'magnetization_dict': self.magnetization_dict,
             'horizontal_pos_err_dict': horizontal_pos_err_dict,
             'vertical_pos_err_dict': vertical_pos_err_dict,

@@ -65,6 +65,7 @@ class Delta(_pmdevice.PMDevice):
 
     def create_radia_object(
             self,
+            block_names_dict=None,
             magnetization_dict=None,
             horizontal_pos_err_dict=None,
             vertical_pos_err_dict=None, delete_all=True):
@@ -72,6 +73,9 @@ class Delta(_pmdevice.PMDevice):
             _rad.UtiDelAll()
 
         self._cassettes = {}
+
+        if block_names_dict is None:
+            block_names_dict = {}
 
         if magnetization_dict is None:
             magnetization_dict = {}
@@ -87,6 +91,7 @@ class Delta(_pmdevice.PMDevice):
             upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
         cse.create_radia_object(
+            block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
@@ -99,6 +104,7 @@ class Delta(_pmdevice.PMDevice):
             upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
         csd.create_radia_object(
+            block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
@@ -111,6 +117,7 @@ class Delta(_pmdevice.PMDevice):
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         cie.create_radia_object(
+            block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
@@ -123,6 +130,7 @@ class Delta(_pmdevice.PMDevice):
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         cid.create_radia_object(
+            block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
@@ -267,6 +275,7 @@ class AppleX(_pmdevice.PMDevice):
 
     def create_radia_object(
             self,
+            block_names_dict=None,
             magnetization_dict=None,
             horizontal_pos_err_dict=None,
             vertical_pos_err_dict=None, delete_all=True):
@@ -274,6 +283,9 @@ class AppleX(_pmdevice.PMDevice):
             _rad.UtiDelAll()
 
         self._cassettes = {}
+
+        if block_names_dict is None:
+            block_names_dict = {}
 
         if magnetization_dict is None:
             magnetization_dict = {}
@@ -289,6 +301,7 @@ class AppleX(_pmdevice.PMDevice):
             upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
         cse.create_radia_object(
+            block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
@@ -301,6 +314,7 @@ class AppleX(_pmdevice.PMDevice):
             upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
         csd.create_radia_object(
+            block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
@@ -313,6 +327,7 @@ class AppleX(_pmdevice.PMDevice):
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         cie.create_radia_object(
+            block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
@@ -325,6 +340,7 @@ class AppleX(_pmdevice.PMDevice):
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         cid.create_radia_object(
+            block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
@@ -453,6 +469,7 @@ class AppleII(_pmdevice.PMDevice):
 
     def create_radia_object(
             self,
+            block_names_dict=None,
             magnetization_dict=None,
             horizontal_pos_err_dict=None,
             vertical_pos_err_dict=None, delete_all=True):
@@ -460,6 +477,9 @@ class AppleII(_pmdevice.PMDevice):
             _rad.UtiDelAll()
 
         self._cassettes = {}
+
+        if block_names_dict is None:
+            block_names_dict = {}
 
         if magnetization_dict is None:
             magnetization_dict = {}
@@ -482,6 +502,7 @@ class AppleII(_pmdevice.PMDevice):
             upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
         cse.create_radia_object(
+            block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
@@ -495,6 +516,7 @@ class AppleII(_pmdevice.PMDevice):
             upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
         csd.create_radia_object(
+            block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
@@ -508,6 +530,7 @@ class AppleII(_pmdevice.PMDevice):
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         cie.create_radia_object(
+            block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
@@ -520,6 +543,7 @@ class AppleII(_pmdevice.PMDevice):
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         cid.create_radia_object(
+            block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
@@ -590,6 +614,7 @@ class APU(_pmdevice.PMDevice):
 
     def create_radia_object(
             self,
+            block_names_dict=None,
             magnetization_dict=None,
             horizontal_pos_err_dict=None,
             vertical_pos_err_dict=None, delete_all=True):
@@ -597,6 +622,9 @@ class APU(_pmdevice.PMDevice):
             _rad.UtiDelAll()
 
         self._cassettes = {}
+
+        if block_names_dict is None:
+            block_names_dict = {}
 
         if magnetization_dict is None:
             magnetization_dict = {}
@@ -612,6 +640,7 @@ class APU(_pmdevice.PMDevice):
             upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
         cs.create_radia_object(
+            block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))
@@ -624,6 +653,7 @@ class APU(_pmdevice.PMDevice):
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         ci.create_radia_object(
+            block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             horizontal_pos_err=horizontal_pos_err_dict.get(name),
             vertical_pos_err=vertical_pos_err_dict.get(name))

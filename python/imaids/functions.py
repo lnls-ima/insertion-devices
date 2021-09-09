@@ -157,7 +157,7 @@ def cosine_function(z, bamp, freq, phase):
 def calc_field_amplitude(
         radia_object, period_length,
         nr_periods, x=0, y=0, z_list=None,
-        field_list=None, npts_per_period=101):
+        field_list=None, npts_per_period=101, maxfev=5000):
     if radia_object is None:
         return None, None, None, None
 
@@ -193,19 +193,22 @@ def calc_field_amplitude(
 
     px = _optimize.curve_fit(
         cosine_function, z_list, bx,
-        p0=[bx_amp_init, 2*_np.pi/period_length, 0])[0]
+        p0=[bx_amp_init, 2*_np.pi/period_length, 0],
+        maxfev=maxfev)[0]
     bx_amp = _np.abs(px[0])
     bx_phase = px[2]
 
     py = _optimize.curve_fit(
         cosine_function, z_list, by,
-        p0=[by_amp_init, 2*_np.pi/period_length, 0])[0]
+        p0=[by_amp_init, 2*_np.pi/period_length, 0],
+        maxfev=maxfev)[0]
     by_amp = _np.abs(py[0])
     by_phase = py[2]
 
     pz = _optimize.curve_fit(
         cosine_function, z_list, bz,
-        p0=[bz_amp_init, 2*_np.pi/period_length, 0])[0]
+        p0=[bz_amp_init, 2*_np.pi/period_length, 0],
+        maxfev=maxfev)[0]
     bz_amp = _np.abs(pz[0])
 
     bxy_phase = (bx_phase - by_phase) % _np.pi
@@ -244,9 +247,12 @@ def calc_radiation_wavelength(
 
 
 def calc_phase_error(
-        energy, trajectory, wavelength,
-        skip_poles=1, zmin=None, zmax=None):
-    z_list = _utils.find_zeros(trajectory[:, 2], trajectory[:, 3])
+        energy, trajectory, bx_amp, by_amp, period_length,
+        skip_poles=0, zmin=None, zmax=None):
+    if by_amp >= bx_amp:
+        z_list = _utils.find_zeros(trajectory[:, 2], trajectory[:, 3])
+    else:
+        z_list = _utils.find_zeros(trajectory[:, 2], trajectory[:, 4])
 
     if zmin is not None:
         z_list = z_list[z_list >= zmin]
@@ -257,6 +263,8 @@ def calc_phase_error(
     if skip_poles != 0:
         z_list = z_list[skip_poles:-skip_poles]
 
+    wavelength = calc_radiation_wavelength(
+        energy, bx_amp, by_amp, period_length, harmonic=1)
     phase = calc_radiation_phase(energy, trajectory, wavelength)
     phase_poles = _np.interp(z_list, trajectory[:, 2], phase)
 

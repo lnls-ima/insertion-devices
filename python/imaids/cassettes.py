@@ -174,6 +174,12 @@ class PMCassette(_fieldsource.FieldSource):
         return nr_blocks
 
     @property
+    def block_names(self):
+        """List of block names."""
+        name_list = [block.name for block in self._blocks]
+        return name_list
+
+    @property
     def magnetization_list(self):
         """List of magnetization vectors [T]."""
         magnetization_list = [block.magnetization for block in self._blocks]
@@ -199,12 +205,20 @@ class PMCassette(_fieldsource.FieldSource):
         return cassette
 
     def create_radia_object(
-            self, magnetization_list=None,
+            self,
+            block_names=None,
+            magnetization_list=None,
             horizontal_pos_err=None,
             vertical_pos_err=None):
         """Create radia object."""
         if self._radia_object is not None:
             _rad.UtiDel(self._radia_object)
+
+        if block_names is None:
+            block_names = ['']*self.nr_blocks
+        if len(block_names) != self.nr_blocks:
+            raise ValueError(
+                'Invalid length for block name list.')
 
         if horizontal_pos_err is None:
             horizontal_pos_err = [0]*self.nr_blocks
@@ -256,6 +270,9 @@ class PMCassette(_fieldsource.FieldSource):
                 horizontal_pos_err[idx],
                 vertical_pos_err[idx],
                 0])
+
+        for name, block in zip(block_names, self._blocks):
+            block.name = name
 
         rad_obj_list = []
         for block in self._blocks:

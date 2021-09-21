@@ -88,7 +88,7 @@ class Delta(_pmdevice.PMDevice):
 
         name = 'cse'
         cse = _cassettes.PMCassette(
-            upper_cassette=True, name=name,
+            upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         cse.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -101,7 +101,7 @@ class Delta(_pmdevice.PMDevice):
 
         name = 'csd'
         csd = _cassettes.PMCassette(
-            upper_cassette=True, name=name,
+            upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         csd.create_radia_object(
             block_names=block_names_dict.get(name),

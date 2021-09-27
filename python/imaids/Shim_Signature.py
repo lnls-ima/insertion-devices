@@ -22,7 +22,10 @@ def Shim_Signature(Positions, Shim, fname):
     long = np.linspace(-800, 800, 16000)
     long = np.reshape(long, newshape=(16000,1))
     
+    a = __file__ 
 
+    filepath = a.replace('Shim_Signature.py','')
+    
     time = ctime()
 
     header = ["timestamp:   {}\n\
@@ -102,7 +105,7 @@ def Shim_Signature(Positions, Shim, fname):
                         b_positions[m] = 40
             
 
-            Signature = np.loadtxt(r"C:/Users/labimas/eclipse-workspace/Signature/Signature_" + u + "_Block" \
+            Signature = np.loadtxt(filepath + "Signature_" + u + "_Block" \
                                    + str(b_positions[m]) + "_Shim" + str(height[m]) + "_" + blocktype + ".txt",
                                     dtype=float, unpack=True, skiprows = 17)
             

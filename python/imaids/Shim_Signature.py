@@ -15,29 +15,13 @@ def Shim_Signature(Positions, Shim, fname):
     
     delta = models.DeltaSabia()
     
-    CSE = delta.cassettes['cse']
-    CSD = delta.cassettes['csd']
-    CIE = delta.cassettes['cie']
-    CID = delta.cassettes['cid']
 
-    CSElist_errors = CSE.get_random_errors_magnetization_list(max_amplitude_error = 0.01, max_angular_error = np.pi/180)
-    delta.create_radia_object(magnetization_dict = {'cse':CSElist_errors})
-    CSDlist_errors = CSD.get_random_errors_magnetization_list(max_amplitude_error = 0.01, max_angular_error = np.pi/180)
-    delta.create_radia_object(magnetization_dict = {'csd':CSDlist_errors})
-    CIElist_errors = CIE.get_random_errors_magnetization_list(max_amplitude_error = 0.01, max_angular_error = np.pi/180)
-    delta.create_radia_object(magnetization_dict = {'cie':CIElist_errors})
-    CIDlist_errors = CID.get_random_errors_magnetization_list(max_amplitude_error = 0.01, max_angular_error = np.pi/180)
-    delta.create_radia_object(magnetization_dict = {'cid':CIDlist_errors})
-    
-    delta.solve()
-    
     x = np.zeros(16000)
     x = np.reshape(x, newshape = (16000,1)) 
     
     long = np.linspace(-800, 800, 16000)
     long = np.reshape(long, newshape=(16000,1))
     
-    Field_0_errors = delta.get_field(z = long)
 
     time = ctime()
 
@@ -122,11 +106,11 @@ def Shim_Signature(Positions, Shim, fname):
                                    + str(b_positions[m]) + "_Shim" + str(height[m]) + "_" + blocktype + ".txt",
                                     dtype=float, unpack=True, skiprows = 17)
             
-            Field_errors1 = np.loadtxt(fname, dtype=float, unpack=True, skiprows = 17)
+            Field_errors1 = np.loadtxt(fname, dtype=float, unpack=True, skiprows = 21)
             Field_errors1 = np.transpose(Field_errors1)
             
             Signature = np.transpose(Signature)
-            Field_errors = Field_errors1 + Signature[:,3:]
+            Field_errors = Field_errors1[:,3:] + Signature[:,3:]
 
             
     Field_errors = np.hstack((long, Field_errors))

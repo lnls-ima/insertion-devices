@@ -745,7 +745,7 @@ class DeltaSabia(Delta):
         block_len = period_length/4 - block_distance
         lenghts = [
             block_len/4, block_len/4, 3*block_len/4, 3*block_len/4, block_len]
-        distances = [8.7, 2, 3.3, 1, block_distance]
+        distances = [8.4, 2, 3.3, 1, block_distance]
 
         if start_blocks_length == 'default':
             start_blocks_length = lenghts

@@ -1,6 +1,15 @@
 
 import numpy as _np
 from scipy import signal as _signal
+import radia as _rad
+
+
+def set_len_tol(absolute=1e-12, relative=1e-12):
+    return _rad.FldLenTol(absolute, relative)
+
+
+def cosine_function(z, bamp, freq, phase):
+    return bamp*_np.cos(freq*z + phase)
 
 
 def depth(lst):
@@ -23,6 +32,17 @@ def calc_beam_parameters(energy):
     beta = _np.sqrt(1 - 1/((energy*1e9/electron_rest_energy)**2))
     brho = energy*1e9/light_speed
     return beta, gamma, brho
+
+
+def newton_lorentz_equation(a, r, b):
+    drds = _np.zeros(6)
+    drds[0] = r[3]
+    drds[1] = r[4]
+    drds[2] = r[5]
+    drds[3] = -a*(r[4]*b[2] - r[5]*b[1])
+    drds[4] = -a*(r[5]*b[0] - r[3]*b[2])
+    drds[5] = -a*(r[3]*b[1] - r[4]*b[0])
+    return drds
 
 
 def rotation_matrix(axis, theta):

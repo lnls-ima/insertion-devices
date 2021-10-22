@@ -4,12 +4,12 @@ import numpy as _np
 import radia as _rad
 
 from . import utils as _utils
-from . import pmdevice as _pmdevice
+from . import insertiondevice as _insertiondevice
 from . import blocks as _blocks
 from . import cassettes as _cassettes
 
 
-class Delta(_pmdevice.PMDevice):
+class Delta(_insertiondevice.PMInsertionDevice):
     """Delta model."""
 
     def __init__(self, *args, **kwargs):
@@ -229,7 +229,7 @@ class Delta(_pmdevice.PMDevice):
         return header
 
 
-class AppleX(_pmdevice.PMDevice):
+class AppleX(_insertiondevice.PMInsertionDevice):
     """AppleX model."""
 
     def __init__(self, *args, **kwargs):
@@ -430,7 +430,7 @@ class AppleX(_pmdevice.PMDevice):
         return header
 
 
-class AppleII(_pmdevice.PMDevice):
+class AppleII(_insertiondevice.PMInsertionDevice):
     """AppleII model."""
 
     def __init__(self, *args, **kwargs):
@@ -588,7 +588,7 @@ class AppleII(_pmdevice.PMDevice):
         return True
 
 
-class APU(_pmdevice.PMDevice):
+class APU(_insertiondevice.PMInsertionDevice):
     """Adjustable phase undulador model."""
 
     def __init__(self, *args, **kwargs):

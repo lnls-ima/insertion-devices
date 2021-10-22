@@ -8,7 +8,7 @@ from . import utils as _utils
 from . import fieldsource as _fieldsource
 
 
-class PMBlock(_fieldsource.FieldSource):
+class PMBlock(_fieldsource.RadiaModel):
     """Permanent magnet block."""
 
     def __init__(

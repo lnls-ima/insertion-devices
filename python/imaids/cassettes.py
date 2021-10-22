@@ -9,7 +9,7 @@ from . import blocks as _blocks
 from . import fieldsource as _fieldsource
 
 
-class PMCassette(_fieldsource.FieldSource):
+class PMCassette(_fieldsource.RadiaModel):
     """Permanent magnet cassette."""
 
     def __init__(

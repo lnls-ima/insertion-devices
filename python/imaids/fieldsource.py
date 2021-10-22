@@ -395,7 +395,7 @@ class FieldData(FieldSource):
             data = f.read(header_size)
 
         idx = data.find('--------')
-        skiprows = idx+1 if idx != -1 else 0
+        skiprows = len(data[:idx].split('\n')) if idx != -1 else 0
         self._raw_data = _np.loadtxt(
             self._filename, skiprows=skiprows)
         return True

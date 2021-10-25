@@ -1,6 +1,7 @@
 
 import numpy as _np
 from scipy import signal as _signal
+from scipy import optimize as _optimize
 import radia as _rad
 
 
@@ -10,6 +11,47 @@ def set_len_tol(absolute=1e-12, relative=1e-12):
 
 def cosine_function(z, bamp, freq, phase):
     return bamp*_np.cos(freq*z + phase)
+
+
+def calc_cosine_amplitude(
+        pos_list, values_list, freq_guess, maxfev=5000):
+    if len(pos_list) != len(values_list):
+        raise ValueError(
+            'Inconsistent length between values and position lists.')
+
+    pos_list = _np.array(pos_list)
+    values_list = _np.array(values_list)
+
+    vx, vy, vz = _np.transpose(values_list)
+    vx_amp_init = _np.max(_np.abs(vx))
+    vy_amp_init = _np.max(_np.abs(vy))
+    vz_amp_init = _np.max(_np.abs(vz))
+
+    px = _optimize.curve_fit(
+        cosine_function, pos_list, vx,
+        p0=[vx_amp_init, freq_guess, 0],
+        maxfev=maxfev)[0]
+    vx_amp = _np.abs(px[0])
+    vx_phase = px[2]
+
+    py = _optimize.curve_fit(
+        cosine_function, pos_list, vy,
+        p0=[vy_amp_init, freq_guess, 0],
+        maxfev=maxfev)[0]
+    vy_amp = _np.abs(py[0])
+    vy_phase = py[2]
+
+    pz = _optimize.curve_fit(
+        cosine_function, pos_list, vz,
+        p0=[vz_amp_init, freq_guess, 0],
+        maxfev=maxfev)[0]
+    vz_amp = _np.abs(pz[0])
+    vz_phase = pz[2]
+
+    amp = [vx_amp, vy_amp, vz_amp]
+    phase = [vx_phase, vy_phase, vz_phase]
+
+    return amp, phase
 
 
 def depth(lst):
@@ -60,9 +102,19 @@ def rotation_matrix(axis, theta):
     return matrix
 
 
-def find_peaks_and_valleys(data, prominence=0.05):
+def find_peaks(data, prominence=0.05):
     peaks, _ = _signal.find_peaks(data, prominence=prominence)
+    return peaks
+
+
+def find_valleys(data, prominence=0.05):
     valleys, _ = _signal.find_peaks(data*(-1), prominence=prominence)
+    return valleys
+
+
+def find_peaks_and_valleys(data, prominence=0.05):
+    peaks = find_peaks(data, prominence=prominence)
+    valleys = find_valleys(data, prominence=prominence)
     return sorted(_np.append(peaks, valleys))
 
 

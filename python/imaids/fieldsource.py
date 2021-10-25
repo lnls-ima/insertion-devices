@@ -1,6 +1,7 @@
 
 import numpy as _np
 from scipy import integrate as _integrate
+from scipy import interpolate as _interpolate
 import radia as _rad
 
 from . import utils as _utils
@@ -368,6 +369,18 @@ class FieldData(FieldSource):
     def __init__(self, filename=None):
         self._filename = filename
         self._raw_data = None
+        self._nx = None
+        self._ny = None
+        self._nz = None
+        self._px = None
+        self._py = None
+        self._pz = None
+        self._bx = None
+        self._by = None
+        self._bz = None
+        self._bx_func = None
+        self._by_func = None
+        self._bz_func = None
         if self._filename is not None:
             self.read_file(self._filename)
 
@@ -378,17 +391,27 @@ class FieldData(FieldSource):
     def clear(self):
         self._filename = None
         self._raw_data = None
+        self._nx = None
+        self._ny = None
+        self._nz = None
+        self._px = None
+        self._py = None
+        self._pz = None
+        self._bx = None
+        self._by = None
+        self._bz = None
+        self._bx_func = None
+        self._by_func = None
+        self._bz_func = None
 
     def get_field_at_point(self, point):
-        raise NotImplementedError
+        bx = self._bx_func(point[0], point[2])[0, 0]
+        by = self._by_func(point[0], point[2])[0, 0]
+        bz = self._bz_func(point[0], point[2])[0, 0]
+        return [bx, by, bz]
 
-    def shift(self, value):
-        raise NotImplementedError
-
-    def rotate(self, point, vector, angle):
-        raise NotImplementedError
-
-    def read_file(self, filename, header_size=2000):
+    def read_file(
+            self, filename, header_size=2000, y=0, interpolation='linear'):
         self._filename = filename
 
         with open(self._filename, 'r') as f:
@@ -398,4 +421,37 @@ class FieldData(FieldSource):
         skiprows = len(data[:idx].split('\n')) if idx != -1 else 0
         self._raw_data = _np.loadtxt(
             self._filename, skiprows=skiprows)
+
+        px = self._raw_data[:, 0]
+        py = self._raw_data[:, 1]
+        pz = self._raw_data[:, 2]
+        bx = self._raw_data[:, 3]
+        by = self._raw_data[:, 4]
+        bz = self._raw_data[:, 5]
+
+        self._nx = len(_np.unique(px))
+        self._ny = len(_np.unique(py))
+        self._nz = len(_np.unique(pz))
+
+        if self._ny > 1:
+            filt = (py == y)
+            bx = bx[filt]
+            by = by[filt]
+            bz = bz[filt]
+
+        self._px = _np.unique(px)
+        self._py = _np.unique(py)
+        self._pz = _np.unique(pz)
+
+        self._bx = _np.transpose(bx.reshape(self._nz, -1))
+        self._by = _np.transpose(by.reshape(self._nz, -1))
+        self._bz = _np.transpose(bz.reshape(self._nz, -1))
+
+        self._bx_func = _interpolate.RectBivariateSpline(
+            self._px, self._pz, self._bx)
+        self._by_func = _interpolate.RectBivariateSpline(
+            self._px, self._pz, self._by)
+        self._bz_func = _interpolate.RectBivariateSpline(
+            self._px, self._pz, self._bz)
+
         return True

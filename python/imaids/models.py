@@ -9,7 +9,7 @@ from . import blocks as _blocks
 from . import cassettes as _cassettes
 
 
-class Delta(_insertiondevice.PMInsertionDevice):
+class Delta(_insertiondevice.InsertionDeviceModel):
     """Delta model."""
 
     def __init__(self, *args, **kwargs):
@@ -229,7 +229,7 @@ class Delta(_insertiondevice.PMInsertionDevice):
         return header
 
 
-class AppleX(_insertiondevice.PMInsertionDevice):
+class AppleX(_insertiondevice.InsertionDeviceModel):
     """AppleX model."""
 
     def __init__(self, *args, **kwargs):
@@ -430,7 +430,7 @@ class AppleX(_insertiondevice.PMInsertionDevice):
         return header
 
 
-class AppleII(_insertiondevice.PMInsertionDevice):
+class AppleII(_insertiondevice.InsertionDeviceModel):
     """AppleII model."""
 
     def __init__(self, *args, **kwargs):
@@ -588,7 +588,7 @@ class AppleII(_insertiondevice.PMInsertionDevice):
         return True
 
 
-class APU(_insertiondevice.PMInsertionDevice):
+class APU(_insertiondevice.InsertionDeviceModel):
     """Adjustable phase undulador model."""
 
     def __init__(self, *args, **kwargs):

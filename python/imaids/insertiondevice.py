@@ -3,14 +3,259 @@ import time as _time
 from copy import deepcopy as _deepcopy
 import json as _json
 import numpy as _np
-from scipy import optimize as _optimize
 
 from . import utils as _utils
 from . import fieldsource as _fieldsource
 
 
-class PMInsertionDevice(_fieldsource.RadiaModel):
-    """Permanent magnet insertion device."""
+class InsertionDevice(_fieldsource.FieldSource):
+    """Base class for insertion devices model and data."""
+
+    def __init__(self):
+        self._nr_periods = None
+        self._period_length = None
+        self._gap = None
+        self.name = ''
+
+    @property
+    def nr_periods(self):
+        """Number of complete periods."""
+        return self._nr_periods
+
+    @property
+    def period_length(self):
+        """Period length [mm]."""
+        return self._period_length
+
+    @property
+    def gap(self):
+        """Magnetic gap [mm]."""
+        return self._gap
+
+    def calc_avg_period_length(
+            self, z_list, field_list=None, x=0, y=0,
+            period_length_guess=20, maxfev=5000, prominence=1):
+        if field_list is None:
+            field_list = self.get_field(x=x, y=y, z=z_list)
+
+        freq_guess = 2*_np.pi/period_length_guess
+        amp, _ = _utils.calc_cosine_amplitude(
+            z_list, field_list, freq_guess, maxfev=maxfev)
+
+        idx_max = _np.argmax(amp)
+        idx_peaks_valleys = _utils.find_peaks_and_valleys(
+            field_list[:, idx_max], prominence=prominence)
+
+        dz = _np.diff(z_list[idx_peaks_valleys])
+        avg_period_length = _np.mean(dz)*2
+        nr_periods = int(len(dz)/2)
+        return avg_period_length, nr_periods
+
+    def calc_field_amplitude(
+            self, z_list=None, field_list=None,
+            x=0, y=0, npts_per_period=101, maxfev=5000):
+        if self.nr_periods > 1:
+            zmin = -self._period_length*(self.nr_periods - 1)/2
+            zmax = self._period_length*(self.nr_periods - 1)/2
+            znpts = npts_per_period*(self.nr_periods-1)
+        else:
+            zmin = -self.period_length/2
+            zmax = self.period_length/2
+            znpts = npts_per_period
+
+        if z_list is not None and field_list is not None:
+            z_list = _np.array(z_list)
+            field_list = _np.array(field_list)
+
+            cond = (z_list >= zmin) & (z_list <= zmax)
+            z_list = z_list[cond]
+            field_list = field_list[cond]
+
+        else:
+            z_list = _np.linspace(zmin, zmax, znpts)
+            field_list = self.get_field(x=x, y=y, z=z_list)
+
+        freq_guess = 2*_np.pi/self.period_length
+        amp, phase = _utils.calc_cosine_amplitude(
+            z_list, field_list, freq_guess, maxfev=maxfev)
+
+        bx_amp = amp[0]
+        by_amp = amp[1]
+        bz_amp = amp[2]
+        bxy_phase = (phase[0] - phase[1]) % _np.pi
+
+        return bx_amp, by_amp, bz_amp, bxy_phase
+
+    def calc_deflection_parameter(self, bx_amp, by_amp):
+        kh = 0.934*by_amp*(self.period_length/10)
+        kv = 0.934*bx_amp*(self.period_length/10)
+        return kh, kv
+
+    def calc_trajectory_length(self, trajectory):
+        traj_pos = trajectory[:, 0:3]
+        traj_diff = _np.diff(traj_pos, axis=0)
+        traj_len = _np.append(
+            0, _np.cumsum(_np.sqrt(_np.sum(traj_diff**2, axis=1))))
+        return traj_len
+
+    def calc_radiation_phase(self, energy, trajectory, wavelength):
+        beta, *_ = _utils.calc_beam_parameters(energy)
+        traj_z = trajectory[:, 2]
+        traj_len = self.calc_trajectory_length(trajectory)
+        return (2*_np.pi/(wavelength))*(traj_len/beta - (traj_z - traj_z[0]))
+
+    def calc_radiation_wavelength(
+            self, energy, bx_amp, by_amp, harmonic=1):
+        _, gamma, _ = _utils.calc_beam_parameters(energy)
+        kh, kv = self.calc_deflection_parameter(bx_amp, by_amp)
+        wl = (self.period_length/(2*harmonic*(gamma**2)))*(
+            1 + (kh**2 + kv**2)/2)
+        return wl
+
+    def calc_phase_error(
+            self, energy, trajectory, bx_amp, by_amp,
+            skip_poles=0, zmin=None, zmax=None):
+        if by_amp >= bx_amp:
+            z_list = _utils.find_zeros(trajectory[:, 2], trajectory[:, 3])
+        else:
+            z_list = _utils.find_zeros(trajectory[:, 2], trajectory[:, 4])
+
+        if zmin is not None:
+            z_list = z_list[z_list >= zmin]
+
+        if zmax is not None:
+            z_list = z_list[z_list <= zmax]
+
+        if skip_poles != 0:
+            z_list = z_list[skip_poles:-skip_poles]
+
+        wavelength = self.calc_radiation_wavelength(
+            energy, bx_amp, by_amp, harmonic=1)
+        phase = self.calc_radiation_phase(energy, trajectory, wavelength)
+        phase_poles = _np.interp(z_list, trajectory[:, 2], phase)
+
+        coeffs = _np.polynomial.polynomial.polyfit(z_list, phase_poles, 1)
+        phase_fit = _np.polynomial.polynomial.polyval(z_list, coeffs)
+        phase_error = phase_poles - phase_fit
+
+        phase_error_rms = _np.sqrt(_np.mean(phase_error**2))
+
+        return z_list, phase_error, phase_error_rms
+
+    def get_fieldmap_header(
+            self, kh, kv, field_phase=None, polarization_name=None):
+        if field_phase is None:
+            field_phase_str = '--'
+        else:
+            field_phase_str = '{0:.0f}'.format(field_phase)
+
+        if polarization_name is None:
+            polarization_name = '--'
+
+        device_name = self.name
+        if device_name is None:
+            device_name = '--'
+
+        if self.gap is not None:
+            gap_str = '{0:g}'.format(self.gap)
+        else:
+            gap_str = '--'
+
+        timestamp = _time.strftime('%Y-%m-%d_%H-%M-%S', _time.localtime())
+
+        k = (kh**2 + kv**2)**(1/2)
+
+        header = []
+        header.append('timestamp:\t{0:s}\n'.format(timestamp))
+        header.append('magnet_name:\t{0:s}\n'.format(device_name))
+        header.append('gap[mm]:\t{0:s}\n'.format(gap_str))
+        header.append('period_length[mm]:\t{0:g}\n'.format(self.period_length))
+        header.append('nr_periods:\t{0:d}\n'.format(self.nr_periods))
+        header.append('polarization:\t{0:s}\n'.format(polarization_name))
+        header.append('field_phase[deg]:\t{0:s}\n'.format(field_phase_str))
+        header.append('K_Horizontal:\t{0:.1f}\n'.format(kh))
+        header.append('K_Vertical:\t{0:.1f}\n'.format(kv))
+        header.append('K:\t{0:.1f}\n'.format(k))
+        header.append('\n')
+
+        return header
+
+    def get_filename(
+            self, date, x_list, y_list, z_list, kh, kv,
+            polarization_name=None, add_label=None,
+            file_extension='.fld'):
+        filename = '{0:s}'.format(date)
+
+        if isinstance(x_list, (float, int)):
+            x_list = [x_list]
+
+        if isinstance(y_list, (float, int)):
+            y_list = [y_list]
+
+        if isinstance(z_list, (float, int)):
+            z_list = [z_list]
+
+        x_list = _np.round(x_list, decimals=8)
+        y_list = _np.round(y_list, decimals=8)
+        z_list = _np.round(z_list, decimals=8)
+
+        device_name = self.name
+        if device_name is not None:
+            filename += '_' + device_name
+
+        if polarization_name is not None:
+            filename += '_' + polarization_name
+
+        filename += '_Kh={0:.1f}_Kv={1:.1f}'.format(kh, kv)
+
+        if add_label is not None:
+            filename += '_' + add_label
+
+        if len(x_list) > 1:
+            filename += '_X={0:g}_{1:g}mm'.format(x_list[0], x_list[-1])
+
+        if len(y_list) > 1:
+            filename += '_Y={0:g}_{1:g}mm'.format(y_list[0], y_list[-1])
+
+        if len(z_list) > 1:
+            filename += '_Z={0:g}_{1:g}mm'.format(z_list[0], z_list[-1])
+
+        filename += file_extension
+
+        return filename
+
+
+class InsertionDeviceData(_fieldsource.FieldData, InsertionDevice):
+    """Insertion device field data."""
+
+    def __init__(self, filename=None):
+        self._nr_periods = None
+        self._period_length = None
+        self._gap = None
+        self.name = ''
+        _fieldsource.FieldData.__init__(self, filename=filename)
+
+    @property
+    def nr_periods(self):
+        """Number of complete periods."""
+        if self._nr_periods is None and self._filename is not None:
+            period_length, nr_periods = self.calc_avg_period_length(self._pz)
+            self._period_length = period_length
+            self._nr_periods = nr_periods
+        return self._nr_periods
+
+    @property
+    def period_length(self):
+        """Period length [mm]."""
+        if self._period_length is None and self._filename is not None:
+            period_length, nr_periods = self.calc_avg_period_length(self._pz)
+            self._period_length = period_length
+            self._nr_periods = nr_periods
+        return self._period_length
+
+
+class InsertionDeviceModel(_fieldsource.RadiaModel, InsertionDevice):
+    """Permanent magnet insertion device model."""
 
     def __init__(
             self, block_shape, nr_periods,
@@ -208,195 +453,6 @@ class PMInsertionDevice(_fieldsource.RadiaModel):
 
     def create_radia_object(self):
         raise NotImplementedError
-
-    def calc_field_amplitude(
-            self, x=0, y=0, z_list=None,
-            field_list=None, npts_per_period=101, maxfev=5000):
-        if self._radia_object is None:
-            return None, None, None, None
-
-        if self._nr_periods > 1:
-            zmin = -self._period_length*(self._nr_periods - 1)/2
-            zmax = self._period_length*(self._nr_periods - 1)/2
-            znpts = npts_per_period*(self._nr_periods-1)
-        else:
-            zmin = -self._period_length/2
-            zmax = self._period_length/2
-            znpts = npts_per_period
-
-        if z_list is not None and field_list is not None:
-            if len(field_list) != len(z_list):
-                raise ValueError(
-                    'Inconsistent length between field and position lists.')
-
-            z_list = _np.array(z_list)
-            field_list = _np.array(field_list)
-
-            cond = (z_list >= zmin) & (z_list <= zmax)
-            z_list = z_list[cond]
-            field_list = field_list[cond]
-
-        else:
-            z_list = _np.linspace(zmin, zmax, znpts)
-            field_list = self.get_field(x=x, y=y, z=z_list)
-
-        bx, by, bz = _np.transpose(field_list)
-        bx_amp_init = _np.max(_np.abs(bx))
-        by_amp_init = _np.max(_np.abs(by))
-        bz_amp_init = _np.max(_np.abs(bz))
-
-        px = _optimize.curve_fit(
-            _utils.cosine_function, z_list, bx,
-            p0=[bx_amp_init, 2*_np.pi/self._period_length, 0],
-            maxfev=maxfev)[0]
-        bx_amp = _np.abs(px[0])
-        bx_phase = px[2]
-
-        py = _optimize.curve_fit(
-            _utils.cosine_function, z_list, by,
-            p0=[by_amp_init, 2*_np.pi/self._period_length, 0],
-            maxfev=maxfev)[0]
-        by_amp = _np.abs(py[0])
-        by_phase = py[2]
-
-        pz = _optimize.curve_fit(
-            _utils.cosine_function, z_list, bz,
-            p0=[bz_amp_init, 2*_np.pi/self._period_length, 0],
-            maxfev=maxfev)[0]
-        bz_amp = _np.abs(pz[0])
-
-        bxy_phase = (bx_phase - by_phase) % _np.pi
-
-        return bx_amp, by_amp, bz_amp, bxy_phase
-
-    def calc_deflection_parameter(self, bx_amp, by_amp, period_length):
-        kh = 0.934*by_amp*(period_length/10)
-        kv = 0.934*bx_amp*(period_length/10)
-        return kh, kv
-
-    def calc_trajectory_length(self, trajectory):
-        traj_pos = trajectory[:, 0:3]
-        traj_diff = _np.diff(traj_pos, axis=0)
-        traj_len = _np.append(
-            0, _np.cumsum(_np.sqrt(_np.sum(traj_diff**2, axis=1))))
-        return traj_len
-
-    def calc_radiation_phase(self, energy, trajectory, wavelength):
-        beta, *_ = _utils.calc_beam_parameters(energy)
-        traj_z = trajectory[:, 2]
-        traj_len = self.calc_trajectory_length(trajectory)
-        return (2*_np.pi/(wavelength))*(traj_len/beta - (traj_z - traj_z[0]))
-
-    def calc_radiation_wavelength(
-            self, energy, bx_amp, by_amp, harmonic=1):
-        _, gamma, _ = _utils.calc_beam_parameters(energy)
-        kh, kv = self.calc_deflection_parameter(
-            bx_amp, by_amp, self._period_length)
-        wl = (self._period_length/(2*harmonic*(gamma**2)))*(
-            1 + (kh**2 + kv**2)/2)
-        return wl
-
-    def calc_phase_error(
-            self, energy, trajectory, bx_amp, by_amp,
-            skip_poles=0, zmin=None, zmax=None):
-        if by_amp >= bx_amp:
-            z_list = _utils.find_zeros(trajectory[:, 2], trajectory[:, 3])
-        else:
-            z_list = _utils.find_zeros(trajectory[:, 2], trajectory[:, 4])
-
-        if zmin is not None:
-            z_list = z_list[z_list >= zmin]
-
-        if zmax is not None:
-            z_list = z_list[z_list <= zmax]
-
-        if skip_poles != 0:
-            z_list = z_list[skip_poles:-skip_poles]
-
-        wavelength = self.calc_radiation_wavelength(
-            energy, bx_amp, by_amp, harmonic=1)
-        phase = self.calc_radiation_phase(energy, trajectory, wavelength)
-        phase_poles = _np.interp(z_list, trajectory[:, 2], phase)
-
-        coeffs = _np.polynomial.polynomial.polyfit(z_list, phase_poles, 1)
-        phase_fit = _np.polynomial.polynomial.polyval(z_list, coeffs)
-        phase_error = phase_poles - phase_fit
-
-        phase_error_rms = _np.sqrt(_np.mean(phase_error**2))
-
-        return z_list, phase_error, phase_error_rms
-
-    def get_fieldmap_header(
-            self, kh, kv, field_phase, polarization_name):
-        if polarization_name == '':
-            polarization_name = '--'
-
-        timestamp = _time.strftime('%Y-%m-%d_%H-%M-%S', _time.localtime())
-
-        device_name = self.name
-        if device_name == '':
-            device_name = '--'
-
-        k = (kh**2 + kv**2)**(1/2)
-
-        header = []
-        header.append('timestamp:\t{0:s}\n'.format(timestamp))
-        header.append('magnet_name:\t{0:s}\n'.format(device_name))
-        header.append('gap[mm]:\t{0:g}\n'.format(self.gap))
-        header.append('period_length[mm]:\t{0:g}\n'.format(self.period_length))
-        header.append('magnet_length[mm]:\t{0:g}\n'.format(self.device_length))
-        header.append('polarization:\t{0:s}\n'.format(polarization_name))
-        header.append('field_phase[deg]:\t{0:.0f}\n'.format(field_phase))
-        header.append('K_Horizontal:\t{0:.1f}\n'.format(kh))
-        header.append('K_Vertical:\t{0:.1f}\n'.format(kv))
-        header.append('K:\t{0:.1f}\n'.format(k))
-        header.append('\n')
-
-        return header
-
-    def get_filename(
-            self, date, device_name, polarization_name,
-            x_list, y_list, z_list, kh, kv,
-            file_extension='.fld', add_label=''):
-
-        filename = '{0:s}'.format(date)
-
-        if isinstance(x_list, (float, int)):
-            x_list = [x_list]
-
-        if isinstance(y_list, (float, int)):
-            y_list = [y_list]
-
-        if isinstance(z_list, (float, int)):
-            z_list = [z_list]
-
-        x_list = _np.round(x_list, decimals=8)
-        y_list = _np.round(y_list, decimals=8)
-        z_list = _np.round(z_list, decimals=8)
-
-        if device_name != '':
-            filename += '_' + device_name
-
-        if polarization_name != '':
-            filename += '_' + polarization_name
-
-        filename += '_Kh={0:.1f}_Kv={1:.1f}'.format(kh, kv)
-
-        if add_label != '':
-            filename += '_' + add_label
-
-        if len(x_list) > 1:
-            filename += '_X={0:g}_{1:g}mm'.format(x_list[0], x_list[-1])
-
-        if len(y_list) > 1:
-            filename += '_Y={0:g}_{1:g}mm'.format(y_list[0], y_list[-1])
-
-        if len(z_list) > 1:
-            filename += '_Z={0:g}_{1:g}mm'.format(z_list[0], z_list[-1])
-
-        filename += file_extension
-
-        return filename
 
     def save_state(self, filename):
         horizontal_pos_err_dict = {}

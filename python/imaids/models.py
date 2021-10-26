@@ -67,8 +67,8 @@ class Delta(_insertiondevice.InsertionDeviceModel):
             self,
             block_names_dict=None,
             magnetization_dict=None,
-            horizontal_pos_err_dict=None,
-            vertical_pos_err_dict=None, delete_all=True):
+            position_err_dict=None,
+            delete_all=True):
         if delete_all:
             _rad.UtiDelAll()
 
@@ -80,11 +80,8 @@ class Delta(_insertiondevice.InsertionDeviceModel):
         if magnetization_dict is None:
             magnetization_dict = {}
 
-        if horizontal_pos_err_dict is None:
-            horizontal_pos_err_dict = {}
-
-        if vertical_pos_err_dict is None:
-            vertical_pos_err_dict = {}
+        if position_err_dict is None:
+            position_err_dict = {}
 
         name = 'cse'
         cse = _cassettes.PMCassette(
@@ -93,8 +90,7 @@ class Delta(_insertiondevice.InsertionDeviceModel):
         cse.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
+            position_err=position_err_dict.get(name))
         cse.shift([0, -self._gap/2, 0])
         cse.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = cse
@@ -106,8 +102,7 @@ class Delta(_insertiondevice.InsertionDeviceModel):
         csd.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
+            position_err=position_err_dict.get(name))
         csd.shift([0, -self._gap/2, 0])
         csd.rotate([0, 0, 0], [0, 0, 1], -_np.pi/2)
         self._cassettes[name] = csd
@@ -119,8 +114,7 @@ class Delta(_insertiondevice.InsertionDeviceModel):
         cie.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
+            position_err=position_err_dict.get(name))
         cie.shift([0, -self._gap/2, 0])
         cie.rotate([0, 0, 0], [0, 0, 1], _np.pi/2)
         self._cassettes[name] = cie
@@ -132,8 +126,7 @@ class Delta(_insertiondevice.InsertionDeviceModel):
         cid.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
+            position_err=position_err_dict.get(name))
         cid.shift([0, -self._gap/2, 0])
         self._cassettes[name] = cid
 
@@ -277,8 +270,8 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
             self,
             block_names_dict=None,
             magnetization_dict=None,
-            horizontal_pos_err_dict=None,
-            vertical_pos_err_dict=None, delete_all=True):
+            position_err_dict=None,
+            delete_all=True):
         if delete_all:
             _rad.UtiDelAll()
 
@@ -290,11 +283,8 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
         if magnetization_dict is None:
             magnetization_dict = {}
 
-        if horizontal_pos_err_dict is None:
-            horizontal_pos_err_dict = {}
-
-        if vertical_pos_err_dict is None:
-            vertical_pos_err_dict = {}
+        if position_err_dict is None:
+            position_err_dict = {}
 
         name = 'cse'
         cse = _cassettes.PMCassette(
@@ -303,8 +293,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
         cse.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
+            position_err=position_err_dict.get(name))
         cse.shift([0, -self._gap/2, 0])
         cse.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = cse
@@ -316,8 +305,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
         csd.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
+            position_err=position_err_dict.get(name))
         csd.shift([0, -self._gap/2, 0])
         csd.rotate([0, 0, 0], [0, 0, 1], -_np.pi/2)
         self._cassettes[name] = csd
@@ -329,8 +317,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
         cie.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
+            position_err=position_err_dict.get(name))
         cie.shift([0, -self._gap/2, 0])
         cie.rotate([0, 0, 0], [0, 0, 1], _np.pi/2)
         self._cassettes[name] = cie
@@ -342,8 +329,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
         cid.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
+            position_err=position_err_dict.get(name))
         cid.shift([0, -self._gap/2, 0])
         self._cassettes[name] = cid
 
@@ -471,8 +457,8 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
             self,
             block_names_dict=None,
             magnetization_dict=None,
-            horizontal_pos_err_dict=None,
-            vertical_pos_err_dict=None, delete_all=True):
+            position_err_dict=None,
+            delete_all=True):
         if delete_all:
             _rad.UtiDelAll()
 
@@ -484,11 +470,8 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
         if magnetization_dict is None:
             magnetization_dict = {}
 
-        if horizontal_pos_err_dict is None:
-            horizontal_pos_err_dict = {}
-
-        if vertical_pos_err_dict is None:
-            vertical_pos_err_dict = {}
+        if position_err_dict is None:
+            position_err_dict = {}
 
         if _utils.depth(self._block_shape) != 3:
             self._block_shape = [self._block_shape]
@@ -504,8 +487,7 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
         cse.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
+            position_err=position_err_dict.get(name))
         cse.shift([0, -self._gap/2, 0])
         cse.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = cse
@@ -518,8 +500,7 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
         csd.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
+            position_err=position_err_dict.get(name))
         csd.shift([0, -self._gap/2, 0])
         csd.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = csd
@@ -532,8 +513,7 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
         cie.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
+            position_err=position_err_dict.get(name))
         cie.shift([0, -self._gap/2, 0])
         self._cassettes[name] = cie
 
@@ -545,8 +525,7 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
         cid.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
+            position_err=position_err_dict.get(name))
         cid.shift([0, -self._gap/2, 0])
         self._cassettes[name] = cid
 
@@ -616,8 +595,8 @@ class APU(_insertiondevice.InsertionDeviceModel):
             self,
             block_names_dict=None,
             magnetization_dict=None,
-            horizontal_pos_err_dict=None,
-            vertical_pos_err_dict=None, delete_all=True):
+            position_err_dict=None,
+            delete_all=True):
         if delete_all:
             _rad.UtiDelAll()
 
@@ -629,11 +608,8 @@ class APU(_insertiondevice.InsertionDeviceModel):
         if magnetization_dict is None:
             magnetization_dict = {}
 
-        if horizontal_pos_err_dict is None:
-            horizontal_pos_err_dict = {}
-
-        if vertical_pos_err_dict is None:
-            vertical_pos_err_dict = {}
+        if position_err_dict is None:
+            position_err_dict = {}
 
         name = 'cs'
         cs = _cassettes.PMCassette(
@@ -642,8 +618,7 @@ class APU(_insertiondevice.InsertionDeviceModel):
         cs.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
+            position_err=position_err_dict.get(name))
         cs.shift([0, -self._gap/2, 0])
         cs.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = cs
@@ -655,8 +630,7 @@ class APU(_insertiondevice.InsertionDeviceModel):
         ci.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            horizontal_pos_err=horizontal_pos_err_dict.get(name),
-            vertical_pos_err=vertical_pos_err_dict.get(name))
+            position_err=position_err_dict.get(name))
         ci.shift([0, -self._gap/2, 0])
         self._cassettes[name] = ci
 

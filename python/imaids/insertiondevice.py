@@ -413,22 +413,13 @@ class InsertionDeviceModel(_fieldsource.RadiaModel, InsertionDevice):
         return mag_dict
 
     @property
-    def horizontal_pos_err_dict(self):
-        herr_dict = {}
+    def position_err_dict(self):
+        pos_err_dict = {}
 
         for key, value in self._cassettes.items():
-            herr_dict[key] = value.horizontal_pos_err
+            pos_err_dict[key] = value.position_err
 
-        return herr_dict
-
-    @property
-    def vertical_pos_err_dict(self):
-        verr_dict = {}
-
-        for key, value in self._cassettes.items():
-            verr_dict[key] = value.vertical_pos_err
-
-        return verr_dict
+        return pos_err_dict
 
     @classmethod
     def load_state(cls, filename):
@@ -439,15 +430,13 @@ class InsertionDeviceModel(_fieldsource.RadiaModel, InsertionDevice):
 
         block_names_dict = kwargs.pop('block_names_dict', None)
         magnetization_dict = kwargs.pop('magnetization_dict', None)
-        horizontal_pos_err_dict = kwargs.pop('horizontal_pos_err_dict', None)
-        vertical_pos_err_dict = kwargs.pop('vertical_pos_err_dict', None)
+        position_err_dict = kwargs.pop('position_err_dict', None)
 
         device = cls(init_radia_object=False, **kwargs)
         device.create_radia_object(
             block_names_dict=block_names_dict,
             magnetization_dict=magnetization_dict,
-            horizontal_pos_err_dict=horizontal_pos_err_dict,
-            vertical_pos_err_dict=vertical_pos_err_dict)
+            position_err_dict=position_err_dict)
 
         return device
 
@@ -455,13 +444,6 @@ class InsertionDeviceModel(_fieldsource.RadiaModel, InsertionDevice):
         raise NotImplementedError
 
     def save_state(self, filename):
-        horizontal_pos_err_dict = {}
-        vertical_pos_err_dict = {}
-
-        for key, value in self._cassettes.items():
-            horizontal_pos_err_dict[key] = value.horizontal_pos_err
-            vertical_pos_err_dict[key] = value.vertical_pos_err
-
         data = {
             'block_shape': self._block_shape,
             'nr_periods': self._nr_periods,
@@ -480,8 +462,7 @@ class InsertionDeviceModel(_fieldsource.RadiaModel, InsertionDevice):
             'name': self.name,
             'block_names_dict': self.block_names_dict,
             'magnetization_dict': self.magnetization_dict,
-            'horizontal_pos_err_dict': horizontal_pos_err_dict,
-            'vertical_pos_err_dict': vertical_pos_err_dict,
+            'position_err_dict': self.position_err_dict,
         }
 
         with open(filename, 'w') as f:

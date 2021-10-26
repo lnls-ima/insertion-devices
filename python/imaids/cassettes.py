@@ -59,8 +59,7 @@ class PMCassette(_fieldsource.RadiaModel):
         self._end_blocks_distance = end_blocks_distance
         self.name = name
 
-        self._horizontal_pos_err = []
-        self._vertical_pos_err = []
+        self._position_err = []
         self._blocks = []
         self._radia_object = None
         if init_radia_object:
@@ -142,14 +141,9 @@ class PMCassette(_fieldsource.RadiaModel):
         return self._blocks
 
     @property
-    def horizontal_pos_err(self):
-        """Horizontal position errors [mm]."""
-        return _deepcopy(self._horizontal_pos_err)
-
-    @property
-    def vertical_pos_err(self):
-        """Vertical position errors [mm]."""
-        return _deepcopy(self._vertical_pos_err)
+    def position_err(self):
+        """Position errors [mm]."""
+        return _deepcopy(self._position_err)
 
     @property
     def nr_start_blocks(self):
@@ -193,14 +187,12 @@ class PMCassette(_fieldsource.RadiaModel):
             kwargs = _json.load(f)
 
         magnetization_list = kwargs.pop('magnetization_list', None)
-        horizontal_pos_err = kwargs.pop('horizontal_pos_err', None)
-        vertical_pos_err = kwargs.pop('vertical_pos_err', None)
+        position_err = kwargs.pop('position_err', None)
 
         cassette = cls(init_radia_object=False, **kwargs)
         cassette.create_radia_object(
             magnetization_list=magnetization_list,
-            horizontal_pos_err=horizontal_pos_err,
-            vertical_pos_err=vertical_pos_err)
+            position_err=position_err)
 
         return cassette
 
@@ -208,8 +200,7 @@ class PMCassette(_fieldsource.RadiaModel):
             self,
             block_names=None,
             magnetization_list=None,
-            horizontal_pos_err=None,
-            vertical_pos_err=None):
+            position_err=None):
         """Create radia object."""
         if self._radia_object is not None:
             _rad.UtiDel(self._radia_object)
@@ -220,19 +211,12 @@ class PMCassette(_fieldsource.RadiaModel):
             raise ValueError(
                 'Invalid length for block name list.')
 
-        if horizontal_pos_err is None:
-            horizontal_pos_err = [0]*self.nr_blocks
-        if len(horizontal_pos_err) != self.nr_blocks:
+        if position_err is None:
+            position_err = [[0, 0, 0]]*self.nr_blocks
+        if len(position_err) != self.nr_blocks:
             raise ValueError(
-                'Invalid length for horizontal errors list.')
-        self._horizontal_pos_err = horizontal_pos_err
-
-        if vertical_pos_err is None:
-            vertical_pos_err = [0]*self.nr_blocks
-        if len(vertical_pos_err) != self.nr_blocks:
-            raise ValueError(
-                'Invalid length for vertical errors list.')
-        self._vertical_pos_err = vertical_pos_err
+                'Invalid length for position errors list.')
+        self._position_err = position_err
 
         block_length = self._period_length/4 - self._block_distance
 
@@ -250,7 +234,8 @@ class PMCassette(_fieldsource.RadiaModel):
         for i in range(1, self.nr_blocks):
             position_list.append((
                 length_list[i] + length_list[i-1])/2 + distance_list[i-1])
-        position_list = list(_np.cumsum(position_list))
+        position_list = _np.cumsum(position_list)
+        position_list -= (position_list[0] + position_list[-1])/2
 
         if magnetization_list is None:
             magnetization_list = self.get_ideal_magnetization_list()
@@ -266,10 +251,7 @@ class PMCassette(_fieldsource.RadiaModel):
             self._blocks.append(block)
 
         for idx, block in enumerate(self._blocks):
-            block.shift([
-                horizontal_pos_err[idx],
-                vertical_pos_err[idx],
-                0])
+            block.shift(position_err[idx])
 
         for name, block in zip(block_names, self._blocks):
             block.name = name
@@ -279,8 +261,6 @@ class PMCassette(_fieldsource.RadiaModel):
             if block.radia_object is not None:
                 rad_obj_list.append(block.radia_object)
         self._radia_object = _rad.ObjCnt(rad_obj_list)
-
-        self.shift([0, 0, -(position_list[0] + position_list[-1])/2])
 
     def get_ideal_magnetization_list(self):
         """
@@ -334,10 +314,10 @@ class PMCassette(_fieldsource.RadiaModel):
         return magnetization_list_with_errors
 
     def get_random_errors_position(
-            self, max_horizontal_error=0, max_vertical_error=0,
+            self, max_horizontal_error=0,
+            max_vertical_error=0, max_longitudinal_error=0,
             termination_errors=True, core_errors=True):
-        horizontal_pos_err = []
-        vertical_pos_err = []
+        position_err = []
 
         nr_start = self.nr_start_blocks
         nr_blocks = self.nr_blocks
@@ -346,18 +326,16 @@ class PMCassette(_fieldsource.RadiaModel):
         for idx in range(nr_blocks):
             is_termination = idx < nr_start or idx >= nr_blocks - nr_end
             if is_termination and not termination_errors:
-                horizontal_pos_err.append(0)
-                vertical_pos_err.append(0)
+                position_err.append([0, 0, 0])
             elif not is_termination and not core_errors:
-                horizontal_pos_err.append(0)
-                vertical_pos_err.append(0)
+                position_err.append([0, 0, 0])
             else:
-                horizontal_pos_err.append(
-                    _np.random.uniform(-1, 1)*max_horizontal_error)
-                vertical_pos_err.append(
-                    _np.random.uniform(-1, 1)*max_vertical_error)
+                herr = _np.random.uniform(-1, 1)*max_horizontal_error
+                verr = _np.random.uniform(-1, 1)*max_vertical_error
+                lerr = _np.random.uniform(-1, 1)*max_longitudinal_error
+                position_err.append([herr, verr, lerr])
 
-        return horizontal_pos_err, vertical_pos_err
+        return position_err
 
     def save_state(self, filename):
         """Save state to file."""
@@ -378,9 +356,8 @@ class PMCassette(_fieldsource.RadiaModel):
             'end_blocks_distance': self._end_blocks_distance,
             'name': self.name,
             'magnetization_list': list(self.magnetization_list),
-            'horizontal_pos_err': list(
-                self._horizontal_pos_err),
-            'vertical_pos_err': list(self._vertical_pos_err),
+            'position_err': list(
+                self._position_err),
         }
 
         with open(filename, 'w') as f:

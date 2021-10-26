@@ -228,12 +228,8 @@ class InsertionDevice(_fieldsource.FieldSource):
 class InsertionDeviceData(_fieldsource.FieldData, InsertionDevice):
     """Insertion device field data."""
 
-    def __init__(self, filename=None):
-        self._nr_periods = None
-        self._period_length = None
-        self._gap = None
-        self.name = ''
-        _fieldsource.FieldData.__init__(self, filename=filename)
+    def __init__(self):
+        InsertionDevice.__init__(self)
 
     @property
     def nr_periods(self):

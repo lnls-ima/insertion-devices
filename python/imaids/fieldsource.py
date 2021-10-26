@@ -366,8 +366,8 @@ class RadiaModel(FieldSource):
 
 class FieldData(FieldSource):
 
-    def __init__(self, filename=None):
-        self._filename = filename
+    def __init__(self):
+        self._filename = None
         self._raw_data = None
         self._nx = None
         self._ny = None
@@ -381,12 +381,19 @@ class FieldData(FieldSource):
         self._bx_func = None
         self._by_func = None
         self._bz_func = None
-        if self._filename is not None:
-            self.read_file(self._filename)
 
     @property
     def filename(self):
         return self._filename
+
+    def _update_interpolation_functions(self):
+        self._bx_func = _interpolate.RectBivariateSpline(
+            self._px, self._pz, self._bx)
+        self._by_func = _interpolate.RectBivariateSpline(
+            self._px, self._pz, self._by)
+        self._bz_func = _interpolate.RectBivariateSpline(
+            self._px, self._pz, self._bz)
+        return True
 
     def clear(self):
         self._filename = None
@@ -404,11 +411,40 @@ class FieldData(FieldSource):
         self._by_func = None
         self._bz_func = None
 
+    def correct_angles(
+            self, angxy=0.15, angxz=-0.21, angyx=-0.01,
+            angyz=-0.02, angzx=0.01, angzy=-0.74):
+        tmp_bx = _np.copy(self._bx)
+        tmp_by = _np.copy(self._by)
+        tmp_bz = _np.copy(self._bz)
+
+        bxy = tmp_by*_np.sin(angxy*_np.pi/180)
+        bxz = tmp_bz*_np.sin(angxz*_np.pi/180)
+        self._bx = tmp_bx - bxy - bxz
+
+        byx = tmp_bx*_np.sin(angyx*_np.pi/180)
+        byz = tmp_bz*_np.sin(angyz*_np.pi/180)
+        self._by = tmp_by - byx - byz
+
+        bzx = tmp_bx*_np.sin(angzx*_np.pi/180)
+        bzy = tmp_by*_np.sin(angzy*_np.pi/180)
+        self._bz = tmp_bz - bzx - bzy
+
+        self._update_interpolation_functions()
+
     def get_field_at_point(self, point):
         bx = self._bx_func(point[0], point[2])[0, 0]
         by = self._by_func(point[0], point[2])[0, 0]
         bz = self._bz_func(point[0], point[2])[0, 0]
         return [bx, by, bz]
+
+    def shift(self, value):
+        self._px += value[0]
+        self._pz += value[2]
+        self._update_interpolation_functions()
+
+    def rotate(self, point, vector, angle):
+        raise NotImplementedError
 
     def read_file(
             self, filename, header_size=2000, y=0, interpolation='linear'):
@@ -447,11 +483,6 @@ class FieldData(FieldSource):
         self._by = _np.transpose(by.reshape(self._nz, -1))
         self._bz = _np.transpose(bz.reshape(self._nz, -1))
 
-        self._bx_func = _interpolate.RectBivariateSpline(
-            self._px, self._pz, self._bx)
-        self._by_func = _interpolate.RectBivariateSpline(
-            self._px, self._pz, self._by)
-        self._bz_func = _interpolate.RectBivariateSpline(
-            self._px, self._pz, self._bz)
+        self._update_interpolation_functions()
 
         return True

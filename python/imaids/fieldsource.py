@@ -387,12 +387,21 @@ class FieldData(FieldSource):
         return self._filename
 
     def _update_interpolation_functions(self):
-        self._bx_func = _interpolate.RectBivariateSpline(
-            self._px, self._pz, self._bx)
-        self._by_func = _interpolate.RectBivariateSpline(
-            self._px, self._pz, self._by)
-        self._bz_func = _interpolate.RectBivariateSpline(
-            self._px, self._pz, self._bz)
+        if self._nx == 1:
+            self._bx_func = _interpolate.interp1d(self._pz, self._bx)
+            self._by_func = _interpolate.interp1d(self._pz, self._by)
+            self._bz_func = _interpolate.interp1d(self._pz, self._bz)
+        elif self._nz == 1:
+            self._bx_func = _interpolate.interp1d(self._px, self._bx)
+            self._by_func = _interpolate.interp1d(self._px, self._by)
+            self._bz_func = _interpolate.interp1d(self._px, self._bz)
+        else:
+            self._bx_func = _interpolate.RectBivariateSpline(
+                self._px, self._pz, self._bx)
+            self._by_func = _interpolate.RectBivariateSpline(
+                self._px, self._pz, self._by)
+            self._bz_func = _interpolate.RectBivariateSpline(
+                self._px, self._pz, self._bz)
         return True
 
     def clear(self):
@@ -433,9 +442,18 @@ class FieldData(FieldSource):
         self._update_interpolation_functions()
 
     def get_field_at_point(self, point):
-        bx = self._bx_func(point[0], point[2])[0, 0]
-        by = self._by_func(point[0], point[2])[0, 0]
-        bz = self._bz_func(point[0], point[2])[0, 0]
+        if self._nx == 1:
+            bx = self._bx_func(point[2])[0]
+            by = self._by_func(point[2])[0]
+            bz = self._bz_func(point[2])[0]
+        elif self._nz == 1:
+            bx = self._bx_func(point[0])[0]
+            by = self._by_func(point[0])[0]
+            bz = self._bz_func(point[0])[0]
+        else:
+            bx = self._bx_func(point[0], point[2])[0, 0]
+            by = self._by_func(point[0], point[2])[0, 0]
+            bz = self._bz_func(point[0], point[2])[0, 0]
         return [bx, by, bz]
 
     def shift(self, value):
@@ -447,7 +465,7 @@ class FieldData(FieldSource):
         raise NotImplementedError
 
     def read_file(
-            self, filename, header_size=2000, y=0, interpolation='linear'):
+            self, filename, header_size=2000, y=0):
         self._filename = filename
 
         with open(self._filename, 'r') as f:

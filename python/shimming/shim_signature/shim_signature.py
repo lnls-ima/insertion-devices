@@ -191,7 +191,7 @@ def Shim_Signature(nested_dict, nr_periods, fname):
             
     filename = "Longitudinal_Magnetic_Field_Delta_Sabia.txt"
     file = open(filename,'w')
-    a_file = open(r"C:\Users\labimas\Desktop\2021-03-15_DeltaSabia_LinearPolarization_Kh=0.0_Kv=5.99_X=-7_7mm_Y=-4_4mm_Z=-1000_1000mm.txt")
+    a_file = open(fname)
     lines_to_read = np.linspace(0,20,21)
 
     for number, line in enumerate(a_file):
@@ -229,5 +229,3 @@ def Shim_Signature(nested_dict, nr_periods, fname):
         
   
     
-Shim_Signature(nested_dict = {'cid':{10:0.5},'csd':{20:0.5}}, nr_periods = 5,
-               fname = r"C:\Users\labimas\Desktop\2021-03-15_DeltaSabia_LinearPolarization_Kh=0.0_Kv=5.99_X=-7_7mm_Y=-4_4mm_Z=-1000_1000mm.txt")

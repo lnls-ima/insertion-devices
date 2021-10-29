@@ -311,20 +311,20 @@ filename_matrix = os.path.join(directory, filename_matrix)
 
 utils.set_len_tol()
 
+if not os.path.isfile(filename_ideal):
+    model = create_and_save_model(filename_ideal, nr_periods)
+else:
+    model = load_model(filename_ideal)
+
 if calc_matrix:
     calc_response_matrix(
         filename_ideal, filename_matrix,
         zmin, zmax, znpts, cassettes,
         energy=energy, rkstep=rkstep,
         shim=shim, x=x, y=y)
-else:
-    m = np.loadtxt(filename_matrix)
-    minv = np.linalg.pinv(m)
 
-if not os.path.isfile(filename_ideal):
-    model = create_and_save_model(filename_ideal, nr_periods)
-else:
-    model = load_model(filename_ideal)
+m = np.loadtxt(filename_matrix)
+minv = np.linalg.pinv(m)
 
 z = np.linspace(zmin, zmax, znpts)
 zpos_segs = get_zpos_segs(model, zmin, zmax, znpts)

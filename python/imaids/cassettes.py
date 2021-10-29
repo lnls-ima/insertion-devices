@@ -176,8 +176,14 @@ class PMCassette(_fieldsource.RadiaModel):
     @property
     def magnetization_list(self):
         """List of magnetization vectors [T]."""
-        magnetization_list = [block.magnetization for block in self._blocks]
-        return magnetization_list
+        mag_list = [block.magnetization for block in self._blocks]
+        return mag_list
+
+    @property
+    def longitudinal_position_list(self):
+        """List of initial longitudinal position of blocks [mm]."""
+        pos_list = [block.longitudinal_position for block in self._blocks]
+        return pos_list
 
     @classmethod
     def load_state(cls, filename):

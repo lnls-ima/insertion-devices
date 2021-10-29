@@ -314,6 +314,10 @@ class InsertionDeviceData(_fieldsource.FieldData, InsertionDevice):
             self._nr_periods = nr_periods
         return self._period_length
 
+    @period_length.setter
+    def period_length(self, value):
+        self._period_length = value
+
 
 class InsertionDeviceModel(_fieldsource.RadiaModel, InsertionDevice):
     """Permanent magnet insertion device model."""

@@ -441,6 +441,24 @@ class FieldData(FieldSource):
 
         self._update_interpolation_functions()
 
+    def correct_cross_talk(
+            self, K0=7.56863157e-06, K1=-1.67524756e-02,
+            K2=-6.78110439e-03):
+        tmp_bx = _np.copy(self._bx)
+        tmp_by = _np.copy(self._by)
+        tmp_bz = _np.copy(self._bz)
+
+        tmp_bx_corr = []
+
+        for b in range(len(tmp_bx)):
+            tmp_bx_corr.append((tmp_bx[b] + (((
+                K0 + K1*tmp_by[b] + K2*tmp_by[b]**2) + (
+                K0 + K1*tmp_bz[b] + K2*tmp_bz[b]**2)))/2))
+
+        self._bx = _np.array(tmp_bx_corr)
+
+        self._update_interpolation_functions()
+
     def get_field_at_point(self, point):
         if self._nx == 1:
             bx = self._bx_func(point[2])[0]

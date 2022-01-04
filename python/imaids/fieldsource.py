@@ -388,13 +388,19 @@ class FieldData(FieldSource):
 
     def _update_interpolation_functions(self):
         if self._nx == 1:
-            self._bx_func = _interpolate.interp1d(self._pz, self._bx)
-            self._by_func = _interpolate.interp1d(self._pz, self._by)
-            self._bz_func = _interpolate.interp1d(self._pz, self._bz)
+            self._bx_func = _interpolate.interp1d(
+                self._pz, self._bx, bounds_error=False)
+            self._by_func = _interpolate.interp1d(
+                self._pz, self._by, bounds_error=False)
+            self._bz_func = _interpolate.interp1d(
+                self._pz, self._bz, bounds_error=False)
         elif self._nz == 1:
-            self._bx_func = _interpolate.interp1d(self._px, self._bx)
-            self._by_func = _interpolate.interp1d(self._px, self._by)
-            self._bz_func = _interpolate.interp1d(self._px, self._bz)
+            self._bx_func = _interpolate.interp1d(
+                self._px, self._bx, bounds_error=False)
+            self._by_func = _interpolate.interp1d(
+                self._px, self._by, bounds_error=False)
+            self._bz_func = _interpolate.interp1d(
+                self._px, self._bz, bounds_error=False)
         else:
             self._bx_func = _interpolate.RectBivariateSpline(
                 self._px, self._pz, self._bx)

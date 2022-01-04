@@ -188,7 +188,7 @@ class InsertionDevice(_fieldsource.FieldSource):
             z_list = z_list[z_list <= zmax]
 
         if skip_poles != 0:
-            z_list = z_list[skip_poles:-skip_poles]
+            z_list = z_list[skip_poles:-(skip_poles-1)]
 
         wavelength = self.calc_radiation_wavelength(
             energy, bx_amp, by_amp, harmonic=1)

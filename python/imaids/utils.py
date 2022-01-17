@@ -126,5 +126,5 @@ def find_zeros(pos, data):
     posa = pos[idxa]
     datab = data[idxb]
     dataa = data[idxa]
-    pos = (dataa*posb - datab*posa)/(dataa - datab)
-    return pos[:-1]
+    pos_zeros = (dataa*posb - datab*posa)/(dataa - datab)
+    return pos_zeros

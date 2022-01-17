@@ -1,4 +1,5 @@
 
+from operator import length_hint
 import time as _time
 import numpy as _np
 import radia as _rad
@@ -751,7 +752,7 @@ class DeltaCarnauba(Delta):
     def __init__(
             self,
             block_shape='default', nr_periods=52,
-            period_length=22, gap=7, mr=1.39,
+            period_length=22, gap=7, mr=1.37,
             block_subdivision='default',
             rectangular_shape=False, block_distance=0.05,
             start_blocks_length='default', start_blocks_distance='default',
@@ -767,9 +768,10 @@ class DeltaCarnauba(Delta):
                 'delta_carnauba')
 
         block_len = period_length/4 - block_distance
-        lenghts = [
-            block_len/4, block_len/4, 3*block_len/4, 3*block_len/4, block_len]
-        distances = [3.64, 0.84, 1.38, 0.42, block_distance]
+        tlen = _np.round(block_len/4, decimals=2)
+        lenghts = _np.round(
+            [tlen, tlen, 3*tlen, 3*tlen, block_len], decimals=2).tolist()
+        distances = [2.9, 1.5, 1.8, 0.4, block_distance]
 
         if start_blocks_length == 'default':
             start_blocks_length = lenghts

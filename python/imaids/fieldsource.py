@@ -366,7 +366,7 @@ class RadiaModel(FieldSource):
 
 class FieldData(FieldSource):
 
-    def __init__(self):
+    def __init__(self, filename=None, raw_data=None, selected_y=0):
         self._filename = None
         self._raw_data = None
         self._nx = None
@@ -381,10 +381,53 @@ class FieldData(FieldSource):
         self._bx_func = None
         self._by_func = None
         self._bz_func = None
+        if filename is not None:
+            self.read_file(filename, selected_y=selected_y)
+        elif raw_data is not None:
+            self.read_raw_data(raw_data, selected_y=selected_y)
+
+    def __add__(self, other):
+        px = [i for i in self._px]
+        py = [i for i in self._py]
+        pz = [i for i in self._pz]
+        raw_data = []
+        for z in pz:
+            for y in py:
+                for x in px:
+                    b = self.get_field_at_point([x, y, z])
+                    bo = other.get_field_at_point([x, y, z])
+                    bs = _np.array(b) + _np.array(bo)
+                    raw_data.append([x, y, z, bs[0], bs[1], bs[2]])
+        raw_data = _np.array(raw_data)
+        return FieldData(raw_data=raw_data, selected_y=py[0])
 
     @property
     def filename(self):
         return self._filename
+
+    @property
+    def px(self):
+        return self._px
+
+    @property
+    def py(self):
+        return self._py
+
+    @property
+    def pz(self):
+        return self._pz
+
+    @property
+    def bx(self):
+        return self._bx
+
+    @property
+    def by(self):
+        return self._by
+
+    @property
+    def bz(self):
+        return self._bz
 
     def _update_interpolation_functions(self):
         if self._nx == 1:
@@ -482,23 +525,30 @@ class FieldData(FieldSource):
 
     def shift(self, value):
         self._px += value[0]
+        self._py += value[1]
         self._pz += value[2]
         self._update_interpolation_functions()
 
     def rotate(self, point, vector, angle):
         raise NotImplementedError
 
-    def read_file(
-            self, filename, header_size=2000, y=0):
+    def read_file(self, filename, selected_y=0):
         self._filename = filename
 
+        header_size = 2000
         with open(self._filename, 'r') as f:
             data = f.read(header_size)
 
         idx = data.find('--------')
         skiprows = len(data[:idx].split('\n')) if idx != -1 else 0
-        self._raw_data = _np.loadtxt(
+        raw_data = _np.loadtxt(
             self._filename, skiprows=skiprows)
+        self.read_raw_data(raw_data, selected_y=selected_y)
+
+        return True
+
+    def read_raw_data(self, raw_data, selected_y=0):
+        self._raw_data = raw_data
 
         px = self._raw_data[:, 0]
         py = self._raw_data[:, 1]
@@ -512,7 +562,7 @@ class FieldData(FieldSource):
         self._nz = len(_np.unique(pz))
 
         if self._ny > 1:
-            filt = (py == y)
+            filt = (py == selected_y)
             bx = bx[filt]
             by = by[filt]
             bz = bz[filt]

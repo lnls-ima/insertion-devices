@@ -9,6 +9,10 @@ def set_len_tol(absolute=1e-12, relative=1e-12):
     return _rad.FldLenTol(absolute, relative)
 
 
+def delete_all():
+    return _rad.UtiDelAll()
+
+
 def cosine_function(z, bamp, freq, phase):
     return bamp*_np.cos(freq*z + phase)
 

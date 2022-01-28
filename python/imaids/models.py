@@ -1,5 +1,4 @@
 
-from operator import length_hint
 import time as _time
 import numpy as _np
 import radia as _rad
@@ -8,6 +7,7 @@ from . import utils as _utils
 from . import insertiondevice as _insertiondevice
 from . import blocks as _blocks
 from . import cassettes as _cassettes
+from . import materials as _materials
 
 
 class Delta(_insertiondevice.InsertionDeviceModel):
@@ -68,11 +68,7 @@ class Delta(_insertiondevice.InsertionDeviceModel):
             self,
             block_names_dict=None,
             magnetization_dict=None,
-            position_err_dict=None,
-            delete_all=True):
-        if delete_all:
-            _rad.UtiDelAll()
-
+            position_err_dict=None):
         self._cassettes = {}
 
         if block_names_dict is None:
@@ -85,7 +81,7 @@ class Delta(_insertiondevice.InsertionDeviceModel):
             position_err_dict = {}
 
         name = 'cse'
-        cse = _cassettes.PMCassette(
+        cse = _cassettes.Cassette(
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         cse.create_radia_object(
@@ -97,7 +93,7 @@ class Delta(_insertiondevice.InsertionDeviceModel):
         self._cassettes[name] = cse
 
         name = 'csd'
-        csd = _cassettes.PMCassette(
+        csd = _cassettes.Cassette(
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         csd.create_radia_object(
@@ -109,7 +105,7 @@ class Delta(_insertiondevice.InsertionDeviceModel):
         self._cassettes[name] = csd
 
         name = 'cie'
-        cie = _cassettes.PMCassette(
+        cie = _cassettes.Cassette(
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         cie.create_radia_object(
@@ -121,7 +117,7 @@ class Delta(_insertiondevice.InsertionDeviceModel):
         self._cassettes[name] = cie
 
         name = 'cid'
-        cid = _cassettes.PMCassette(
+        cid = _cassettes.Cassette(
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         cid.create_radia_object(
@@ -271,11 +267,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
             self,
             block_names_dict=None,
             magnetization_dict=None,
-            position_err_dict=None,
-            delete_all=True):
-        if delete_all:
-            _rad.UtiDelAll()
-
+            position_err_dict=None):
         self._cassettes = {}
 
         if block_names_dict is None:
@@ -288,7 +280,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
             position_err_dict = {}
 
         name = 'cse'
-        cse = _cassettes.PMCassette(
+        cse = _cassettes.Cassette(
             upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
         cse.create_radia_object(
@@ -300,7 +292,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
         self._cassettes[name] = cse
 
         name = 'csd'
-        csd = _cassettes.PMCassette(
+        csd = _cassettes.Cassette(
             upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
         csd.create_radia_object(
@@ -312,7 +304,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
         self._cassettes[name] = csd
 
         name = 'cie'
-        cie = _cassettes.PMCassette(
+        cie = _cassettes.Cassette(
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         cie.create_radia_object(
@@ -324,7 +316,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
         self._cassettes[name] = cie
 
         name = 'cid'
-        cid = _cassettes.PMCassette(
+        cid = _cassettes.Cassette(
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         cid.create_radia_object(
@@ -458,11 +450,7 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
             self,
             block_names_dict=None,
             magnetization_dict=None,
-            position_err_dict=None,
-            delete_all=True):
-        if delete_all:
-            _rad.UtiDelAll()
-
+            position_err_dict=None):
         self._cassettes = {}
 
         if block_names_dict is None:
@@ -481,7 +469,7 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
             [(-1)*pts[0], pts[1]] for shp in self._block_shape for pts in shp]
 
         name = 'cse'
-        cse = _cassettes.PMCassette(
+        cse = _cassettes.Cassette(
             block_shape=mirror_block_shape,
             upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
@@ -494,7 +482,7 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
         self._cassettes[name] = cse
 
         name = 'csd'
-        csd = _cassettes.PMCassette(
+        csd = _cassettes.Cassette(
             block_shape=self._block_shape,
             upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
@@ -507,7 +495,7 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
         self._cassettes[name] = csd
 
         name = 'cie'
-        cie = _cassettes.PMCassette(
+        cie = _cassettes.Cassette(
             block_shape=self._block_shape,
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
@@ -519,7 +507,7 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
         self._cassettes[name] = cie
 
         name = 'cid'
-        cid = _cassettes.PMCassette(
+        cid = _cassettes.Cassette(
             block_shape=mirror_block_shape,
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
@@ -596,11 +584,7 @@ class APU(_insertiondevice.InsertionDeviceModel):
             self,
             block_names_dict=None,
             magnetization_dict=None,
-            position_err_dict=None,
-            delete_all=True):
-        if delete_all:
-            _rad.UtiDelAll()
-
+            position_err_dict=None):
         self._cassettes = {}
 
         if block_names_dict is None:
@@ -613,7 +597,7 @@ class APU(_insertiondevice.InsertionDeviceModel):
             position_err_dict = {}
 
         name = 'cs'
-        cs = _cassettes.PMCassette(
+        cs = _cassettes.Cassette(
             upper_cassette=True, name=name,
             init_radia_object=False, **self.cassette_properties)
         cs.create_radia_object(
@@ -625,7 +609,7 @@ class APU(_insertiondevice.InsertionDeviceModel):
         self._cassettes[name] = cs
 
         name = 'ci'
-        ci = _cassettes.PMCassette(
+        ci = _cassettes.Cassette(
             upper_cassette=False, name=name,
             init_radia_object=False, **self.cassette_properties)
         ci.create_radia_object(
@@ -652,6 +636,89 @@ class APU(_insertiondevice.InsertionDeviceModel):
         return True
 
 
+class Planar(_insertiondevice.InsertionDeviceModel):
+    """Planar undulador model."""
+
+    def __init__(self, *args, **kwargs):
+        """Create radia model."""
+        self._dg = 0
+        super().__init__(*args, **kwargs)
+
+    @property
+    def dg(self):
+        """Gap oppening in mm."""
+        return self._dg
+
+    @dg.setter
+    def dg(self, value):
+        self.set_cassete_positions(dg=value)
+
+    @property
+    def cassette_properties(self):
+        """Common cassettes properties."""
+        props = super().cassette_properties
+        props['block_shape'] = self._block_shape
+        return props
+
+    def create_radia_object(
+            self,
+            block_names_dict=None,
+            magnetization_dict=None,
+            position_err_dict=None):
+        self._cassettes = {}
+
+        if block_names_dict is None:
+            block_names_dict = {}
+
+        if magnetization_dict is None:
+            magnetization_dict = {}
+
+        if position_err_dict is None:
+            position_err_dict = {}
+
+        name = 'cs'
+        cs = _cassettes.Cassette(
+            upper_cassette=True, name=name,
+            init_radia_object=False, **self.cassette_properties)
+        cs.create_radia_object(
+            block_names=block_names_dict.get(name),
+            magnetization_list=magnetization_dict.get(name),
+            position_err=position_err_dict.get(name))
+        cs.shift([0, -self._gap/2, 0])
+        cs.rotate([0, 0, 0], [0, 0, 1], _np.pi)
+        self._cassettes[name] = cs
+
+        name = 'ci'
+        ci = _cassettes.Cassette(
+            upper_cassette=False, name=name,
+            init_radia_object=False, **self.cassette_properties)
+        ci.create_radia_object(
+            block_names=block_names_dict.get(name),
+            magnetization_list=magnetization_dict.get(name),
+            position_err=position_err_dict.get(name))
+        ci.shift([0, -self._gap/2, 0])
+        self._cassettes[name] = ci
+
+        self._radia_object = _rad.ObjCnt(
+            [c.radia_object for c in [cs, ci]])
+
+    def set_cassete_positions(self, dg=None):
+        """Change longitudinal cassette position."""
+        if dg is None:
+            dg = self._dg
+
+        diff_dg = dg - self._dg
+
+        cs = self._cassettes['cs']
+        cs.shift([0, diff_dg/2, 0])
+
+        ci = self._cassettes['ci']
+        ci.shift([0, -diff_dg/2, 0])
+
+        self._dg = dg
+        return True
+
+
 class DeltaPrototype(Delta):
     """Delta Prototype model."""
 
@@ -659,17 +726,17 @@ class DeltaPrototype(Delta):
             self, block_shape='default',
             nr_periods=60, period_length=20, gap=7, mr=1.36,
             block_subdivision='default',
-            rectangular_shape=False, block_distance=0,
+            rectangular=False, longitudinal_distance=0,
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='delta_prototype', **kwargs):
 
         if block_shape == 'default':
-            block_shape = _blocks.PMBlock.get_predefined_shape(
+            block_shape = _blocks.Block.get_predefined_shape(
                 'delta_prototype')
 
         if block_subdivision == 'default':
-            block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
+            block_subdivision = _blocks.Block.get_predefined_subdivision(
                 'delta_prototype')
 
         if start_blocks_length == 'default':
@@ -687,8 +754,8 @@ class DeltaPrototype(Delta):
         super().__init__(
             block_shape, nr_periods, period_length, gap, mr,
             block_subdivision=block_subdivision,
-            rectangular_shape=rectangular_shape,
-            block_distance=block_distance,
+            rectangular=rectangular,
+            longitudinal_distance=longitudinal_distance,
             start_blocks_length=start_blocks_length,
             start_blocks_distance=start_blocks_distance,
             end_blocks_length=end_blocks_length,
@@ -704,23 +771,23 @@ class DeltaSabia(Delta):
             block_shape='default', nr_periods=21,
             period_length=52.5, gap=13.6, mr=1.39,
             block_subdivision='default',
-            rectangular_shape=False, block_distance=0.125,
+            rectangular=False, longitudinal_distance=0.125,
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='delta_sabia', **kwargs):
 
         if block_shape == 'default':
-            block_shape = _blocks.PMBlock.get_predefined_shape(
+            block_shape = _blocks.Block.get_predefined_shape(
                 'delta_sabia')
 
         if block_subdivision == 'default':
-            block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
+            block_subdivision = _blocks.Block.get_predefined_subdivision(
                 'delta_sabia')
 
-        block_len = period_length/4 - block_distance
+        block_len = period_length/4 - longitudinal_distance
         lenghts = [
             block_len/4, block_len/4, 3*block_len/4, 3*block_len/4, block_len]
-        distances = [8.4, 2, 3.3, 1, block_distance]
+        distances = [8.4, 2, 3.3, 1, longitudinal_distance]
 
         if start_blocks_length == 'default':
             start_blocks_length = lenghts
@@ -737,8 +804,8 @@ class DeltaSabia(Delta):
         super().__init__(
             block_shape, nr_periods, period_length, gap, mr,
             block_subdivision=block_subdivision,
-            rectangular_shape=rectangular_shape,
-            block_distance=block_distance,
+            rectangular=rectangular,
+            longitudinal_distance=longitudinal_distance,
             start_blocks_length=start_blocks_length,
             start_blocks_distance=start_blocks_distance,
             end_blocks_length=end_blocks_length,
@@ -754,24 +821,24 @@ class DeltaCarnauba(Delta):
             block_shape='default', nr_periods=52,
             period_length=22, gap=7, mr=1.37,
             block_subdivision='default',
-            rectangular_shape=False, block_distance=0.05,
+            rectangular=False, longitudinal_distance=0.05,
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='delta_carnauba', **kwargs):
 
         if block_shape == 'default':
-            block_shape = _blocks.PMBlock.get_predefined_shape(
+            block_shape = _blocks.Block.get_predefined_shape(
                 'delta_carnauba')
 
         if block_subdivision == 'default':
-            block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
+            block_subdivision = _blocks.Block.get_predefined_subdivision(
                 'delta_carnauba')
 
-        block_len = period_length/4 - block_distance
+        block_len = period_length/4 - longitudinal_distance
         tlen = _np.round(block_len/4, decimals=2)
         lenghts = _np.round(
             [tlen, tlen, 3*tlen, 3*tlen, block_len], decimals=2).tolist()
-        distances = [2.9, 1.5, 1.8, 0.4, block_distance]
+        distances = [2.9, 1.5, 1.8, 0.4, longitudinal_distance]
 
         if start_blocks_length == 'default':
             start_blocks_length = lenghts
@@ -788,8 +855,8 @@ class DeltaCarnauba(Delta):
         super().__init__(
             block_shape, nr_periods, period_length, gap, mr,
             block_subdivision=block_subdivision,
-            rectangular_shape=rectangular_shape,
-            block_distance=block_distance,
+            rectangular=rectangular,
+            longitudinal_distance=longitudinal_distance,
             start_blocks_length=start_blocks_length,
             start_blocks_distance=start_blocks_distance,
             end_blocks_length=end_blocks_length,
@@ -805,23 +872,23 @@ class AppleXSabia(AppleX):
             block_shape='default', nr_periods=21,
             period_length=52.5, gap=13.6, mr=1.39,
             block_subdivision='default',
-            rectangular_shape=False, block_distance=0.125,
+            rectangular=False, longitudinal_distance=0.125,
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='applex_sabia', **kwargs):
 
         if block_shape == 'default':
-            block_shape = _blocks.PMBlock.get_predefined_shape(
+            block_shape = _blocks.Block.get_predefined_shape(
                 'delta_sabia')
 
         if block_subdivision == 'default':
-            block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
+            block_subdivision = _blocks.Block.get_predefined_subdivision(
                 'delta_sabia')
 
-        block_len = period_length/4 - block_distance
+        block_len = period_length/4 - longitudinal_distance
         lenghts = [
             block_len/4, block_len/4, 3*block_len/4, 3*block_len/4, block_len]
-        distances = [8.7, 2, 3.3, 1, block_distance]
+        distances = [8.7, 2, 3.3, 1, longitudinal_distance]
 
         if start_blocks_length == 'default':
             start_blocks_length = lenghts
@@ -838,8 +905,8 @@ class AppleXSabia(AppleX):
         super().__init__(
             block_shape, nr_periods, period_length, gap, mr,
             block_subdivision=block_subdivision,
-            rectangular_shape=rectangular_shape,
-            block_distance=block_distance,
+            rectangular=rectangular,
+            longitudinal_distance=longitudinal_distance,
             start_blocks_length=start_blocks_length,
             start_blocks_distance=start_blocks_distance,
             end_blocks_length=end_blocks_length,
@@ -855,23 +922,23 @@ class AppleXCarnauba(AppleX):
             block_shape='default', nr_periods=53,
             period_length=22, gap=7, mr=1.39,
             block_subdivision='default',
-            rectangular_shape=False, block_distance=0.1,
+            rectangular=False, longitudinal_distance=0.1,
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='applex_carnauba', **kwargs):
 
         if block_shape == 'default':
-            block_shape = _blocks.PMBlock.get_predefined_shape(
+            block_shape = _blocks.Block.get_predefined_shape(
                 'delta_carnauba')
 
         if block_subdivision == 'default':
-            block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
+            block_subdivision = _blocks.Block.get_predefined_subdivision(
                 'delta_carnauba')
 
-        block_len = period_length/4 - block_distance
+        block_len = period_length/4 - longitudinal_distance
         lenghts = [
             block_len/4, block_len/4, 3*block_len/4, 3*block_len/4, block_len]
-        distances = [3.64, 0.84, 1.38, 0.42, block_distance]
+        distances = [3.64, 0.84, 1.38, 0.42, longitudinal_distance]
 
         if start_blocks_length == 'default':
             start_blocks_length = lenghts
@@ -888,8 +955,8 @@ class AppleXCarnauba(AppleX):
         super().__init__(
             block_shape, nr_periods, period_length, gap, mr,
             block_subdivision=block_subdivision,
-            rectangular_shape=rectangular_shape,
-            block_distance=block_distance,
+            rectangular=rectangular,
+            longitudinal_distance=longitudinal_distance,
             start_blocks_length=start_blocks_length,
             start_blocks_distance=start_blocks_distance,
             end_blocks_length=end_blocks_length,
@@ -904,22 +971,22 @@ class AppleIISabia(AppleII):
             self, block_shape='default',
             nr_periods=21, period_length=52.5, gap=13.6, mr=1.39,
             block_subdivision='default',
-            rectangular_shape=True, block_distance=0.125,
+            rectangular=True, longitudinal_distance=0.125,
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='apple_sabia', **kwargs):
 
         if block_shape == 'default':
-            block_shape = _blocks.PMBlock.get_predefined_shape(
+            block_shape = _blocks.Block.get_predefined_shape(
                 'apple_sabia')
 
         if block_subdivision == 'default':
-            block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
+            block_subdivision = _blocks.Block.get_predefined_subdivision(
                 'apple_sabia')
 
-        block_len = period_length/4 - block_distance
+        block_len = period_length/4 - longitudinal_distance
         lenghts = [block_len/4, block_len/2, 3*block_len/4, block_len]
-        distances = [block_len/2, block_len/4, 0, block_distance]
+        distances = [block_len/2, block_len/4, 0, longitudinal_distance]
 
         if start_blocks_length == 'default':
             start_blocks_length = lenghts
@@ -936,8 +1003,8 @@ class AppleIISabia(AppleII):
         super().__init__(
             block_shape, nr_periods, period_length, gap, mr,
             block_subdivision=block_subdivision,
-            rectangular_shape=rectangular_shape,
-            block_distance=block_distance,
+            rectangular=rectangular,
+            longitudinal_distance=longitudinal_distance,
             start_blocks_length=start_blocks_length,
             start_blocks_distance=start_blocks_distance,
             end_blocks_length=end_blocks_length,
@@ -953,22 +1020,22 @@ class AppleIICarnauba(AppleII):
             block_shape='default', nr_periods=53,
             period_length=22, gap=7, mr=1.39,
             block_subdivision='default',
-            rectangular_shape=False, block_distance=0.1,
+            rectangular=False, longitudinal_distance=0.1,
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='apple_carnauba', **kwargs):
 
         if block_shape == 'default':
-            block_shape = _blocks.PMBlock.get_predefined_shape(
+            block_shape = _blocks.Block.get_predefined_shape(
                 'apple_carnauba')
 
         if block_subdivision == 'default':
-            block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
+            block_subdivision = _blocks.Block.get_predefined_subdivision(
                 'apple_carnauba')
 
-        block_len = period_length/4 - block_distance
+        block_len = period_length/4 - longitudinal_distance
         lenghts = [block_len/4, block_len/2, 3*block_len/4, block_len]
-        distances = [block_len/2, block_len/4, 0, block_distance]
+        distances = [block_len/2, block_len/4, 0, longitudinal_distance]
 
         if start_blocks_length == 'default':
             start_blocks_length = lenghts
@@ -985,8 +1052,8 @@ class AppleIICarnauba(AppleII):
         super().__init__(
             block_shape, nr_periods, period_length, gap, mr,
             block_subdivision=block_subdivision,
-            rectangular_shape=rectangular_shape,
-            block_distance=block_distance,
+            rectangular=rectangular,
+            longitudinal_distance=longitudinal_distance,
             start_blocks_length=start_blocks_length,
             start_blocks_distance=start_blocks_distance,
             end_blocks_length=end_blocks_length,
@@ -1001,26 +1068,26 @@ class Kyma22(APU):
             self, block_shape='default',
             nr_periods=51, period_length=22, gap=8, mr=1.32,
             block_subdivision='default',
-            rectangular_shape=False, block_distance=0.1,
+            rectangular=False, longitudinal_distance=0.1,
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='kyma_22', **kwargs):
 
         if block_shape == 'default':
-            block_shape = _blocks.PMBlock.get_predefined_shape(
+            block_shape = _blocks.Block.get_predefined_shape(
                 'kyma_22')
 
         if block_subdivision == 'default':
-            block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
+            block_subdivision = _blocks.Block.get_predefined_subdivision(
                 'kyma_22')
 
-        block_len = period_length/4 - block_distance
+        block_len = period_length/4 - longitudinal_distance
         lenghts = [
             block_len/2, 0, block_len, block_len/2,
             block_len, block_len]
         distances = [
             block_len/4, 0, block_len/4, block_len/4,
-            block_distance, block_distance]
+            longitudinal_distance, longitudinal_distance]
 
         if start_blocks_length == 'default':
             start_blocks_length = lenghts
@@ -1037,8 +1104,58 @@ class Kyma22(APU):
         super().__init__(
             block_shape, nr_periods, period_length, gap, mr,
             block_subdivision=block_subdivision,
-            rectangular_shape=rectangular_shape,
-            block_distance=block_distance,
+            rectangular=rectangular,
+            longitudinal_distance=longitudinal_distance,
+            start_blocks_length=start_blocks_length,
+            start_blocks_distance=start_blocks_distance,
+            end_blocks_length=end_blocks_length,
+            end_blocks_distance=end_blocks_distance,
+            name=name, **kwargs)
+
+
+class HybridPlanar(Planar):
+    """Hybrid planar undulador."""
+
+    def __init__(
+            self, block_shape='default',
+            nr_periods=10, period_length=19.9, gap=5.2, mr=1.34,
+            block_subdivision='default', hybrid=True,
+            pole_shape='default', pole_length=2.786,
+            pole_material='default', pole_subdivision='default',
+            rectangular=False, longitudinal_distance=0.1,
+            start_blocks_length=None, start_blocks_distance=None,
+            end_blocks_length=None, end_blocks_distance=None,
+            name='hybrid_planar', **kwargs):
+
+        if block_shape == 'default':
+            block_shape = _blocks.Block.get_predefined_shape(
+                'hybrid_block')
+
+        if block_subdivision == 'default':
+            block_subdivision = _blocks.Block.get_predefined_subdivision(
+                'hybrid_block')
+
+        if pole_shape == 'default':
+            pole_shape = _blocks.Block.get_predefined_shape(
+                'hybrid_pole')
+
+        if pole_subdivision == 'default':
+            pole_subdivision = _blocks.Block.get_predefined_subdivision(
+                'hybrid_pole')
+
+        if pole_material == 'default':
+            pole_material = _materials.Permendur()
+
+        super().__init__(
+            block_shape, nr_periods, period_length, gap, mr,
+            block_subdivision=block_subdivision,
+            rectangular=rectangular,
+            longitudinal_distance=longitudinal_distance,
+            hybrid=hybrid,
+            pole_shape=pole_shape,
+            pole_length=pole_length,
+            pole_material=pole_material,
+            pole_subdivision=pole_subdivision,
             start_blocks_length=start_blocks_length,
             start_blocks_distance=start_blocks_distance,
             end_blocks_length=end_blocks_length,
@@ -1054,24 +1171,24 @@ class MiniPlanarSabia(APU):
             block_shape='default', nr_periods=3,
             period_length=52.5, gap=13.6, mr=1.39,
             block_subdivision='default',
-            rectangular_shape=False, block_distance=0.125,
+            rectangular=False, longitudinal_distance=0.125,
             start_blocks_length=None, start_blocks_distance=None,
             end_blocks_length=None, end_blocks_distance=None,
             name='mini_planar_sabia', **kwargs):
 
         if block_shape == 'default':
-            block_shape = _blocks.PMBlock.get_predefined_shape(
+            block_shape = _blocks.Block.get_predefined_shape(
                 'delta_sabia')
 
         if block_subdivision == 'default':
-            block_subdivision = _blocks.PMBlock.get_predefined_subdivision(
+            block_subdivision = _blocks.Block.get_predefined_subdivision(
                 'delta_sabia')
 
         super().__init__(
             block_shape, nr_periods, period_length, gap, mr,
             block_subdivision=block_subdivision,
-            rectangular_shape=rectangular_shape,
-            block_distance=block_distance,
+            rectangular=rectangular,
+            longitudinal_distance=longitudinal_distance,
             start_blocks_length=start_blocks_length,
             start_blocks_distance=start_blocks_distance,
             end_blocks_length=end_blocks_length,

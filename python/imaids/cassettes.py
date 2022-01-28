@@ -5,58 +5,76 @@ import numpy as _np
 import radia as _rad
 
 from . import utils as _utils
+from . import materials as _materials
 from . import blocks as _blocks
 from . import fieldsource as _fieldsource
 
 
-class PMCassette(_fieldsource.RadiaModel):
-    """Permanent magnet cassette."""
+class Cassette(_fieldsource.RadiaModel):
+    """Insertion device cassette."""
 
     def __init__(
             self, block_shape, nr_periods, period_length, mr,
-            upper_cassette=False, block_distance=0,
-            block_subdivision=None, rectangular_shape=False,
-            ksipar=0.06, ksiper=0.17,
+            upper_cassette=False, longitudinal_distance=0,
+            block_subdivision=None, rectangular=False,
+            ksipar=0.06, ksiper=0.17, hybrid=False,
+            pole_shape=None, pole_length=None, pole_material=None,
+            pole_subdivision=None,
             start_blocks_length=None, start_blocks_distance=None,
             end_blocks_length=None, end_blocks_distance=None,
             name='', init_radia_object=True):
 
         pos_args = [
-            nr_periods, period_length, mr, block_distance]
+            nr_periods, period_length, mr, longitudinal_distance]
         if any([arg < 0 for arg in pos_args]):
             raise ValueError('Invalid argument value.')
 
+        self._nr_periods = nr_periods
+        self._period_length = period_length
+        self._mr = float(mr)
+        self._longitudinal_distance = longitudinal_distance
+
+        self._block_shape = block_shape
+        self._rectangular = rectangular
+
         if upper_cassette not in (True, False):
             raise ValueError('Invalid value for upper_cassette argument.')
+        self._upper_cassette = upper_cassette
 
         if start_blocks_length and start_blocks_distance:
             if len(start_blocks_length) != len(start_blocks_distance):
                 raise ValueError('Incosistent start blocks arguments.')
+            self._start_blocks_length = start_blocks_length
+            self._start_blocks_distance = start_blocks_distance
         else:
-            start_blocks_length = []
-            start_blocks_distance = []
+            self._start_blocks_length = []
+            self._start_blocks_distance = []
 
         if end_blocks_length and end_blocks_distance:
             if len(end_blocks_length) != len(end_blocks_distance):
                 raise ValueError('Incosistent end blocks arguments.')
+            self._end_blocks_length = end_blocks_length
+            self._end_blocks_distance = end_blocks_distance
         else:
-            end_blocks_length = []
-            end_blocks_distance = []
+            self._end_blocks_length = []
+            self._end_blocks_distance = []
 
-        self._block_shape = block_shape
-        self._nr_periods = nr_periods
-        self._period_length = period_length
-        self._mr = float(mr)
-        self._upper_cassette = upper_cassette
-        self._block_distance = block_distance
+        self._hybrid = hybrid
+        if self._hybrid:
+            if pole_shape is None:
+                pole_shape = block_shape
+
+            if pole_length is None:
+                pole_length = period_length/4 - longitudinal_distance
+
+        self._pole_shape = pole_shape
+        self._pole_length = pole_length
+        self._pole_material = pole_material
+        self._pole_subdivision = pole_subdivision
+
         self._block_subdivision = block_subdivision
-        self._rectangular_shape = rectangular_shape
         self._ksipar = ksipar
         self._ksiper = ksiper
-        self._start_blocks_length = start_blocks_length
-        self._start_blocks_distance = start_blocks_distance
-        self._end_blocks_length = end_blocks_length
-        self._end_blocks_distance = end_blocks_distance
         self.name = name
 
         self._position_err = []
@@ -86,14 +104,34 @@ class PMCassette(_fieldsource.RadiaModel):
         return self._mr
 
     @property
+    def hybrid(self):
+        """True for hybrid cassette, False otherwise."""
+        return self._hybrid
+
+    @property
+    def pole_length(self):
+        """Pole length [mm]."""
+        return self._pole_length
+
+    @property
+    def pole_shape(self):
+        """Pole list of shapes [mm]."""
+        return _deepcopy(self._pole_shape)
+
+    @property
+    def pole_subdivision(self):
+        """Pole shape subdivision."""
+        return _deepcopy(self._pole_subdivision)
+
+    @property
     def upper_cassette(self):
         """True for upper cassette, False otherwise."""
         return self._upper_cassette
 
     @property
-    def block_distance(self):
+    def longitudinal_distance(self):
         """Longitudinal distance between regular blocks [mm]."""
-        return self._block_distance
+        return self._longitudinal_distance
 
     @property
     def block_subdivision(self):
@@ -101,9 +139,9 @@ class PMCassette(_fieldsource.RadiaModel):
         return _deepcopy(self._block_subdivision)
 
     @property
-    def rectangular_shape(self):
+    def rectangular(self):
         """True if the shape is rectangular, False otherwise."""
-        return self._rectangular_shape
+        return self._rectangular
 
     @property
     def ksipar(self):
@@ -137,7 +175,7 @@ class PMCassette(_fieldsource.RadiaModel):
 
     @property
     def blocks(self):
-        """List of PMBlock objects."""
+        """List of Block objects."""
         return self._blocks
 
     @property
@@ -224,16 +262,39 @@ class PMCassette(_fieldsource.RadiaModel):
                 'Invalid length for position errors list.')
         self._position_err = position_err
 
-        block_length = self._period_length/4 - self._block_distance
+        if self.hybrid:
+            block_length = (
+                self._period_length/2 - self._pole_length -
+                self._longitudinal_distance)
+        else:
+            block_length = self._period_length/4 - self._longitudinal_distance
 
-        length_list = _utils.flatten([
-            self._start_blocks_length,
-            [block_length]*self.nr_core_blocks,
-            self._end_blocks_length])
+        if magnetization_list is None:
+            magnetization_list = self.get_ideal_magnetization_list()
+
+        if self.hybrid:
+            mag0 = magnetization_list[0]
+            if _np.abs(mag0[1]) > _np.abs(mag0[2]):
+                length_list = _utils.flatten([
+                    self._start_blocks_length,
+                    [self._pole_length, block_length]*int(
+                        self.nr_core_blocks/2),
+                    self._end_blocks_length])
+            else:
+                length_list = _utils.flatten([
+                    self._start_blocks_length,
+                    [block_length, self._pole_length]*int(
+                        self.nr_core_blocks/2),
+                    self._end_blocks_length])
+        else:
+            length_list = _utils.flatten([
+                self._start_blocks_length,
+                [block_length]*self.nr_core_blocks,
+                self._end_blocks_length])
 
         distance_list = _utils.flatten([
             self._start_blocks_distance,
-            [self._block_distance]*(self.nr_core_blocks-1),
+            [self._longitudinal_distance]*(self.nr_core_blocks-1),
             self._end_blocks_distance])
 
         position_list = [0]
@@ -243,18 +304,24 @@ class PMCassette(_fieldsource.RadiaModel):
         position_list = _np.cumsum(position_list)
         position_list -= (position_list[0] + position_list[-1])/2
 
-        if magnetization_list is None:
-            magnetization_list = self.get_ideal_magnetization_list()
-
         self._blocks = []
+        count = 0
         for length, position, magnetization in zip(
                 length_list, position_list, magnetization_list):
-            block = _blocks.PMBlock(
-                self._block_shape, length, position, magnetization,
-                subdivision=self._block_subdivision,
-                rectangular_shape=self._rectangular_shape,
-                ksipar=self._ksipar, ksiper=self._ksiper)
+            if self.hybrid and not count % 2:
+                block = _blocks.Block(
+                    self._pole_shape, length, position, [0, 0, 0],
+                    subdivision=self._pole_subdivision,
+                    rectangular=self._rectangular,
+                    material=self._pole_material)
+            else:
+                block = _blocks.Block(
+                    self._block_shape, length, position, magnetization,
+                    subdivision=self._block_subdivision,
+                    rectangular=self._rectangular,
+                    ksipar=self._ksipar, ksiper=self._ksiper)
             self._blocks.append(block)
+            count += 1
 
         for idx, block in enumerate(self._blocks):
             block.shift(position_err[idx])
@@ -346,20 +413,24 @@ class PMCassette(_fieldsource.RadiaModel):
     def save_state(self, filename):
         """Save state to file."""
         data = {
-            'block_shape': self._block_shape,
-            'nr_periods': self._nr_periods,
-            'period_length': self._period_length,
-            'mr': self._mr,
-            'upper_cassette': self._upper_cassette,
-            'block_distance': self._block_distance,
-            'block_subdivision': self._block_subdivision,
-            'rectangular_shape': self._rectangular_shape,
-            'ksipar': self._ksipar,
-            'ksiper': self._ksiper,
-            'start_blocks_length': self._start_blocks_length,
-            'start_blocks_distance': self._start_blocks_distance,
-            'end_blocks_length': self._end_blocks_length,
-            'end_blocks_distance': self._end_blocks_distance,
+            'block_shape': self.block_shape,
+            'nr_periods': self.nr_periods,
+            'period_length': self.period_length,
+            'mr': self.mr,
+            'upper_cassette': self.upper_cassette,
+            'longitudinal_distance': self.longitudinal_distance,
+            'block_subdivision': self.block_subdivision,
+            'rectangular': self.rectangular,
+            'ksipar': self.ksipar,
+            'ksiper': self.ksiper,
+            'start_blocks_length': self.start_blocks_length,
+            'start_blocks_distance': self.start_blocks_distance,
+            'end_blocks_length': self.end_blocks_length,
+            'end_blocks_distance': self.end_blocks_distance,
+            'hybrid': self.hybrid,
+            'pole_shape': self.pole_shape,
+            'pole_length': self.pole_length,
+            'pole_subdivision': self.pole_subdivision,
             'name': self.name,
             'magnetization_list': list(self.magnetization_list),
             'position_err': list(

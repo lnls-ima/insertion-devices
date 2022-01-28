@@ -11,11 +11,11 @@ from . import fieldsource as _fieldsource
 class InsertionDevice(_fieldsource.FieldSource):
     """Base class for insertion devices model and data."""
 
-    def __init__(self):
-        self._nr_periods = None
-        self._period_length = None
-        self._gap = None
-        self.name = ''
+    def __init__(self, nr_periods=None, period_length=None, gap=None, name=''):
+        self._nr_periods = nr_periods
+        self._period_length = period_length
+        self._gap = gap
+        self.name = name
 
     @property
     def nr_periods(self):
@@ -289,34 +289,43 @@ class InsertionDevice(_fieldsource.FieldSource):
 class InsertionDeviceData(_fieldsource.FieldData, InsertionDevice):
     """Insertion device field data."""
 
-    def __init__(self):
-        self._nr_periods = None
-        self._period_length = None
-        self._gap = None
-        self.name = ''
-        _fieldsource.FieldData.__init__(self)
+    def __init__(
+            self, nr_periods=None, period_length=None,
+            gap=None, name='', filename=None,
+            raw_data=None, selected_y=0):
+        self._nr_periods = nr_periods
+        self._period_length = period_length
+        self._gap = gap
+        self.name = name
+        _fieldsource.FieldData.__init__(
+            self, filename=filename, raw_data=raw_data, selected_y=selected_y)
 
     @property
     def nr_periods(self):
         """Number of complete periods."""
-        if self._nr_periods is None and self._filename is not None:
-            period_length, nr_periods = self.calc_avg_period_length(self._pz)
-            self._period_length = period_length
-            self._nr_periods = nr_periods
         return self._nr_periods
+
+    @nr_periods.setter
+    def nr_periods(self, value):
+        self._nr_periods = value
 
     @property
     def period_length(self):
         """Period length [mm]."""
-        if self._period_length is None and self._filename is not None:
-            period_length, nr_periods = self.calc_avg_period_length(self._pz)
-            self._period_length = period_length
-            self._nr_periods = nr_periods
         return self._period_length
 
     @period_length.setter
     def period_length(self, value):
         self._period_length = value
+
+    @property
+    def gap(self):
+        """Magnetic gap [mm]."""
+        return self._gap
+
+    @gap.setter
+    def gap(self, value):
+        self._gap = value
 
 
 class InsertionDeviceModel(_fieldsource.RadiaModel, InsertionDevice):
@@ -326,7 +335,10 @@ class InsertionDeviceModel(_fieldsource.RadiaModel, InsertionDevice):
             self, block_shape, nr_periods,
             period_length, gap, mr,
             block_subdivision=None,
-            rectangular_shape=False, block_distance=0,
+            rectangular=False, longitudinal_distance=0,
+            hybrid=False, pole_shape=None,
+            pole_length=None, pole_material=None,
+            pole_subdivision=None,
             ksipar=0.06, ksiper=0.17,
             start_blocks_length=None, start_blocks_distance=None,
             end_blocks_length=None, end_blocks_distance=None,
@@ -341,10 +353,15 @@ class InsertionDeviceModel(_fieldsource.RadiaModel, InsertionDevice):
         self._gap = gap
         self._mr = mr
         self._block_subdivision = block_subdivision
-        self._rectangular_shape = rectangular_shape
-        self._block_distance = block_distance
+        self._rectangular = rectangular
+        self._longitudinal_distance = longitudinal_distance
         self._ksipar = ksipar
         self._ksiper = ksiper
+        self._hybrid = hybrid
+        self._pole_shape = pole_shape
+        self._pole_length = pole_length
+        self._pole_material = pole_material
+        self._pole_subdivision = pole_subdivision
         self._start_blocks_length = start_blocks_length
         self._start_blocks_distance = start_blocks_distance
         self._end_blocks_length = end_blocks_length
@@ -382,9 +399,9 @@ class InsertionDeviceModel(_fieldsource.RadiaModel, InsertionDevice):
         return self._mr
 
     @property
-    def block_distance(self):
+    def longitudinal_distance(self):
         """Longitudinal distance between regular blocks [mm]."""
-        return self._block_distance
+        return self._longitudinal_distance
 
     @property
     def block_subdivision(self):
@@ -392,9 +409,9 @@ class InsertionDeviceModel(_fieldsource.RadiaModel, InsertionDevice):
         return _deepcopy(self._block_subdivision)
 
     @property
-    def rectangular_shape(self):
+    def rectangular(self):
         """True if the shape is rectangular, False otherwise."""
-        return self._rectangular_shape
+        return self._rectangular
 
     @property
     def ksipar(self):
@@ -450,8 +467,13 @@ class InsertionDeviceModel(_fieldsource.RadiaModel, InsertionDevice):
             'ksipar': self._ksipar,
             'ksiper': self._ksiper,
             'block_subdivision': self._block_subdivision,
-            'rectangular_shape': self._rectangular_shape,
-            'block_distance': self._block_distance,
+            'rectangular': self._rectangular,
+            'longitudinal_distance': self._longitudinal_distance,
+            'hybrid': self._hybrid,
+            'pole_shape': self._pole_shape,
+            'pole_length': self._pole_length,
+            'pole_material': self._pole_material,
+            'pole_subdivision': self._pole_subdivision,
             'start_blocks_length': self._start_blocks_length,
             'start_blocks_distance': self._start_blocks_distance,
             'end_blocks_length': self._end_blocks_length,
@@ -515,11 +537,16 @@ class InsertionDeviceModel(_fieldsource.RadiaModel, InsertionDevice):
             'period_length': self._period_length,
             'gap': self._gap,
             'mr': self._mr,
-            'block_distance': self._block_distance,
+            'longitudinal_distance': self._longitudinal_distance,
             'block_subdivision': self._block_subdivision,
-            'rectangular_shape': self._rectangular_shape,
+            'rectangular': self._rectangular,
             'ksipar': self._ksipar,
             'ksiper': self._ksiper,
+            'hybrid': self._hybrid,
+            'pole_shape': self._pole_shape,
+            'pole_length': self._pole_length,
+            'pole_material': self._pole_material,
+            'pole_subdivision': self._pole_subdivision,
             'start_blocks_length': self._start_blocks_length,
             'start_blocks_distance': self._start_blocks_distance,
             'end_blocks_length': self._end_blocks_length,

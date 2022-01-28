@@ -1,4 +1,5 @@
 
+from . import materials
 from . import blocks
 from . import cassettes
 from . import fieldsource

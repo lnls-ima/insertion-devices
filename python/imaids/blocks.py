@@ -5,48 +5,115 @@ import numpy as _np
 import radia as _rad
 
 from . import utils as _utils
+from . import materials as _materials
 from . import fieldsource as _fieldsource
 
 
-class PMBlock(_fieldsource.RadiaModel):
-    """Permanent magnet block."""
+class Block(_fieldsource.RadiaModel):
+    """Magnetic material block."""
+
+    PREDEFINED_SHAPES = {
+        'delta_prototype': [
+            [
+                [-2.75, 0], [-11.2662, -8.9645], [-7.73071, -12.5],
+                [7.73071, -12.5], [11.2662, -8.9645], [2.75, 0]],
+            [
+                [-7.73071, -12.5], [-11.2662, -16.0355], [-2.75, -25],
+                [2.75, -25], [11.2662, -16.0355], [7.73071, -12.5]]],
+        'delta_sabia': [
+            [
+                [-5.25, 0], [-22.5, -19.3], [-22.5, -29.2], [-17.8, -33.2],
+                [17.8, -33.2], [22.5, -29.2], [22.5, -19.3], [5.25, 0]],
+            [
+                [-17.8, -33.2], [-17.8, -38.4], [17.8, -38.4], [17.8, -33.2]],
+            [
+                [-17.8, -38.4], [-22.5, -42.4], [-22.5, -49], [-21.5, -50],
+                [21.5, -50], [22.5, -49], [22.5, -42.4], [17.8, -38.4]]],
+        'delta_carnauba': [
+            [
+                [-2.55, 0.0], [-11.25, -9.65], [-11.25, -14.6],
+                [-8.9, -16.6], [8.9, -16.6], [11.25, -14.6],
+                [11.25, -9.65], [2.55, 0.0]],
+            [
+                [-8.9, -16.6], [-8.9, -19.2], [8.9, -19.2], [8.9, -16.6]],
+            [
+                [-8.9, -19.2], [-11.25, -21.2], [-11.25, -24.5],
+                [-10.75, -25.0], [10.75, -25.0], [11.25, -24.5],
+                [11.25, -21.2], [8.9, -19.2]]],
+        'apple_sabia': [
+            [
+                [0.1, 0], [50, 0], [50, -50], [0.1, -50]]],
+        'apple_carnauba': [
+            [
+                [0.1, 0], [25, 0], [25, -25], [0.1, -25]]],
+        'kyma_22': [
+            [
+                [15, 0], [18, -3], [18, -17], [15, -20],
+                [-15, -20], [-18, -17], [-18, -3], [-15, 0]]],
+        'hybrid_block': [
+            [
+                [30, 0], [30, -40], [-30, -40], [-30, 0]]],
+        'hybrid_pole': [
+            [
+                [20, 0], [20, -40], [-20, -40], [-20, 0]]],
+        }
+
+    PREDEFINED_SUBDIVISION = {
+        'delta_prototype': [[3, 3, 2], [3, 3, 2]],
+        'delta_sabia': [[3, 3, 2], [1, 1, 2], [1, 1, 2]],
+        'delta_carnauba': [[3, 3, 2], [1, 1, 1], [1, 1, 1]],
+        'apple_sabia': [[3, 3, 3]],
+        'apple_carnauba': [[3, 3, 3]],
+        'kyma_22': [[6, 3, 3]],
+        'hybrid_block': [[3, 3, 3]],
+        'hybrid_pole': [[6, 6, 3]],
+    }
 
     def __init__(
-            self, shape, length, longitudinal_position, magnetization,
-            subdivision=None, rectangular_shape=False,
-            ksipar=0.06, ksiper=0.17, name='', init_radia_object=True):
+            self, shape, length, longitudinal_position,
+            magnetization=[0, 1.37, 0], subdivision=None, rectangular=False,
+            init_radia_object=True, name='',
+            material=None, **kwargs):
 
         if _utils.depth(shape) != 3:
-            shape = [shape]
+            self._shape = [shape]
+        else:
+            self._shape = shape
 
         if length < 0:
             raise ValueError('The block length must be bigger than 0.')
+        self._length = length
 
         if len(magnetization) != 3:
             raise ValueError('Invalid magnetization argument.')
+        self._magnetization = magnetization
 
         if subdivision is None or len(subdivision) == 0:
-            subdivision = [[1, 1, 1]]*len(shape)
+            sub = [[1, 1, 1]]*len(self._shape)
+        else:
+            sub = subdivision
 
-        if _utils.depth(subdivision) != 2:
-            subdivision = [subdivision]
+        if _utils.depth(sub) != 2:
+            sub = [sub]
 
-        if len(subdivision) != len(shape):
+        if len(sub) != len(self._shape):
             raise ValueError(
                 'Inconsistent length between block_sudivision ' +
                 'and block_shape arguments.')
+        self._subdivision = sub
 
-        if rectangular_shape not in (True, False):
-            raise ValueError('Invalid value for rectangular_shape argument.')
+        if rectangular not in (True, False):
+            raise ValueError('Invalid value for rectangular argument.')
+        self._rectangular = rectangular
 
-        self._shape = shape
-        self._length = length
         self._longitudinal_position = longitudinal_position
-        self._magnetization = magnetization
-        self._subdivision = subdivision
-        self._rectangular_shape = rectangular_shape
-        self._ksipar = ksipar
-        self._ksiper = ksiper
+
+        if material is None:
+            self._material = _materials.Material(
+                mr=_np.linalg.norm(self._magnetization), **kwargs)
+        else:
+            self._material = material
+
         self.name = name
 
         self._radia_object = None
@@ -79,122 +146,40 @@ class PMBlock(_fieldsource.RadiaModel):
         return _deepcopy(self._subdivision)
 
     @property
-    def rectangular_shape(self):
+    def rectangular(self):
         """True if the shape is rectangular, False otherwise."""
-        return self._rectangular_shape
+        return self._rectangular
 
     @property
-    def ksipar(self):
-        """Parallel magnetic susceptibility."""
-        return self._ksipar
+    def state(self):
+        data = {
+            'shape': self._shape,
+            'length': self._length,
+            'longitudinal_position': self._longitudinal_position,
+            'magnetization': self._magnetization,
+            'subdivision': self._subdivision,
+            'rectangular': self._rectangular,
+            'name': self.name,
+        }
+        data.update(self._material.state)
+        return data
 
-    @property
-    def ksiper(self):
-        """Perpendicular magnetic susceptibility."""
-        return self._ksiper
-
-    @staticmethod
-    def get_predefined_shape(device_name):
+    @classmethod
+    def get_predefined_shape(cls, device_name):
         """Get predefined block shape for the device."""
-        block_shape = None
+        return cls.PREDEFINED_SHAPES.get(device_name)
 
-        if device_name == 'delta_prototype':
-            block_shape_a = [
-                [-2.75, 0], [-11.2662, -8.9645], [-7.73071, -12.5],
-                [7.73071, -12.5], [11.2662, -8.9645], [2.75, 0]]
-            block_shape_b = [
-                [-7.73071, -12.5], [-11.2662, -16.0355], [-2.75, -25],
-                [2.75, -25], [11.2662, -16.0355], [7.73071, -12.5]]
-            block_shape = [block_shape_a, block_shape_b]
-
-        elif device_name == 'delta_sabia':
-            block_shape_a = [
-                [-5.25, 0], [-22.5, -19.3], [-22.5, -29.2], [-17.8, -33.2],
-                [17.8, -33.2], [22.5, -29.2], [22.5, -19.3], [5.25, 0]]
-            block_shape_b = [
-                [-17.8, -33.2], [-17.8, -38.4], [17.8, -38.4], [17.8, -33.2]]
-            block_shape_c = [
-                [-17.8, -38.4], [-22.5, -42.4], [-22.5, -49], [-21.5, -50],
-                [21.5, -50], [22.5, -49], [22.5, -42.4], [17.8, -38.4]]
-            block_shape = [block_shape_a, block_shape_b, block_shape_c]
-
-        elif device_name == 'delta_carnauba':
-            block_shape_a = [
-                [-2.55, 0.0], [-11.25, -9.65], [-11.25, -14.6],
-                [-8.9, -16.6], [8.9, -16.6], [11.25, -14.6],
-                [11.25, -9.65], [2.55, 0.0]]
-            block_shape_b = [
-                [-8.9, -16.6], [-8.9, -19.2], [8.9, -19.2], [8.9, -16.6]]
-            block_shape_c = [
-                [-8.9, -19.2], [-11.25, -21.2], [-11.25, -24.5],
-                [-10.75, -25.0], [10.75, -25.0], [11.25, -24.5],
-                [11.25, -21.2], [8.9, -19.2]]
-            block_shape = [block_shape_a, block_shape_b, block_shape_c]
-
-        elif device_name == 'apple_sabia':
-            block_shape_a = [[0.1, 0], [50, 0], [50, -50], [0.1, -50]]
-            block_shape = [block_shape_a]
-
-        elif device_name == 'apple_carnauba':
-            block_shape_a = [[0.1, 0], [25, 0], [25, -25], [0.1, -25]]
-            block_shape = [block_shape_a]
-
-        elif device_name == 'kyma_22':
-            block_shape_a = [
-                [15, 0], [18, -3], [18, -17], [15, -20],
-                [-15, -20], [-18, -17], [-18, -3], [-15, 0]]
-            block_shape = [block_shape_a]
-
-        return block_shape
-
-    @staticmethod
-    def get_predefined_subdivision(device_name):
+    @classmethod
+    def get_predefined_subdivision(cls, device_name):
         """Get predefined block subdivision for the device."""
-        block_subdivision = None
-
-        if device_name == 'delta_prototype':
-            block_subdivision_a = [3, 3, 2]
-            block_subdivision_b = [3, 3, 2]
-            block_subdivision = [
-                block_subdivision_a, block_subdivision_b]
-
-        elif device_name == 'delta_sabia':
-            block_subdivision_a = [3, 3, 2]
-            block_subdivision_b = [1, 1, 2]
-            block_subdivision_c = [1, 1, 2]
-            block_subdivision = [
-                block_subdivision_a, block_subdivision_b, block_subdivision_c]
-
-        elif device_name == 'delta_carnauba':
-            block_subdivision_a = [3, 3, 2]
-            block_subdivision_b = [1, 1, 1]
-            block_subdivision_c = [1, 1, 1]
-            block_subdivision = [
-                block_subdivision_a, block_subdivision_b, block_subdivision_c]
-
-        elif device_name == 'apple_sabia':
-            block_subdivision_a = [3, 3, 3]
-            block_subdivision = [block_subdivision_a]
-
-        elif device_name == 'apple_carnauba':
-            block_subdivision_a = [3, 3, 3]
-            block_subdivision = [block_subdivision_a]
-
-        elif device_name == 'kyma_22':
-            block_subdivision_a = [6, 3, 3]
-            block_subdivision = [block_subdivision_a]
-
-        return block_subdivision
+        return cls.PREDEFINED_SUBDIVISION.get(device_name)
 
     @classmethod
     def load_state(cls, filename):
         """Load state from file."""
-
         with open(filename) as f:
             kwargs = _json.load(f)
-
-        block = cls(init_radia_object=True, **kwargs)
-        return block
+        return cls(init_radia_object=True, **kwargs)
 
     def create_radia_object(self):
         """Create radia object."""
@@ -204,11 +189,7 @@ class PMBlock(_fieldsource.RadiaModel):
         if self._length == 0:
             return
 
-        mat = _rad.MatLin(
-            [self._ksipar, self._ksiper],
-            _np.linalg.norm(self._magnetization))
-
-        if self._rectangular_shape:
+        if self._rectangular:
             center = []
             width = []
             height = []
@@ -228,7 +209,7 @@ class PMBlock(_fieldsource.RadiaModel):
                 subblock = _rad.ObjRecMag(
                     [ctr[0], ctr[1], self._longitudinal_position],
                     [wdt, hgt, self._length], self._magnetization)
-                subblock = _rad.MatApl(subblock, mat)
+                subblock = _rad.MatApl(subblock, self._material.radia_object)
                 subblock = _rad.ObjDivMag(subblock, div, 'Frame->Lab')
                 subblock_list.append(subblock)
             self._radia_object = _rad.ObjCnt(subblock_list)
@@ -239,26 +220,13 @@ class PMBlock(_fieldsource.RadiaModel):
                 subblock = _rad.ObjThckPgn(
                     self._longitudinal_position, self._length, shp, 'z',
                     self._magnetization)
-                subblock = _rad.MatApl(subblock, mat)
+                subblock = _rad.MatApl(subblock, self._material.radia_object)
                 subblock = _rad.ObjDivMag(subblock, div, 'Frame->Lab')
                 subblock_list.append(subblock)
             self._radia_object = _rad.ObjCnt(subblock_list)
 
     def save_state(self, filename):
         """Save state to file."""
-        data = {
-            'shape': self._shape,
-            'length': self._length,
-            'longitudinal_position': self._longitudinal_position,
-            'magnetization': self._magnetization,
-            'subdivision': self._subdivision,
-            'rectangular_shape': self._rectangular_shape,
-            'ksipar': self._ksipar,
-            'ksiper': self._ksiper,
-            'name': self.name,
-        }
-
         with open(filename, 'w') as f:
-            _json.dump(data, f)
-
+            _json.dump(self.state, f)
         return True

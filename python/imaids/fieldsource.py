@@ -22,6 +22,26 @@ class FieldSource():
             r += fmtstr.format(name, str(value))
         return r
 
+    @staticmethod
+    def find_peaks(data, prominence=0.05):
+        return _utils.find_peaks(data, prominence=prominence)
+
+    @staticmethod
+    def find_valleys(data, prominence=0.05):
+        return _utils.find_valleys(data, prominence=prominence)
+
+    @staticmethod
+    def find_peaks_and_valleys(data, prominence=0.05):
+        return _utils.find_peaks_and_valleys(data, prominence=prominence)
+
+    @staticmethod
+    def find_zeros(pos, data):
+        return _utils.find_zeros(pos, data)
+
+    @staticmethod
+    def delete_all():
+        return _utils.delete_all()
+
     def calc_field_integrals(self, z_list, x=0, y=0, field_list=None):
         if field_list is not None:
             if len(field_list) != len(z_list):
@@ -399,7 +419,22 @@ class FieldData(FieldSource):
                     bs = _np.array(b) + _np.array(bo)
                     raw_data.append([x, y, z, bs[0], bs[1], bs[2]])
         raw_data = _np.array(raw_data)
-        return FieldData(raw_data=raw_data, selected_y=py[0])
+        return self.__class__(raw_data=raw_data, selected_y=py[0])
+
+    def __sub__(self, other):
+        px = [i for i in self._px]
+        py = [i for i in self._py]
+        pz = [i for i in self._pz]
+        raw_data = []
+        for z in pz:
+            for y in py:
+                for x in px:
+                    b = self.get_field_at_point([x, y, z])
+                    bo = other.get_field_at_point([x, y, z])
+                    bs = _np.array(b) - _np.array(bo)
+                    raw_data.append([x, y, z, bs[0], bs[1], bs[2]])
+        raw_data = _np.array(raw_data)
+        return self.__class__(raw_data=raw_data, selected_y=py[0])
 
     @property
     def filename(self):

@@ -342,8 +342,255 @@ class FieldSource():
     def rotate(self, point, vector, angle):
         raise NotImplementedError
 
+    def mirror(self, point, normal):
+        raise NotImplementedError
 
-class RadiaModel(FieldSource):
+
+class SinusoidalFieldSource(FieldSource):
+    """Sinusoidal field source."""
+
+    def __init__(self, nr_periods=None, period_length=None):
+        if nr_periods is not None and nr_periods <= 0:
+            raise ValueError('nr_periods must be > 0.')
+
+        if period_length is not None and period_length <= 0:
+            raise ValueError('period_length must be > 0.')
+
+        self._nr_periods = nr_periods
+        self._period_length = period_length
+
+    @property
+    def nr_periods(self):
+        """Number of complete periods."""
+        return self._nr_periods
+
+    @property
+    def period_length(self):
+        """Period length [mm]."""
+        return self._period_length
+
+    @staticmethod
+    def calc_cosine_amplitude(z_list, field_list, freq_guess, maxfev=5000):
+        return _utils.calc_cosine_amplitude(
+            z_list, field_list, freq_guess, maxfev=maxfev)
+
+    def calc_avg_period_length(
+            self, z_list, field_list=None, x=0, y=0,
+            period_length_guess=20, maxfev=5000, prominence=1):
+        if field_list is None:
+            field_list = self.get_field(x=x, y=y, z=z_list)
+
+        freq_guess = 2*_np.pi/period_length_guess
+        amp, _ = self.calc_cosine_amplitude(
+            z_list, field_list, freq_guess, maxfev=maxfev)
+
+        idx_max = _np.argmax(amp)
+        idx_peaks_valleys = self.find_peaks_and_valleys(
+            field_list[:, idx_max], prominence=prominence)
+
+        dz = _np.diff(z_list[idx_peaks_valleys])
+        avg_period_length = _np.mean(dz)*2
+        nr_periods = int(len(dz)/2)
+        return avg_period_length, nr_periods
+
+    def calc_field_amplitude(
+            self, z_list=None, field_list=None,
+            x=0, y=0, npts_per_period=101, maxfev=5000):
+        if self.nr_periods > 1:
+            zmin = -self._period_length*(self.nr_periods - 1)/2
+            zmax = self._period_length*(self.nr_periods - 1)/2
+            znpts = npts_per_period*(self.nr_periods-1)
+        else:
+            zmin = -self.period_length/2
+            zmax = self.period_length/2
+            znpts = npts_per_period
+
+        if z_list is not None and field_list is not None:
+            z_list = _np.array(z_list)
+            field_list = _np.array(field_list)
+
+            cond = (z_list >= zmin) & (z_list <= zmax)
+            z_list = z_list[cond]
+            field_list = field_list[cond]
+
+        else:
+            z_list = _np.linspace(zmin, zmax, znpts)
+            field_list = self.get_field(x=x, y=y, z=z_list)
+
+        freq_guess = 2*_np.pi/self.period_length
+        amp, phase = self.calc_cosine_amplitude(
+            z_list, field_list, freq_guess, maxfev=maxfev)
+
+        bx_amp = amp[0]
+        by_amp = amp[1]
+        bz_amp = amp[2]
+        bxy_phase = (phase[0] - phase[1]) % _np.pi
+
+        return bx_amp, by_amp, bz_amp, bxy_phase
+
+    def calc_deflection_parameter(self, bx_amp, by_amp):
+        kh = 0.934*by_amp*(self.period_length/10)
+        kv = 0.934*bx_amp*(self.period_length/10)
+        return kh, kv
+
+    def calc_trajectory_avg_over_period(self, trajectory):
+        trajz = [t for t in trajectory[:, 2]]
+        step = trajz[1] - trajz[0]
+        navg = int(self.period_length/step)
+
+        avgtrajx = _np.convolve(
+            trajectory[:, 0], _np.ones(navg)/navg, mode='same')
+        avgtrajy = _np.convolve(
+            trajectory[:, 1], _np.ones(navg)/navg, mode='same')
+
+        trajz = trajz[navg:-navg]
+        avgtrajx = avgtrajx[navg:-navg]
+        avgtrajy = avgtrajy[navg:-navg]
+        avgtraj = _np.transpose([avgtrajx, avgtrajy, trajz])
+        return avgtraj
+
+    def fit_trajectory_segments(self, trajectory, zpos_segs, max_size):
+        trajx = trajectory[:, 0]
+        trajy = trajectory[:, 1]
+        trajz = trajectory[:, 2]
+
+        seg_start = []
+        seg_end = []
+        poly_x = []
+        poly_y = []
+
+        nsegs = len(zpos_segs)
+
+        index_list = []
+        for pos in zpos_segs:
+            index_list.append(_np.where(trajz >= pos)[0][0])
+        index_list.append(
+            _np.where(trajz >= zpos_segs[-1] + max_size)[0][0])
+
+        for i in range(nsegs):
+            initial = index_list[i]
+            final = index_list[i+1]
+
+            tx = trajx[initial:final]
+            ty = trajy[initial:final]
+            tz = trajz[initial:final]
+
+            if len(tx) == 0:
+                break
+
+            seg_start.append([tx[0], ty[0], tz[0]])
+            seg_end.append([tx[-1], ty[-1], tz[-1]])
+
+            xcoefs = _np.polynomial.polynomial.polyfit(tz, tx, 1)
+            poly_x.append(xcoefs)
+
+            ycoefs = _np.polynomial.polynomial.polyfit(tz, ty, 1)
+            poly_y.append(ycoefs)
+
+        seg_start = _np.array(seg_start)
+        seg_end = _np.array(seg_end)
+        poly_x = _np.array(poly_x)
+        poly_y = _np.array(poly_y)
+
+        return seg_start, seg_end, poly_x, poly_y
+
+    def calc_trajectory_length(self, trajectory):
+        traj_pos = trajectory[:, 0:3]
+        traj_diff = _np.diff(traj_pos, axis=0)
+        traj_len = _np.append(
+            0, _np.cumsum(_np.sqrt(_np.sum(traj_diff**2, axis=1))))
+        return traj_len
+
+    def calc_radiation_phase(self, energy, trajectory, wavelength):
+        beta, *_ = _utils.calc_beam_parameters(energy)
+        traj_z = trajectory[:, 2]
+        traj_len = self.calc_trajectory_length(trajectory)
+        return (2*_np.pi/(wavelength))*(traj_len/beta - (traj_z - traj_z[0]))
+
+    def calc_radiation_wavelength(
+            self, energy, bx_amp, by_amp, harmonic=1):
+        _, gamma, _ = _utils.calc_beam_parameters(energy)
+        kh, kv = self.calc_deflection_parameter(bx_amp, by_amp)
+        wl = (self.period_length/(2*harmonic*(gamma**2)))*(
+            1 + (kh**2 + kv**2)/2)
+        return wl
+
+    def calc_phase_error(
+            self, energy, trajectory, bx_amp, by_amp,
+            skip_poles=0, zmin=None, zmax=None):
+        if by_amp >= bx_amp:
+            z_list = self.find_zeros(trajectory[:, 2], trajectory[:, 3])
+        else:
+            z_list = self.find_zeros(trajectory[:, 2], trajectory[:, 4])
+
+        if zmin is not None:
+            z_list = z_list[z_list >= zmin]
+
+        if zmax is not None:
+            z_list = z_list[z_list <= zmax]
+
+        if skip_poles != 0:
+            z_list = z_list[skip_poles:-(skip_poles-1)]
+
+        wavelength = self.calc_radiation_wavelength(
+            energy, bx_amp, by_amp, harmonic=1)
+        phase = self.calc_radiation_phase(energy, trajectory, wavelength)
+        phase_poles = _np.interp(z_list, trajectory[:, 2], phase)
+
+        coeffs = _np.polynomial.polynomial.polyfit(z_list, phase_poles, 1)
+        phase_fit = _np.polynomial.polynomial.polyval(z_list, coeffs)
+        phase_error = phase_poles - phase_fit
+
+        phase_error_rms = _np.sqrt(_np.mean(phase_error**2))
+
+        return z_list, phase_error, phase_error_rms
+
+    def get_filename(
+            self, date, x_list, y_list, z_list, kh, kv,
+            polarization_name=None, add_label=None,
+            file_extension='.fld'):
+        filename = '{0:s}'.format(date)
+
+        if isinstance(x_list, (float, int)):
+            x_list = [x_list]
+
+        if isinstance(y_list, (float, int)):
+            y_list = [y_list]
+
+        if isinstance(z_list, (float, int)):
+            z_list = [z_list]
+
+        x_list = _np.round(x_list, decimals=8)
+        y_list = _np.round(y_list, decimals=8)
+        z_list = _np.round(z_list, decimals=8)
+
+        device_name = self.name
+        if device_name is not None:
+            filename += '_' + device_name
+
+        if polarization_name is not None:
+            filename += '_' + polarization_name
+
+        filename += '_Kh={0:.1f}_Kv={1:.1f}'.format(kh, kv)
+
+        if add_label is not None:
+            filename += '_' + add_label
+
+        if len(x_list) > 1:
+            filename += '_X={0:g}_{1:g}mm'.format(x_list[0], x_list[-1])
+
+        if len(y_list) > 1:
+            filename += '_Y={0:g}_{1:g}mm'.format(y_list[0], y_list[-1])
+
+        if len(z_list) > 1:
+            filename += '_Z={0:g}_{1:g}mm'.format(z_list[0], z_list[-1])
+
+        filename += file_extension
+
+        return filename
+
+
+class FieldModel(FieldSource):
 
     def __init__(self, radia_object=None):
         self._radia_object = radia_object
@@ -379,6 +626,14 @@ class RadiaModel(FieldSource):
         if self._radia_object is not None:
             self._radia_object = _rad.TrfOrnt(
                 self._radia_object, _rad.TrfRot(point, vector, angle))
+            return True
+        else:
+            return False
+
+    def mirror(self, point, normal):
+        if self._radia_object is not None:
+            self._radia_object = _rad.TrfOrnt(
+                self._radia_object, _rad.TrfPlSym(point, normal))
             return True
         else:
             return False
@@ -526,8 +781,8 @@ class FieldData(FieldSource):
         self._update_interpolation_functions()
 
     def correct_cross_talk(
-            self, K0=7.56863157e-06, K1=-1.67524756e-02,
-            K2=-6.78110439e-03):
+            self, k0=7.56863157e-06, k1=-1.67524756e-02,
+            k2=-6.78110439e-03):
         tmp_bx = _np.copy(self._bx)
         tmp_by = _np.copy(self._by)
         tmp_bz = _np.copy(self._bz)
@@ -536,8 +791,8 @@ class FieldData(FieldSource):
 
         for b in range(len(tmp_bx)):
             tmp_bx_corr.append((tmp_bx[b] + (((
-                K0 + K1*tmp_by[b] + K2*tmp_by[b]**2) + (
-                K0 + K1*tmp_bz[b] + K2*tmp_bz[b]**2)))/2))
+                k0 + k1*tmp_by[b] + k2*tmp_by[b]**2) + (
+                k0 + k1*tmp_bz[b] + k2*tmp_bz[b]**2)))/2))
 
         self._bx = _np.array(tmp_bx_corr)
 

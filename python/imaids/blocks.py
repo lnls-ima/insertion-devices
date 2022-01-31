@@ -9,7 +9,7 @@ from . import materials as _materials
 from . import fieldsource as _fieldsource
 
 
-class Block(_fieldsource.RadiaModel):
+class Block(_fieldsource.FieldModel):
     """Magnetic material block."""
 
     PREDEFINED_SHAPES = {

@@ -1,4 +1,5 @@
 
+from distutils.dep_util import newer_pairwise
 import time as _time
 import numpy as _np
 import radia as _rad
@@ -57,13 +58,6 @@ class Delta(_insertiondevice.InsertionDeviceModel):
     def dgh(self, value):
         self.set_cassete_positions(dgh=value)
 
-    @property
-    def cassette_properties(self):
-        """Common cassettes properties."""
-        props = super().cassette_properties
-        props['block_shape'] = self._block_shape
-        return props
-
     def create_radia_object(
             self,
             block_names_dict=None,
@@ -83,6 +77,7 @@ class Delta(_insertiondevice.InsertionDeviceModel):
         name = 'cse'
         cse = _cassettes.Cassette(
             upper_cassette=False, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         cse.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -95,6 +90,7 @@ class Delta(_insertiondevice.InsertionDeviceModel):
         name = 'csd'
         csd = _cassettes.Cassette(
             upper_cassette=False, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         csd.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -107,6 +103,7 @@ class Delta(_insertiondevice.InsertionDeviceModel):
         name = 'cie'
         cie = _cassettes.Cassette(
             upper_cassette=False, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         cie.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -119,6 +116,7 @@ class Delta(_insertiondevice.InsertionDeviceModel):
         name = 'cid'
         cid = _cassettes.Cassette(
             upper_cassette=False, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         cid.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -256,13 +254,6 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
     def dg(self, value):
         self.set_cassete_positions(dg=value)
 
-    @property
-    def cassette_properties(self):
-        """Common cassettes properties."""
-        props = super().cassette_properties
-        props['block_shape'] = self._block_shape
-        return props
-
     def create_radia_object(
             self,
             block_names_dict=None,
@@ -282,6 +273,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
         name = 'cse'
         cse = _cassettes.Cassette(
             upper_cassette=True, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         cse.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -294,6 +286,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
         name = 'csd'
         csd = _cassettes.Cassette(
             upper_cassette=True, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         csd.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -306,6 +299,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
         name = 'cie'
         cie = _cassettes.Cassette(
             upper_cassette=False, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         cie.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -318,6 +312,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
         name = 'cid'
         cid = _cassettes.Cassette(
             upper_cassette=False, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         cid.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -462,29 +457,24 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
         if position_err_dict is None:
             position_err_dict = {}
 
-        if _utils.depth(self._block_shape) != 3:
-            self._block_shape = [self._block_shape]
-
-        mirror_block_shape = [
-            [(-1)*pts[0], pts[1]] for shp in self._block_shape for pts in shp]
-
         name = 'cse'
         cse = _cassettes.Cassette(
-            block_shape=mirror_block_shape,
             upper_cassette=True, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         cse.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
         cse.shift([0, -self._gap/2, 0])
+        cse.mirror([0, 0, 0], [1, 0, 0])
         cse.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = cse
 
         name = 'csd'
         csd = _cassettes.Cassette(
-            block_shape=self._block_shape,
             upper_cassette=True, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         csd.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -496,8 +486,8 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
 
         name = 'cie'
         cie = _cassettes.Cassette(
-            block_shape=self._block_shape,
             upper_cassette=False, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         cie.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -508,14 +498,15 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
 
         name = 'cid'
         cid = _cassettes.Cassette(
-            block_shape=mirror_block_shape,
             upper_cassette=False, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         cid.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
         cid.shift([0, -self._gap/2, 0])
+        cid.mirror([0, 0, 0], [1, 0, 0])
         self._cassettes[name] = cid
 
         self._radia_object = _rad.ObjCnt(
@@ -573,13 +564,6 @@ class APU(_insertiondevice.InsertionDeviceModel):
     def dg(self, value):
         self.set_cassete_positions(dg=value)
 
-    @property
-    def cassette_properties(self):
-        """Common cassettes properties."""
-        props = super().cassette_properties
-        props['block_shape'] = self._block_shape
-        return props
-
     def create_radia_object(
             self,
             block_names_dict=None,
@@ -599,6 +583,7 @@ class APU(_insertiondevice.InsertionDeviceModel):
         name = 'cs'
         cs = _cassettes.Cassette(
             upper_cassette=True, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         cs.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -611,6 +596,7 @@ class APU(_insertiondevice.InsertionDeviceModel):
         name = 'ci'
         ci = _cassettes.Cassette(
             upper_cassette=False, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         ci.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -653,13 +639,6 @@ class Planar(_insertiondevice.InsertionDeviceModel):
     def dg(self, value):
         self.set_cassete_positions(dg=value)
 
-    @property
-    def cassette_properties(self):
-        """Common cassettes properties."""
-        props = super().cassette_properties
-        props['block_shape'] = self._block_shape
-        return props
-
     def create_radia_object(
             self,
             block_names_dict=None,
@@ -679,6 +658,7 @@ class Planar(_insertiondevice.InsertionDeviceModel):
         name = 'cs'
         cs = _cassettes.Cassette(
             upper_cassette=True, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         cs.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -691,6 +671,7 @@ class Planar(_insertiondevice.InsertionDeviceModel):
         name = 'ci'
         ci = _cassettes.Cassette(
             upper_cassette=False, name=name,
+            nr_periods=self.nr_periods, period_length=self.period_length,
             init_radia_object=False, **self.cassette_properties)
         ci.create_radia_object(
             block_names=block_names_dict.get(name),
@@ -752,7 +733,8 @@ class DeltaPrototype(Delta):
             end_blocks_distance = None
 
         super().__init__(
-            block_shape, nr_periods, period_length, gap, mr,
+            nr_periods=nr_periods, period_length=period_length,
+            gap=gap, mr=mr, block_shape=block_shape,
             block_subdivision=block_subdivision,
             rectangular=rectangular,
             longitudinal_distance=longitudinal_distance,
@@ -802,7 +784,8 @@ class DeltaSabia(Delta):
             end_blocks_distance = distances[0:-1][::-1]
 
         super().__init__(
-            block_shape, nr_periods, period_length, gap, mr,
+            nr_periods=nr_periods, period_length=period_length,
+            gap=gap, mr=mr, block_shape=block_shape,
             block_subdivision=block_subdivision,
             rectangular=rectangular,
             longitudinal_distance=longitudinal_distance,
@@ -853,7 +836,8 @@ class DeltaCarnauba(Delta):
             end_blocks_distance = distances[0:-1][::-1]
 
         super().__init__(
-            block_shape, nr_periods, period_length, gap, mr,
+            nr_periods=nr_periods, period_length=period_length,
+            gap=gap, mr=mr, block_shape=block_shape,
             block_subdivision=block_subdivision,
             rectangular=rectangular,
             longitudinal_distance=longitudinal_distance,
@@ -903,7 +887,8 @@ class AppleXSabia(AppleX):
             end_blocks_distance = distances[0:-1][::-1]
 
         super().__init__(
-            block_shape, nr_periods, period_length, gap, mr,
+            nr_periods=nr_periods, period_length=period_length,
+            gap=gap, mr=mr, block_shape=block_shape,
             block_subdivision=block_subdivision,
             rectangular=rectangular,
             longitudinal_distance=longitudinal_distance,
@@ -953,7 +938,8 @@ class AppleXCarnauba(AppleX):
             end_blocks_distance = distances[0:-1][::-1]
 
         super().__init__(
-            block_shape, nr_periods, period_length, gap, mr,
+            nr_periods=nr_periods, period_length=period_length,
+            gap=gap, mr=mr, block_shape=block_shape,
             block_subdivision=block_subdivision,
             rectangular=rectangular,
             longitudinal_distance=longitudinal_distance,
@@ -1001,7 +987,8 @@ class AppleIISabia(AppleII):
             end_blocks_distance = distances[::-1]
 
         super().__init__(
-            block_shape, nr_periods, period_length, gap, mr,
+            nr_periods=nr_periods, period_length=period_length,
+            gap=gap, mr=mr, block_shape=block_shape,
             block_subdivision=block_subdivision,
             rectangular=rectangular,
             longitudinal_distance=longitudinal_distance,
@@ -1050,7 +1037,8 @@ class AppleIICarnauba(AppleII):
             end_blocks_distance = distances[::-1]
 
         super().__init__(
-            block_shape, nr_periods, period_length, gap, mr,
+            nr_periods=nr_periods, period_length=period_length,
+            gap=gap, mr=mr, block_shape=block_shape,
             block_subdivision=block_subdivision,
             rectangular=rectangular,
             longitudinal_distance=longitudinal_distance,
@@ -1102,7 +1090,8 @@ class Kyma22(APU):
             end_blocks_distance = distances[0:-1][::-1]
 
         super().__init__(
-            block_shape, nr_periods, period_length, gap, mr,
+            nr_periods=nr_periods, period_length=period_length,
+            gap=gap, mr=mr, block_shape=block_shape,
             block_subdivision=block_subdivision,
             rectangular=rectangular,
             longitudinal_distance=longitudinal_distance,
@@ -1147,7 +1136,8 @@ class HybridPlanar(Planar):
             pole_material = _materials.Permendur()
 
         super().__init__(
-            block_shape, nr_periods, period_length, gap, mr,
+            nr_periods=nr_periods, period_length=period_length,
+            gap=gap, mr=mr, block_shape=block_shape,
             block_subdivision=block_subdivision,
             rectangular=rectangular,
             longitudinal_distance=longitudinal_distance,
@@ -1185,7 +1175,8 @@ class MiniPlanarSabia(APU):
                 'delta_sabia')
 
         super().__init__(
-            block_shape, nr_periods, period_length, gap, mr,
+            nr_periods=nr_periods, period_length=period_length,
+            gap=gap, mr=mr, block_shape=block_shape,
             block_subdivision=block_subdivision,
             rectangular=rectangular,
             longitudinal_distance=longitudinal_distance,

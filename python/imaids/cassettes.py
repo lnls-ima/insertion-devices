@@ -5,17 +5,17 @@ import numpy as _np
 import radia as _rad
 
 from . import utils as _utils
-from . import materials as _materials
 from . import blocks as _blocks
 from . import fieldsource as _fieldsource
 
 
-class Cassette(_fieldsource.RadiaModel):
+class Cassette(
+        _fieldsource.FieldModel, _fieldsource.SinusoidalFieldSource):
     """Insertion device cassette."""
 
     def __init__(
-            self, block_shape, nr_periods, period_length, mr,
-            upper_cassette=False, longitudinal_distance=0,
+            self, nr_periods=None, period_length=None, mr=None,
+            block_shape=None, upper_cassette=False, longitudinal_distance=0,
             block_subdivision=None, rectangular=False,
             ksipar=0.06, ksiper=0.17, hybrid=False,
             pole_shape=None, pole_length=None, pole_material=None,
@@ -23,23 +23,23 @@ class Cassette(_fieldsource.RadiaModel):
             start_blocks_length=None, start_blocks_distance=None,
             end_blocks_length=None, end_blocks_distance=None,
             name='', init_radia_object=True):
+        _fieldsource.SinusoidalFieldSource.__init__(
+            self, nr_periods=nr_periods, period_length=period_length)
 
-        pos_args = [
-            nr_periods, period_length, mr, longitudinal_distance]
-        if any([arg < 0 for arg in pos_args]):
-            raise ValueError('Invalid argument value.')
-
-        self._nr_periods = nr_periods
-        self._period_length = period_length
+        if mr is not None and mr <= 0:
+            raise ValueError('mr must be > 0.')
         self._mr = float(mr)
-        self._longitudinal_distance = longitudinal_distance
 
-        self._block_shape = block_shape
-        self._rectangular = rectangular
+        if longitudinal_distance is not None and longitudinal_distance <= 0:
+            raise ValueError('longitudinal_distance must be > 0.')
+        self._longitudinal_distance = longitudinal_distance
 
         if upper_cassette not in (True, False):
             raise ValueError('Invalid value for upper_cassette argument.')
         self._upper_cassette = upper_cassette
+
+        self._block_shape = block_shape
+        self._rectangular = rectangular
 
         if start_blocks_length and start_blocks_distance:
             if len(start_blocks_length) != len(start_blocks_distance):
@@ -206,6 +206,15 @@ class Cassette(_fieldsource.RadiaModel):
         return nr_blocks
 
     @property
+    def cassette_length(self):
+        """Cassette length."""
+        start_len = sum(self.start_blocks_distance) + sum(
+            self.start_blocks_length)
+        end_len = sum(self.end_blocks_distance) + sum(
+            self.end_blocks_length)
+        return start_len + self.nr_periods*self.period_length + end_len
+
+    @property
     def block_names(self):
         """List of block names."""
         name_list = [block.name for block in self._blocks]
@@ -223,6 +232,34 @@ class Cassette(_fieldsource.RadiaModel):
         pos_list = [block.longitudinal_position for block in self._blocks]
         return pos_list
 
+    @property
+    def state(self):
+        data = {
+            'block_shape': self.block_shape,
+            'nr_periods': self.nr_periods,
+            'period_length': self.period_length,
+            'mr': self.mr,
+            'upper_cassette': self.upper_cassette,
+            'longitudinal_distance': self.longitudinal_distance,
+            'block_subdivision': self.block_subdivision,
+            'rectangular': self.rectangular,
+            'ksipar': self.ksipar,
+            'ksiper': self.ksiper,
+            'start_blocks_length': self.start_blocks_length,
+            'start_blocks_distance': self.start_blocks_distance,
+            'end_blocks_length': self.end_blocks_length,
+            'end_blocks_distance': self.end_blocks_distance,
+            'hybrid': self.hybrid,
+            'pole_shape': self.pole_shape,
+            'pole_length': self.pole_length,
+            'pole_subdivision': self.pole_subdivision,
+            'name': self.name,
+            'block_names': list(self.block_names),
+            'magnetization_list': list(self.magnetization_list),
+            'position_err': list(self._position_err),
+        }
+        return data
+
     @classmethod
     def load_state(cls, filename):
         """Load state from file."""
@@ -230,13 +267,14 @@ class Cassette(_fieldsource.RadiaModel):
         with open(filename) as f:
             kwargs = _json.load(f)
 
+        block_names = kwargs.pop('block_names', None)
         magnetization_list = kwargs.pop('magnetization_list', None)
         position_err = kwargs.pop('position_err', None)
 
         cassette = cls(init_radia_object=False, **kwargs)
         cassette.create_radia_object(
             magnetization_list=magnetization_list,
-            position_err=position_err)
+            position_err=position_err, block_names=block_names)
 
         return cassette
 
@@ -412,32 +450,6 @@ class Cassette(_fieldsource.RadiaModel):
 
     def save_state(self, filename):
         """Save state to file."""
-        data = {
-            'block_shape': self.block_shape,
-            'nr_periods': self.nr_periods,
-            'period_length': self.period_length,
-            'mr': self.mr,
-            'upper_cassette': self.upper_cassette,
-            'longitudinal_distance': self.longitudinal_distance,
-            'block_subdivision': self.block_subdivision,
-            'rectangular': self.rectangular,
-            'ksipar': self.ksipar,
-            'ksiper': self.ksiper,
-            'start_blocks_length': self.start_blocks_length,
-            'start_blocks_distance': self.start_blocks_distance,
-            'end_blocks_length': self.end_blocks_length,
-            'end_blocks_distance': self.end_blocks_distance,
-            'hybrid': self.hybrid,
-            'pole_shape': self.pole_shape,
-            'pole_length': self.pole_length,
-            'pole_subdivision': self.pole_subdivision,
-            'name': self.name,
-            'magnetization_list': list(self.magnetization_list),
-            'position_err': list(
-                self._position_err),
-        }
-
         with open(filename, 'w') as f:
-            _json.dump(data, f)
-
+            _json.dump(self.state, f)
         return True

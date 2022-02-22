@@ -1153,8 +1153,8 @@ class HybridPlanar(Planar):
             name=name, **kwargs)
 
 
-class MiniPlanarSabia(APU):
-    """APU with the same blocks as Delta Sabia."""
+class MiniPlanarSabia(Planar):
+    """Planar undulator with the same blocks as Delta Sabia."""
 
     def __init__(
             self,

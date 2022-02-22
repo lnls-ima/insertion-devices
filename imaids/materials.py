@@ -14,14 +14,14 @@ class Material():
     def __init__(
             self, linear=True, mr=1.37,
             ksipar=0.06, ksiper=0.17,
-            klist=None, mlist=None,
+            hlist=None, mlist=None,
             init_radia_object=True, name=''):
 
         self._linear = linear
         self._mr = mr
         self._ksipar = ksipar
         self._ksiper = ksiper
-        self._klist = list(klist) if klist is not None else None
+        self._hlist = list(hlist) if hlist is not None else None
         self._mlist = list(mlist) if mlist is not None else None
         self.name = name
 
@@ -62,8 +62,8 @@ class Material():
         return self._ksiper
 
     @property
-    def klist(self):
-        return _deepcopy(self._klist)
+    def hlist(self):
+        return _deepcopy(self._hlist)
 
     @property
     def mlist(self):
@@ -80,7 +80,7 @@ class Material():
             'mr': self.mr,
             'ksipar': self.ksipar,
             'ksiper': self.ksiper,
-            'klist': self.klist,
+            'hlist': self.hlist,
             'mlist': self.mlist,
             'name': self.name,
         }
@@ -99,7 +99,7 @@ class Material():
                 [self.ksipar, self.ksiper], self.mr)
         else:
             self._radia_object = _rad.MatSatIsoTab(
-                _np.transpose([self.klist, self.mlist]).tolist())
+                _np.transpose([self.hlist, self.mlist]).tolist())
 
     def save_state(self, filename):
         """Save state to file."""
@@ -120,91 +120,47 @@ class NdFeB(Material):
             name=name, **kwargs)
 
 
-class Iron(Material):
+
+class VanadiumPermendur(Material):
 
     def __init__(
-            self, linear=False, klist='default',
+            self, linear=False, hlist='default',
             mlist='default', name='iron', **kwargs):
-        iron_h = [
-            0.8, 1.5, 2.2, 3.6, 5, 6.8, 9.8, 18, 28,
-            37.5, 42, 55, 71.5, 80, 85, 88, 92, 100,
-            120, 150, 200, 300, 400, 600, 800, 1000,
-            2000, 4000, 6000, 10000, 25000, 40000]
-        iron_m = [
-            0.000998995, 0.00199812, 0.00299724,
-            0.00499548, 0.00699372, 0.00999145,
-            0.0149877, 0.0299774, 0.0499648, 0.0799529,
-            0.0999472, 0.199931, 0.49991, 0.799899, 0.999893,
-            1.09989, 1.19988, 1.29987, 1.41985, 1.49981,
-            1.59975, 1.72962, 1.7995, 1.89925, 1.96899,
-            1.99874,  2.09749, 2.19497, 2.24246, 2.27743,
-            2.28958, 2.28973]
+        _h = [
+            0.0,
+            71.4,
+            119.0,
+            175.0,
+            268.0,
+            493.0,
+            804.0,
+            1910.0,
+            4775.0,
+            15120.0,
+            42971.0,
+            79577.0,
+        ]
+        _b = [
+            0.00,
+            0.60,
+            1.00,
+            1.60,
+            1.80,
+            2.00,
+            2.10,
+            2.20,
+            2.26,
+            2.30,
+            2.34,
+            2.39,
+        ]
 
-        if klist == 'default':
-            klist = _np.array(iron_h)*mu0
-
-        if mlist == 'default':
-            mlist = iron_m
-
-        super().__init__(
-            linear=linear, klist=klist, mlist=mlist,
-            name=name, **kwargs)
-
-
-class Permendur(Material):
-
-    def __init__(
-            self, linear=False, klist='default',
-            mlist='default', name='permendur', **kwargs):
-        permendur_h = [
-            1.01040000e+00,
-            2.03005312e+02,
-            2.22913049e+02,
-            2.43491638e+02,
-            2.72807126e+02,
-            3.19224408e+02,
-            3.91729364e+02,
-            4.95351181e+02,
-            6.34832700e+02,
-            8.22597280e+02,
-            1.08094594e+03,
-            1.43885757e+03,
-            1.92626020e+03,
-            2.57757203e+03,
-            3.45515665e+03,
-            4.69605131e+03,
-            6.61839266e+03,
-            1.00456446e+04,
-            1.73835508e+04,
-            3.42331679e+04]
-        permendur_m = [
-            0,
-            0.585315598,
-            0.865625605,
-            1.033316775,
-            1.165471494,
-            1.278133069,
-            1.378005711,
-            1.468654074,
-            1.552242092,
-            1.630200393,
-            1.703533209,
-            1.772977569,
-            1.839093362,
-            1.902317766,
-            1.962999893,
-            2.021423791,
-            2.077824248,
-            2.132397988,
-            2.185311783,
-            2.236708474]
-
-        if klist == 'default':
-            klist = _np.array(permendur_h)*mu0
+        if hlist == 'default':
+            hlist = _np.array(_h)*mu0
 
         if mlist == 'default':
-            mlist = permendur_m
+            mlist = _np.array(_b) - _np.array(_h)*mu0
 
         super().__init__(
-            linear=linear, klist=klist, mlist=mlist,
+            linear=linear, hlist=hlist, mlist=mlist,
             name=name, **kwargs)

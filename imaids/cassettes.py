@@ -64,9 +64,6 @@ class Cassette(
             if pole_shape is None:
                 pole_shape = block_shape
 
-            if pole_length is None:
-                pole_length = period_length/4 - longitudinal_distance
-
         self._pole_shape = pole_shape
         self._pole_length = pole_length
         self._pole_material = pole_material

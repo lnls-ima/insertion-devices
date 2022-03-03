@@ -26,12 +26,12 @@ class Cassette(
         _fieldsource.SinusoidalFieldSource.__init__(
             self, nr_periods=nr_periods, period_length=period_length)
 
-        if mr is not None and mr <= 0:
-            raise ValueError('mr must be > 0.')
+        if mr is not None and mr < 0:
+            raise ValueError('mr must be >= 0.')
         self._mr = float(mr)
 
-        if longitudinal_distance is not None and longitudinal_distance <= 0:
-            raise ValueError('longitudinal_distance must be > 0.')
+        if longitudinal_distance is not None and longitudinal_distance < 0:
+            raise ValueError('longitudinal_distance must be >= 0.')
         self._longitudinal_distance = longitudinal_distance
 
         if upper_cassette not in (True, False):

@@ -17,6 +17,58 @@ def cosine_function(z, bamp, freq, phase):
     return bamp*_np.cos(freq*z + phase)
 
 
+def hybrid_undulator_pole_length(gap, period_length):
+    a = 5.939
+    b = -11.883
+    c = 16.354
+    d = -8.55
+    gp = gap/period_length
+    pole_length = gap*a*_np.exp(b*gp + c*(gp**2) + d*(gp**3))
+    return pole_length
+
+
+def fitting_matrix(tim, freqs):
+    """Create the matrix used for fitting of fourier components.
+        The ordering of the matrix is the following:
+           mat[i, 2*j] = cos(2*pi*freqs[j]*tim[i])
+           mat[i, 2*j+1] = sin(2*pi*freqs[j]*tim[i])
+        Args:
+            tim (numpy.ndarray): array with times
+            freqs (numpy.ndarray): array with frequencies to fit.
+        Returns:
+            numpy.ndarray: fitting matrix (len(tim), 2*len(freqs))
+        """
+    mat = _np.zeros((tim.size, 2*freqs.size))
+    arg = freqs[None, :]*tim[:, None]
+    cos = _np.cos(arg)
+    sin = _np.sin(arg)
+    mat[:, ::2] = cos
+    mat[:, 1::2] = sin
+    return mat
+
+
+def fit_fourier_components(data, freqs, tim):
+    """Fit Fourier components in signal for the given frequencies.
+        Args:
+            data (numpy.ndarray, NxM): signal to be fitted consisting of M
+                columns of data.
+            freqs (numpy.ndarray, K): K frequencies to fit Fourier components.
+            tim (numpy.ndarray, N): time vector for data columns.
+        Returns:
+            numpy.ndarray, KxM: Fourier amplitudes.
+            numpy.ndarray, KxM: Fourier phases (phase==0 means pure sine).
+            numpy.ndarray, KxM: Fourier cosine coefficients.
+            numpy.ndarray, KxM: Fourier sine coefficients.
+        """
+    mat = fitting_matrix(tim, freqs)
+    coeffs, *_ = _np.linalg.lstsq(mat, data, rcond=None)
+    cos = coeffs[::2]
+    sin = coeffs[1::2]
+    amps = _np.sqrt(cos**2 + sin**2)
+    phases = _np.arctan2(cos, sin)
+    return amps, phases, cos, sin, mat
+
+
 def calc_cosine_amplitude(
         pos_list, values_list, freq_guess, maxfev=5000):
     if len(pos_list) != len(values_list):

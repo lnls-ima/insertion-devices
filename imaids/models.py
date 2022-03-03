@@ -1,10 +1,8 @@
 
-from distutils.dep_util import newer_pairwise
 import time as _time
 import numpy as _np
 import radia as _rad
 
-from . import utils as _utils
 from . import insertiondevice as _insertiondevice
 from . import blocks as _blocks
 from . import cassettes as _cassettes

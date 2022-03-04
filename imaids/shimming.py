@@ -1,6 +1,7 @@
 
 import numpy as _np
 
+from . import utils as _utils
 from . import fieldsource as _fieldsource
 
 
@@ -8,9 +9,8 @@ class UndulatorShimming():
 
     def __init__(
             self, model, measurement, zmin, zmax, znpts,
-            cassettes=None, block_type=None,
-            segments_type=None, comp=1,
-            energy=3, rkstep=0.5, xpos=0, ypos=0):
+            cassettes=None, block_type=None, segments_type=None, 
+            energy=3.0, rkstep=0.5, xpos=0.0, ypos=0.0):
         if cassettes is None:
             cassettes = list(model.cassettes.keys())
         for cassette in cassettes:
@@ -30,10 +30,6 @@ class UndulatorShimming():
             raise ValueError(
                 'Invalid segments_type value. Valid options: "period" or "half_period"')
 
-        if comp not in (0, 1, 2):
-            raise ValueError(
-                'Invalid comp value. Valid options: 0, 1, 2')     
-
         self.model = model
         self.measurement = measurement
         self.cassettes = cassettes
@@ -42,7 +38,6 @@ class UndulatorShimming():
         self.zmin = zmin
         self.zmax = zmax
         self.znpts = int(znpts)
-        self.comp = int(comp)
         self.energy = energy
         self.rkstep = rkstep
         self.xpos = xpos
@@ -51,12 +46,24 @@ class UndulatorShimming():
         self._segments = None
         self._response_matrix = None
 
+    @property
+    def response_matrix(self):
+        return self._response_matrix
+
+    @property
+    def segments(self):
+        return self._segments
+
     def calc_segments(self):
         self._segments = None
         
         zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
         field = self.model.get_field(z=zpos)
-        peaks = self.model.find_peaks_and_valleys(field[:, self.comp])
+
+        freqs = _np.array([2*_np.pi/self.model.period_length])
+        amps, *_ = _utils.fit_fourier_components(field, freqs, zpos)
+        comp = _np.argmax(amps)
+        peaks = self.model.find_peaks_and_valleys(field[:, comp])
         
         block_pos = zpos[peaks] - self.model.period_length/4
         
@@ -75,7 +82,7 @@ class UndulatorShimming():
         return True
 
     def fit_trajectory_segments(self, trajectory, max_size):
-        if self._segments is None:
+        if self.segments is None:
             self.calc_segments()
 
         trajx = trajectory[:, 0]
@@ -87,13 +94,13 @@ class UndulatorShimming():
         poly_x = []
         poly_y = []
 
-        nsegs = len(self._segments)
+        nsegs = len(self.segments)
 
         index_list = []
-        for pos in self._segments:
+        for pos in self.segments:
             index_list.append(_np.where(trajz >= pos)[0][0])
         index_list.append(
-            _np.where(trajz >= self._segments[-1] + max_size)[0][0])
+            _np.where(trajz >= self.segments[-1] + max_size)[0][0])
 
         for i in range(nsegs):
             initial = index_list[i]
@@ -160,7 +167,7 @@ class UndulatorShimming():
     def calc_response_matrix(self, filename, shim=0.25):
         self._response_matrix = None
 
-        if self._segments is None:
+        if self.segments is None:
             self.calc_segments()
 
         self.model.solve()
@@ -209,10 +216,10 @@ class UndulatorShimming():
         return True
 
     def calc_shims(self, nsv=None):
-        if self._segments is None:
+        if self.segments is None:
             self.calc_segments()
 
-        u, s, vt = _np.linalg.svd(self._response_matrix, full_matrices=False)
+        u, s, vt = _np.linalg.svd(self.response_matrix, full_matrices=False)
         
         if nsv is None:
             nsv = len(s)

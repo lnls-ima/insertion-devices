@@ -8,8 +8,8 @@ from . import fieldsource as _fieldsource
 class UndulatorShimming():
 
     def __init__(
-            self, model, measurement, zmin, zmax, znpts,
-            cassettes=None, block_type=None, segments_type=None, 
+            self, model, meas, zmin, zmax, znpts,
+            cassettes=None, block_type='v', segments_type='half_period', 
             energy=3.0, rkstep=0.5, xpos=0.0, ypos=0.0):
         if cassettes is None:
             cassettes = list(model.cassettes.keys())
@@ -18,20 +18,16 @@ class UndulatorShimming():
                 raise ValueError(
                     'Invalid cassette name: {0:s}'.format(cassette))
 
-        if block_type is None:
-            block_type = 'v'
         if block_type not in ('v', 'vpos', 'vneg'):
             raise ValueError(
                 'Invalid block_type value. Valid options: "v", "vpos", "vneg"')
 
-        if segments_type is None:
-            segments_type = 'period'
         if segments_type not in ('period', 'half_period'):
             raise ValueError(
                 'Invalid segments_type value. Valid options: "period" or "half_period"')
 
         self.model = model
-        self.measurement = measurement
+        self.meas = meas
         self.cassettes = cassettes
         self.block_type = block_type
         self.segments_type = segments_type
@@ -43,7 +39,8 @@ class UndulatorShimming():
         self.xpos = xpos
         self.ypos = ypos
 
-        self._segments = None
+        self._model_segments = None
+        self._meas_segments = None
         self._response_matrix = None
 
     @property
@@ -51,40 +48,43 @@ class UndulatorShimming():
         return self._response_matrix
 
     @property
-    def segments(self):
-        return self._segments
+    def model_segments(self):
+        return self._model_segments
+    
+    @property
+    def meas_segments(self):
+        return self._meas_segments
 
-    def calc_segments(self):
-        self._segments = None
-        
+    def calc_model_segments(self):
+        self._model_segments = self.calc_segments(self.model)
+
+    def calc_meas_segments(self):
+        self._meas_segments = self._model_segments
+        #self._meas_segments = self.calc_segments(self.meas)
+
+    def calc_segments(self, obj):
         zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
-        field = self.model.get_field(z=zpos)
+        field = obj.get_field(z=zpos)
 
         freqs = _np.array([2*_np.pi/self.model.period_length])
         amps, *_ = _utils.fit_fourier_components(field, freqs, zpos)
         comp = _np.argmax(amps)
-        peaks = self.model.find_peaks_and_valleys(field[:, comp])
-        
-        block_pos = zpos[peaks] - self.model.period_length/4
-        
+        spos = obj.find_zeros(zpos, field[:, comp])
+
         if self.segments_type == 'period':
-            segs = list(block_pos[::2])
-            segs.append(segs[-1] + self.model.period_length)
-            segs.append(segs[0] - self.model.period_length)
+            segs = spos[::2]
         
         elif self.segments_type == 'half_period':
-            segs = list(block_pos)
-            segs.append(segs[-1] + self.model.period_length/2)
-            segs.append(segs[0] - self.model.period_length/2)
+            segs = spos
 
-        self._segments = sorted(segs)
+        segs = _np.insert(
+            segs, 0, segs[0] - self.model.period_length)
+        segs = _np.insert(
+            segs, -1, segs[-1] + self.model.period_length)
         
-        return True
+        return segs
 
-    def fit_trajectory_segments(self, trajectory, max_size):
-        if self.segments is None:
-            self.calc_segments()
-
+    def fit_trajectory_segments(self, trajectory, segs, max_size):
         trajx = trajectory[:, 0]
         trajy = trajectory[:, 1]
         trajz = trajectory[:, 2]
@@ -94,13 +94,13 @@ class UndulatorShimming():
         poly_x = []
         poly_y = []
 
-        nsegs = len(self.segments)
+        nsegs = len(segs)
 
         index_list = []
-        for pos in self.segments:
+        for pos in segs:
             index_list.append(_np.where(trajz >= pos)[0][0])
         index_list.append(
-            _np.where(trajz >= self.segments[-1] + max_size)[0][0])
+            _np.where(trajz >= segs[-1] + max_size)[0][0])
 
         for i in range(nsegs):
             initial = index_list[i]
@@ -129,7 +129,7 @@ class UndulatorShimming():
 
         return poly_x, poly_y
 
-    def calc_slope(self, obj):       
+    def calc_slope(self, obj, segs):       
         traj = obj.calc_trajectory(
             self.energy,
             [self.xpos, self.ypos, self.zmin, 0, 0, 1],
@@ -138,7 +138,7 @@ class UndulatorShimming():
         avgtraj = obj.calc_trajectory_avg_over_period(traj)
 
         poly_x, poly_y = self.fit_trajectory_segments(
-            avgtraj, self.model.period_length)
+            avgtraj, segs, self.model.period_length)
 
         slope_x = poly_x[:, 1]
         slope_y = poly_y[:, 1]
@@ -158,8 +158,14 @@ class UndulatorShimming():
             filt = mag[:, 1]*(-1) > mres
         
         blocks = _np.array(cas.blocks)[filt]
+
+        tol = 0.1
+        regular_blocks = []
+        for block in blocks:
+            if block.length > (1 - tol)*self.model.period_length/4:
+                regular_blocks.append(block)
         
-        return blocks    
+        return regular_blocks
 
     def load_response_matrix(self, filename):
         self._response_matrix = _np.loadtxt(filename)
@@ -167,11 +173,12 @@ class UndulatorShimming():
     def calc_response_matrix(self, filename, shim=0.25):
         self._response_matrix = None
 
-        if self.segments is None:
-            self.calc_segments()
+        if self.model_segments is None:
+            self.calc_model_segments()
 
         self.model.solve()
-        slope_x0, slope_y0 = self.calc_slope(self.model)
+        slope_x0, slope_y0 = self.calc_slope(
+            self.model, self.model_segments)
 
         ext = '.' + filename.split('.')[-1]
         filename_mx = filename.replace(ext, '_mx' + ext)
@@ -188,7 +195,8 @@ class UndulatorShimming():
                 blocks[idx].shift([0, shim, 0])
                 
                 self.model.solve()
-                slope_x, slope_y = self.calc_slope(self.model)
+                slope_x, slope_y = self.calc_slope(
+                    self.model, self.model_segments)
 
                 blocks[idx].shift([0, -shim, 0])
 
@@ -216,8 +224,11 @@ class UndulatorShimming():
         return True
 
     def calc_shims(self, nsv=None):
-        if self.segments is None:
-            self.calc_segments()
+        if self.model_segments is None:
+            self.calc_model_segments()
+
+        if self.meas_segments is None:
+            self.calc_meas_segments()
 
         u, s, vt = _np.linalg.svd(self.response_matrix, full_matrices=False)
         
@@ -229,9 +240,11 @@ class UndulatorShimming():
         minv = vt.T*sinv @ u.T
 
         self.model.solve()
-        slope_x0, slope_y0 = self.calc_slope(self.model)
+        slope_x0, slope_y0 = self.calc_slope(
+            self.model, self.model_segments)
 
-        slope_x, slope_y = self.calc_slope(self.measurement)
+        slope_x, slope_y = self.calc_slope(
+            self.meas, self.meas_segments)
 
         slope_error_x = slope_x0 - slope_x
         slope_error_y = slope_y0 - slope_y

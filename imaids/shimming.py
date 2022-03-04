@@ -1,23 +1,48 @@
 
-import os as _os
 import numpy as _np
 
-from imaids import utils as _utils
+from . import fieldsource as _fieldsource
 
 
 class UndulatorShimming():
 
     def __init__(
-            self, model, measurement, cassettes,
-            zmin, zmax, znpts, main_comp=1,
+            self, model, measurement, zmin, zmax, znpts,
+            cassettes=None, block_type=None,
+            segments_type=None, comp=1,
             energy=3, rkstep=0.5, xpos=0, ypos=0):
+        if cassettes is None:
+            cassettes = list(model.cassettes.keys())
+        for cassette in cassettes:
+            if cassette not in model.cassettes:
+                raise ValueError(
+                    'Invalid cassette name: {0:s}'.format(cassette))
+
+        if block_type is None:
+            block_type = 'v'
+        if block_type not in ('v', 'vpos', 'vneg'):
+            raise ValueError(
+                'Invalid block_type value. Valid options: "v", "vpos", "vneg"')
+
+        if segments_type is None:
+            segments_type = 'period'
+        if segments_type not in ('period', 'half_period'):
+            raise ValueError(
+                'Invalid segments_type value. Valid options: "period" or "half_period"')
+
+        if comp not in (0, 1, 2):
+            raise ValueError(
+                'Invalid comp value. Valid options: 0, 1, 2')     
+
         self.model = model
         self.measurement = measurement
         self.cassettes = cassettes
+        self.block_type = block_type
+        self.segments_type = segments_type
         self.zmin = zmin
         self.zmax = zmax
-        self.znpts = znpts
-        self.main_comp = main_comp
+        self.znpts = int(znpts)
+        self.comp = int(comp)
         self.energy = energy
         self.rkstep = rkstep
         self.xpos = xpos
@@ -26,23 +51,76 @@ class UndulatorShimming():
         self._segments = None
         self._response_matrix = None
 
-    def calc_segments(self, prominence=0.05):
+    def calc_segments(self):
         self._segments = None
         
         zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
         field = self.model.get_field(z=zpos)
-        peaks = _utils.find_peaks_and_valleys(
-            field[:, self.main_comp], prominence=prominence)
+        peaks = self.model.find_peaks_and_valleys(field[:, self.comp])
         
         block_pos = zpos[peaks] - self.model.period_length/4
         
-        segs = list(block_pos[::2])
-        segs.append(segs[-1] + self.model.period_length)
-        segs.append(segs[0] - self.model.period_length)
-        segs = sorted(segs)
-        self._segments = segs
+        if self.segments_type == 'period':
+            segs = list(block_pos[::2])
+            segs.append(segs[-1] + self.model.period_length)
+            segs.append(segs[0] - self.model.period_length)
+        
+        elif self.segments_type == 'half_period':
+            segs = list(block_pos)
+            segs.append(segs[-1] + self.model.period_length/2)
+            segs.append(segs[0] - self.model.period_length/2)
+
+        self._segments = sorted(segs)
         
         return True
+
+    def fit_trajectory_segments(self, trajectory, max_size):
+        if self._segments is None:
+            self.calc_segments()
+
+        trajx = trajectory[:, 0]
+        trajy = trajectory[:, 1]
+        trajz = trajectory[:, 2]
+
+        seg_start = []
+        seg_end = []
+        poly_x = []
+        poly_y = []
+
+        nsegs = len(self._segments)
+
+        index_list = []
+        for pos in self._segments:
+            index_list.append(_np.where(trajz >= pos)[0][0])
+        index_list.append(
+            _np.where(trajz >= self._segments[-1] + max_size)[0][0])
+
+        for i in range(nsegs):
+            initial = index_list[i]
+            final = index_list[i+1]
+
+            tx = trajx[initial:final]
+            ty = trajy[initial:final]
+            tz = trajz[initial:final]
+
+            if len(tx) == 0:
+                break
+
+            seg_start.append([tx[0], ty[0], tz[0]])
+            seg_end.append([tx[-1], ty[-1], tz[-1]])
+
+            xcoefs = _np.polynomial.polynomial.polyfit(tz, tx, 1)
+            poly_x.append(xcoefs)
+
+            ycoefs = _np.polynomial.polynomial.polyfit(tz, ty, 1)
+            poly_y.append(ycoefs)
+
+        seg_start = _np.array(seg_start)
+        seg_end = _np.array(seg_end)
+        poly_x = _np.array(poly_x)
+        poly_y = _np.array(poly_y)
+
+        return poly_x, poly_y
 
     def calc_slope(self, obj):       
         traj = obj.calc_trajectory(
@@ -52,21 +130,29 @@ class UndulatorShimming():
         
         avgtraj = obj.calc_trajectory_avg_over_period(traj)
 
-        _, _, poly_x, poly_y = obj.fit_trajectory_segments(
-            avgtraj, self._segments, self.model.period_length)
+        poly_x, poly_y = self.fit_trajectory_segments(
+            avgtraj, self.model.period_length)
 
         slope_x = poly_x[:, 1]
         slope_y = poly_y[:, 1]
 
         return slope_x, slope_y
 
-    def get_shimming_blocks(self, cassette, tol=0.2):
+    def get_shimming_blocks(self, cassette):
         cas = self.model.cassettes[cassette]
         mag = _np.array(cas.magnetization_list)
-        filt = mag[:, 1] > (cas.mr - tol)
-        # filt = _np.abs(mag[:, 1]) > (cas.mr - tol)
+        mres = _np.sqrt(mag[:, 0]**2 + mag[:, 2]**2)
+        
+        if self.block_type == 'v':
+            filt = _np.abs(mag[:, 1]) > mres
+        elif self.block_type == 'vpos':
+            filt = mag[:, 1] > mres
+        elif self.block_type == 'vneg':
+            filt = mag[:, 1]*(-1) > mres
+        
         blocks = _np.array(cas.blocks)[filt]
-        return blocks
+        
+        return blocks    
 
     def load_response_matrix(self, filename):
         self._response_matrix = _np.loadtxt(filename)
@@ -122,8 +208,18 @@ class UndulatorShimming():
 
         return True
 
-    def calc_shims(self):
-        minv = _np.linalg.pinv(self._response_matrix)
+    def calc_shims(self, nsv=None):
+        if self._segments is None:
+            self.calc_segments()
+
+        u, s, vt = _np.linalg.svd(self._response_matrix, full_matrices=False)
+        
+        if nsv is None:
+            nsv = len(s)
+
+        sinv = 1/s
+        sinv[nsv:] = 0
+        minv = vt.T*sinv @ u.T
 
         self.model.solve()
         slope_x0, slope_y0 = self.calc_slope(self.model)
@@ -138,7 +234,17 @@ class UndulatorShimming():
 
         return shims
 
-    def apply_shims(self, shims):
+    def get_rounded_shims(self, shims, possible_shims):
+        shims_round = []
+        for shim in shims:
+            shim_round = min(possible_shims, key=lambda x: abs(x-shim))
+            shims_round.append(shim_round)
+        return shims_round
+
+    def get_shims_signature(self, shims):
+        zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
+        field0 = self.model.get_field(z=zpos)
+        
         count = 0
         for cassette in self.cassettes:
             blocks = self.get_shimming_blocks(cassette)
@@ -146,4 +252,24 @@ class UndulatorShimming():
             for idx in range(len(blocks)):
                 blocks[idx].shift([0, shims[count], 0])
                 count += 1
+        self.model.solve()
+
+        field = self.model.get_field(z=zpos)
+        dfield = field - field0
+
+        count = 0
+        for cassette in self.cassettes:
+            blocks = self.get_shimming_blocks(cassette)
+
+            for idx in range(len(blocks)):
+                blocks[idx].shift([0, (-1)*shims[count], 0])
+                count += 1
+        self.model.solve()
+
+        x = [self.xpos]*self.znpts
+        y = [self.ypos]*self.znpts
+        raw_data = _np.transpose(
+            [x, y, zpos, dfield[:, 0], dfield[:, 1], dfield[:, 2]])
+
+        return _fieldsource.FieldData(raw_data=raw_data)
 

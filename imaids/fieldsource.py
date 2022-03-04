@@ -449,51 +449,6 @@ class SinusoidalFieldSource(FieldSource):
         avgtraj = _np.transpose([avgtrajx, avgtrajy, trajz])
         return avgtraj
 
-    def fit_trajectory_segments(self, trajectory, zpos_segs, max_size):
-        trajx = trajectory[:, 0]
-        trajy = trajectory[:, 1]
-        trajz = trajectory[:, 2]
-
-        seg_start = []
-        seg_end = []
-        poly_x = []
-        poly_y = []
-
-        nsegs = len(zpos_segs)
-
-        index_list = []
-        for pos in zpos_segs:
-            index_list.append(_np.where(trajz >= pos)[0][0])
-        index_list.append(
-            _np.where(trajz >= zpos_segs[-1] + max_size)[0][0])
-
-        for i in range(nsegs):
-            initial = index_list[i]
-            final = index_list[i+1]
-
-            tx = trajx[initial:final]
-            ty = trajy[initial:final]
-            tz = trajz[initial:final]
-
-            if len(tx) == 0:
-                break
-
-            seg_start.append([tx[0], ty[0], tz[0]])
-            seg_end.append([tx[-1], ty[-1], tz[-1]])
-
-            xcoefs = _np.polynomial.polynomial.polyfit(tz, tx, 1)
-            poly_x.append(xcoefs)
-
-            ycoefs = _np.polynomial.polynomial.polyfit(tz, ty, 1)
-            poly_y.append(ycoefs)
-
-        seg_start = _np.array(seg_start)
-        seg_end = _np.array(seg_end)
-        poly_x = _np.array(poly_x)
-        poly_y = _np.array(poly_y)
-
-        return seg_start, seg_end, poly_x, poly_y
-
     def calc_trajectory_length(self, trajectory):
         traj_pos = trajectory[:, 0:3]
         traj_diff = _np.diff(traj_pos, axis=0)

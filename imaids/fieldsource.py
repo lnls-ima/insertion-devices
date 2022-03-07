@@ -86,7 +86,10 @@ class FieldSource():
             r[0]*1000, r[1]*1000, r[2]*1000, r[3], r[4], r[5]
         ])
 
-        while r[2] < zmax/1000:
+        z0 = r[2]
+        lz = _np.abs(zmax/1000 - z0)
+        
+        while _np.abs(r[2]- z0) < lz:
             pos = [p*1000 for p in r[:3]]
             if on_axis_field:
                 pos[0], pos[1] = 0, 0
@@ -114,7 +117,7 @@ class FieldSource():
             b3 = self.get_field_at_point(pos3)
             drds4 = _utils.newton_lorentz_equation(a, r3, b3)
 
-            r = r + (step/6)*(drds1 + 2*drds2 + 2*drds3 + drds4)
+            r += (step/6)*(drds1 + 2*drds2 + 2*drds3 + drds4)
 
             trajectory.append([
                 r[0]*1000, r[1]*1000, r[2]*1000, r[3], r[4], r[5]
@@ -435,7 +438,7 @@ class SinusoidalFieldSource(FieldSource):
 
     def calc_trajectory_avg_over_period(self, trajectory):
         trajz = [t for t in trajectory[:, 2]]
-        step = trajz[1] - trajz[0]
+        step = _np.abs(trajz[1] - trajz[0])
         navg = int(self.period_length/step)
 
         avgtrajx = _np.convolve(
@@ -447,6 +450,7 @@ class SinusoidalFieldSource(FieldSource):
         avgtrajx = avgtrajx[navg:-navg]
         avgtrajy = avgtrajy[navg:-navg]
         avgtraj = _np.transpose([avgtrajx, avgtrajy, trajz])
+
         return avgtraj
 
     def calc_trajectory_length(self, trajectory):

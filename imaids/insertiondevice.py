@@ -14,7 +14,7 @@ class InsertionDeviceData(
             self, nr_periods=None, period_length=None,
             gap=None, name='', filename=None,
             raw_data=None, selected_y=0):
-        if gap <= 0:
+        if gap is not None and gap <= 0:
             raise ValueError('gap must be > 0.')
 
         self._gap = gap

@@ -620,36 +620,6 @@ class FieldData(FieldSource):
         elif raw_data is not None:
             self.read_raw_data(raw_data, selected_y=selected_y)
 
-    def __add__(self, other):
-        px = [i for i in self._px]
-        py = [i for i in self._py]
-        pz = [i for i in self._pz]
-        raw_data = []
-        for z in pz:
-            for y in py:
-                for x in px:
-                    b = self.get_field_at_point([x, y, z])
-                    bo = other.get_field_at_point([x, y, z])
-                    bs = _np.array(b) + _np.array(bo)
-                    raw_data.append([x, y, z, bs[0], bs[1], bs[2]])
-        raw_data = _np.array(raw_data)
-        return self.__class__(raw_data=raw_data, selected_y=py[0])
-
-    def __sub__(self, other):
-        px = [i for i in self._px]
-        py = [i for i in self._py]
-        pz = [i for i in self._pz]
-        raw_data = []
-        for z in pz:
-            for y in py:
-                for x in px:
-                    b = self.get_field_at_point([x, y, z])
-                    bo = other.get_field_at_point([x, y, z])
-                    bs = _np.array(b) - _np.array(bo)
-                    raw_data.append([x, y, z, bs[0], bs[1], bs[2]])
-        raw_data = _np.array(raw_data)
-        return self.__class__(raw_data=raw_data, selected_y=py[0])
-
     @property
     def filename(self):
         return self._filename
@@ -701,6 +671,36 @@ class FieldData(FieldSource):
             self._bz_func = _interpolate.RectBivariateSpline(
                 self._px, self._pz, self._bz)
         return True
+
+    def add_field(self, other):
+        px = [i for i in self._px]
+        py = [i for i in self._py]
+        pz = [i for i in self._pz]
+        raw_data = []
+        for z in pz:
+            for y in py:
+                for x in px:
+                    b = self.get_field_at_point([x, y, z])
+                    bo = other.get_field_at_point([x, y, z])
+                    bs = _np.array(b) + _np.array(bo)
+                    raw_data.append([x, y, z, bs[0], bs[1], bs[2]])
+        raw_data = _np.array(raw_data)
+        self.read_raw_data(raw_data=raw_data)
+
+    def sub_field(self, other):
+        px = [i for i in self._px]
+        py = [i for i in self._py]
+        pz = [i for i in self._pz]
+        raw_data = []
+        for z in pz:
+            for y in py:
+                for x in px:
+                    b = self.get_field_at_point([x, y, z])
+                    bo = other.get_field_at_point([x, y, z])
+                    bs = _np.array(b) - _np.array(bo)
+                    raw_data.append([x, y, z, bs[0], bs[1], bs[2]])
+        raw_data = _np.array(raw_data)
+        self.read_raw_data(raw_data=raw_data)
 
     def clear(self):
         self._filename = None

@@ -1,8 +1,11 @@
 
 import numpy as _np
+import matplotlib.pyplot as _plt
+import matplotlib.gridspec as _gridspec
 
 from . import utils as _utils
 from . import fieldsource as _fieldsource
+from . import insertiondevice as _insertiondevice
 
 
 class UndulatorShimming():
@@ -281,18 +284,25 @@ class UndulatorShimming():
 
         return True
 
-    def calc_shims(self, nsv=None, solved=True):
+    def calc_shims(self, nsv=None, solved=True, ws=None):
         if self.model_segments is None:
             self.calc_model_segments()
 
         if self.meas_segments is None:
             self.calc_meas_segments()
 
+        if ws is None:
+            ws = [1]*self.response_matrix.shape[0]
+        ws = _np.array(ws)/_np.linalg.norm(ws)
+        w = _np.diag(_np.sqrt(ws))
+
         if (self._model_slope_solved != solved or 
                 self._model_slope_x is None or self._model_slope_y is None):
             self.calc_model_slope(solved=solved)
 
-        u, sv, vt = _np.linalg.svd(self.response_matrix, full_matrices=False)
+        m = self.response_matrix
+        m = w @ m
+        u, sv, vt = _np.linalg.svd(m, full_matrices=False)
         
         if nsv is None:
             nsv = len(sv)
@@ -307,6 +317,7 @@ class UndulatorShimming():
         slope_error_x = self._model_slope_x - slope_x
         slope_error_y = self._model_slope_y - slope_y
         slope_error = _np.concatenate([slope_error_x, slope_error_y])
+        slope_error = w @ slope_error
 
         shims = minv @ slope_error
 
@@ -350,3 +361,119 @@ class UndulatorShimming():
 
         return _fieldsource.FieldData(raw_data=raw_data)
 
+    def get_shimmed_meas(self, shims):
+        zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
+        field = self.meas.get_field(z=zpos)
+        x = [self.xpos]*self.znpts
+        y = [self.ypos]*self.znpts
+        raw_data = _np.transpose(
+            [x, y, zpos, field[:, 0], field[:, 1], field[:, 2]])
+        meas_data = _insertiondevice.InsertionDeviceData(
+            nr_periods=self.meas.nr_periods,
+            period_length=self.meas.period_length,
+            gap=self.meas.gap,
+            raw_data=raw_data)
+
+        shim_signature = self.get_shims_signature(shims)
+
+        meas_data.add_field(shim_signature)
+
+        return meas_data
+
+    def calc_and_plot_results(
+            self, shimmed_meas, zmin_pe=None, zmax_pe=None,
+            table_fontsize=12, table_decimals=1):
+        objs = [self.model, self.meas, shimmed_meas]
+        labels = ['model', 'meas', 'shimmed']
+
+        results = {}
+        for obj, label in zip(objs, labels):
+            traj = obj.calc_trajectory(
+                self.energy,
+                [self.xpos, self.ypos, self.zmin, 0, 0, 1],
+                self.zmax, self.rkstep)
+
+            bx0, by0, _, _= obj.calc_field_amplitude()
+            zpe, pe, pe_rms = obj.calc_phase_error(
+                self.energy, traj, bx0, by0, zmin=zmin_pe, zmax=zmax_pe)
+            
+            z = _np.linspace(self.zmin, self.zmax, self.znpts)
+            ib, iib = obj.calc_field_integrals(z_list=z)
+
+            results[label] = {}
+            results[label]['traj'] = traj
+            results[label]['bx0'] = bx0
+            results[label]['by0'] = by0
+            results[label]['phase_error'] = _np.transpose([zpe, pe*180/_np.pi])
+            results[label]['phase_error_rms'] = pe_rms*180/_np.pi
+            results[label]['ib'] = ib
+            results[label]['iib'] = iib
+
+        spec = _gridspec.GridSpec(
+            ncols=2, nrows=2,
+            wspace=0.25, hspace=0.25,
+            left=0.1, right=0.95, top=0.95, bottom=0.15)
+        fig = _plt.figure()
+        ax0 = fig.add_subplot(spec[0, 0])
+        ax1 = fig.add_subplot(spec[0, 1])
+        ax2 = fig.add_subplot(spec[1, 0])
+        ax3 = fig.add_subplot(spec[1, 1])
+
+        values = []
+        for label in labels:
+            traj = results[label]['traj']
+            ax0.plot(traj[:, 2], traj[:, 0]*1000, label=label)
+            ax1.plot(traj[:, 2], traj[:, 1]*1000, label=label)
+
+            phase_error = results[label]['phase_error']
+            phase_error_rms = results[label]['phase_error_rms']
+            ax2.plot(phase_error[:, 0], phase_error[:, 1], '-o', label=label)
+
+            ib = results[label]['ib']
+            iib = results[label]['iib']
+            values.append(
+                [ib[-1, 0], ib[-1, 1], iib[-1, 0], iib[-1, 1], phase_error_rms])
+
+        ax0.set_xlabel('Z [mm]')
+        ax0.set_ylabel('TrajX [um]')
+        ax0.grid(alpha=0.3)
+        ax0.legend(loc='best')
+        ax0.patch.set_edgecolor('black')
+        ax0.patch.set_linewidth('2')
+
+        ax1.set_xlabel('Z [mm]')
+        ax1.set_ylabel('TrajY [um]')
+        ax1.grid(alpha=0.3)
+        ax1.patch.set_edgecolor('black')
+        ax1.patch.set_linewidth('2')
+
+        ax2.set_xlabel('Z [mm]')
+        ax2.set_ylabel('Phase error [deg]')
+        ax2.grid(alpha=0.3)
+        ax2.patch.set_edgecolor('black')
+        ax2.patch.set_linewidth('2')
+
+        values = _np.round(
+            _np.transpose(values), decimals=table_decimals)
+
+        ax3.patch.set_visible(False)
+        ax3.axis('off')
+        table = ax3.table(
+            cellText=values,
+            colLabels=labels,
+            rowLabels=[
+                'IBx [G.cm]',
+                'IBy [G.cm]',
+                'IIBx [kG.cm2]',
+                'IIBy [kG.cm2]',
+                'PhaseErr [deg]',
+                ],
+            loc='center',
+            colLoc='center',
+            rowLoc='center',
+            )
+        table.auto_set_font_size(False)
+        table.set_fontsize(table_fontsize)
+        table.scale(0.7, 2)
+
+        return results

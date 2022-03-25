@@ -398,7 +398,7 @@ class SinusoidalFieldSource(FieldSource):
 
     def calc_field_amplitude(
             self, z_list=None, field_list=None,
-            x=0, y=0, npts_per_period=101, maxfev=5000):
+            x=0, y=0, npts_per_period=101, maxfev=10000):
         if self.nr_periods > 1:
             zmin = -self._period_length*(self.nr_periods - 1)/2
             zmax = self._period_length*(self.nr_periods - 1)/2
@@ -476,8 +476,15 @@ class SinusoidalFieldSource(FieldSource):
 
     def calc_phase_error(
             self, energy, trajectory, bx_amp, by_amp,
-            skip_poles=0, zmin=None, zmax=None):
-        if by_amp >= bx_amp:
+            skip_poles=0, zmin=None, zmax=None, field_comp=None):
+        if field_comp is None:
+            z_from_by = by_amp >= bx_amp
+        elif field_comp == 0:
+            z_from_by = False
+        elif field_comp == 1:
+            z_from_by = True
+
+        if z_from_by:
             z_list = self.find_zeros(trajectory[:, 2], trajectory[:, 3])
         else:
             z_list = self.find_zeros(trajectory[:, 2], trajectory[:, 4])

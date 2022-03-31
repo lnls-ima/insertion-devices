@@ -7,6 +7,7 @@ from . import insertiondevice as _insertiondevice
 from . import blocks as _blocks
 from . import cassettes as _cassettes
 from . import materials as _materials
+from . import utils as _utils
 
 
 class Delta(_insertiondevice.InsertionDeviceModel):
@@ -1100,18 +1101,18 @@ class Kyma22(APU):
             name=name, **kwargs)
 
 
-class HybridPlanar(Planar):
-    """Hybrid planar undulador."""
+class HybridAPU(APU):
+    """Hybrid APU undulador."""
 
     def __init__(
             self, block_shape='default',
             nr_periods=10, period_length=19.9, gap=5.2, mr=1.34,
             block_subdivision='default', hybrid=True,
-            pole_shape='default', pole_length=2.786,
+            pole_shape='default', pole_length='default',
             pole_material='default', pole_subdivision='default',
             rectangular=False, longitudinal_distance=0.1,
-            start_blocks_length=None, start_blocks_distance=None,
-            end_blocks_length=None, end_blocks_distance=None,
+            start_blocks_length='default', start_blocks_distance='default',
+            end_blocks_length='default', end_blocks_distance='default',
             name='hybrid_planar', **kwargs):
 
         if block_shape == 'default':
@@ -1131,7 +1132,102 @@ class HybridPlanar(Planar):
                 'hybrid_pole')
 
         if pole_material == 'default':
-            pole_material = _materials.Permendur()
+            pole_material = _materials.VanadiumPermendur()
+
+        if pole_length == 'default':
+            pole_length = _utils.hybrid_undulator_pole_length(
+                gap, period_length)
+
+        block_len = (
+            period_length/2 - pole_length - longitudinal_distance)
+
+        lenghts = [0, block_len/2, pole_length/2, block_len]
+        distances = [0, pole_length, pole_length, longitudinal_distance]
+
+        if start_blocks_length == 'default':
+            start_blocks_length = lenghts
+
+        if start_blocks_distance == 'default':
+            start_blocks_distance = distances
+
+        if end_blocks_length == 'default':
+            end_blocks_length = lenghts[0:-1][::-1]
+
+        if end_blocks_distance == 'default':
+            end_blocks_distance = distances[0:-1][::-1]
+
+        super().__init__(
+            nr_periods=nr_periods, period_length=period_length,
+            gap=gap, mr=mr, block_shape=block_shape,
+            block_subdivision=block_subdivision,
+            rectangular=rectangular,
+            longitudinal_distance=longitudinal_distance,
+            hybrid=hybrid,
+            pole_shape=pole_shape,
+            pole_length=pole_length,
+            pole_material=pole_material,
+            pole_subdivision=pole_subdivision,
+            start_blocks_length=start_blocks_length,
+            start_blocks_distance=start_blocks_distance,
+            end_blocks_length=end_blocks_length,
+            end_blocks_distance=end_blocks_distance,
+            name=name, **kwargs)
+
+
+class HybridPlanar(Planar):
+    """Hybrid planar undulador."""
+
+    def __init__(
+            self, block_shape='default',
+            nr_periods=10, period_length=19.9, gap=5.2, mr=1.34,
+            block_subdivision='default', hybrid=True,
+            pole_shape='default', pole_length='default',
+            pole_material='default', pole_subdivision='default',
+            rectangular=False, longitudinal_distance=0.1,
+            start_blocks_length='default', start_blocks_distance='default',
+            end_blocks_length='default', end_blocks_distance='default',
+            name='hybrid_planar', **kwargs):
+
+        if block_shape == 'default':
+            block_shape = _blocks.Block.get_predefined_shape(
+                'hybrid_block')
+
+        if block_subdivision == 'default':
+            block_subdivision = _blocks.Block.get_predefined_subdivision(
+                'hybrid_block')
+
+        if pole_shape == 'default':
+            pole_shape = _blocks.Block.get_predefined_shape(
+                'hybrid_pole')
+
+        if pole_subdivision == 'default':
+            pole_subdivision = _blocks.Block.get_predefined_subdivision(
+                'hybrid_pole')
+
+        if pole_material == 'default':
+            pole_material = _materials.VanadiumPermendur()
+
+        if pole_length == 'default':
+            pole_length = _utils.hybrid_undulator_pole_length(
+                gap, period_length)
+
+        block_len = (
+            period_length/2 - pole_length - longitudinal_distance)
+
+        lenghts = [0, block_len/2, pole_length/2, block_len]
+        distances = [0, pole_length, pole_length, longitudinal_distance]
+
+        if start_blocks_length == 'default':
+            start_blocks_length = lenghts
+
+        if start_blocks_distance == 'default':
+            start_blocks_distance = distances
+
+        if end_blocks_length == 'default':
+            end_blocks_length = lenghts[0:-1][::-1]
+
+        if end_blocks_distance == 'default':
+            end_blocks_distance = distances[0:-1][::-1]
 
         super().__init__(
             nr_periods=nr_periods, period_length=period_length,

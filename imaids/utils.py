@@ -83,26 +83,38 @@ def calc_cosine_amplitude(
     vy_amp_init = _np.max(_np.abs(vy))
     vz_amp_init = _np.max(_np.abs(vz))
 
-    px = _optimize.curve_fit(
-        cosine_function, pos_list, vx,
-        p0=[vx_amp_init, freq_guess, 0],
-        maxfev=maxfev)[0]
-    vx_amp = _np.abs(px[0])
-    vx_phase = px[2]
+    try:
+        px = _optimize.curve_fit(
+            cosine_function, pos_list, vx,
+            p0=[vx_amp_init, freq_guess, 0],
+            maxfev=maxfev)[0]
+        vx_amp = _np.abs(px[0])
+        vx_phase = px[2]
+    except Exception:
+        vx_amp = 0
+        vx_phase = 0
 
-    py = _optimize.curve_fit(
-        cosine_function, pos_list, vy,
-        p0=[vy_amp_init, freq_guess, 0],
-        maxfev=maxfev)[0]
-    vy_amp = _np.abs(py[0])
-    vy_phase = py[2]
+    try:
+        py = _optimize.curve_fit(
+            cosine_function, pos_list, vy,
+            p0=[vy_amp_init, freq_guess, 0],
+            maxfev=maxfev)[0]
+        vy_amp = _np.abs(py[0])
+        vy_phase = py[2]
+    except Exception:
+        vy_amp = 0
+        vy_phase = 0
 
-    pz = _optimize.curve_fit(
-        cosine_function, pos_list, vz,
-        p0=[vz_amp_init, freq_guess, 0],
-        maxfev=maxfev)[0]
-    vz_amp = _np.abs(pz[0])
-    vz_phase = pz[2]
+    try:
+        pz = _optimize.curve_fit(
+            cosine_function, pos_list, vz,
+            p0=[vz_amp_init, freq_guess, 0],
+            maxfev=maxfev)[0]
+        vz_amp = _np.abs(pz[0])
+        vz_phase = pz[2]
+    except Exception:
+        vz_amp = 0
+        vz_phase = 0
 
     amp = [vx_amp, vy_amp, vz_amp]
     phase = [vx_phase, vy_phase, vz_phase]

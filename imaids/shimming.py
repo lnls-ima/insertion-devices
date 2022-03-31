@@ -1,4 +1,5 @@
 
+import json as _json
 import numpy as _np
 import matplotlib.pyplot as _plt
 import matplotlib.gridspec as _gridspec
@@ -11,17 +12,12 @@ from . import insertiondevice as _insertiondevice
 class UndulatorShimming():
 
     def __init__(
-            self, model, meas, zmin, zmax, znpts,
-            cassettes=None, block_type='v', segments_type='half_period', 
-            traj_type='pos', energy=3.0, rkstep=0.5, xpos=0.0, ypos=0.0,
-            zmin_pe=None, zmax_pe=None, include_pe=False, field_comp=None):
-        if cassettes is None:
-            cassettes = list(model.cassettes.keys())
-        for cassette in cassettes:
-            if cassette not in model.cassettes:
-                raise ValueError(
-                    'Invalid cassette name: {0:s}'.format(cassette))
-
+            self, zmin, zmax, znpts, cassettes,
+            block_type='v', segments_type='half_period', 
+            energy=3.0, rkstep=0.5, xpos=0.0, ypos=0.0,
+            zmin_pe=None, zmax_pe=None,
+            include_pe=False, field_comp=None,
+            solved_shim=True, solved_matrix=False):
         if block_type not in ('v', 'vpos', 'vneg'):
             raise ValueError(
                 'Invalid block_type value. Valid options: "v", "vpos", "vneg"')
@@ -30,22 +26,15 @@ class UndulatorShimming():
             raise ValueError(
                 'Invalid segments_type value. Valid options: "period" or "half_period"')
 
-        if traj_type not in ('pos', 'neg', 'both'):
-            raise ValueError(
-                'Invalid segments_type value. Valid options: "pos", "neg", "both"')
-
         if zmin_pe is None:
             zmin_pe = zmin
 
         if zmax_pe is None:
             zmax_pe = zmax
 
-        self.model = model
-        self.meas = meas
         self.cassettes = cassettes
         self.block_type = block_type
         self.segments_type = segments_type
-        self.traj_type = traj_type
         self.zmin = zmin
         self.zmax = zmax
         self.znpts = int(znpts)
@@ -57,66 +46,24 @@ class UndulatorShimming():
         self.zmax_pe = zmax_pe
         self.include_pe = include_pe
         self.field_comp = field_comp
+        self.solved_shim = solved_shim
+        self.solved_matrix = solved_matrix
 
-        self._model_segments = None
-        self._meas_segments = None
-        self._response_matrix = None
-        self._model_slope_x = None
-        self._model_slope_y = None
-        self._model_pe = None
-        self._model_slope_solved = None
+    @staticmethod
+    def get_rounded_shims(shims, possible_shims):
+        shims_round = []
+        for shim in shims:
+            shim_round = min(possible_shims, key=lambda x: abs(x-shim))
+            shims_round.append(shim_round)
+        return shims_round
 
-    @property
-    def response_matrix(self):
-        return self._response_matrix
+    @staticmethod
+    def calc_svd(response_matrix):
+        u, sv, vt = _np.linalg.svd(response_matrix, full_matrices=False)
+        return u, sv, vt
 
-    @property
-    def model_segments(self):
-        return self._model_segments
-    
-    @property
-    def meas_segments(self):
-        return self._meas_segments
-
-    def calc_model_segments(self):
-        self._model_segments = self.calc_segments(self.model)
-
-    def calc_meas_segments(self):
-        self._meas_segments = self._model_segments
-
-    def calc_segments(self, obj):
-        zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
-        field = obj.get_field(z=zpos)
-
-        if self.field_comp:
-            comp = self.field_comp
-        else:
-            freqs = _np.array([2*_np.pi/self.model.period_length])
-            amps, *_ = _utils.fit_fourier_components(field, freqs, zpos)
-            comp = _np.argmax(amps)
-
-        spos = obj.find_zeros(zpos, field[:, comp])
-
-        if self.segments_type == 'period':
-            segs = spos[::2]
-        
-        elif self.segments_type == 'half_period':
-            segs = spos
-
-        segs = _np.insert(
-            segs, 0, segs[0] - self.model.period_length)
-        segs = _np.insert(
-            segs, -1, segs[-1] + self.model.period_length)
-        
-        import matplotlib.pyplot as plt
-        print('comp ', comp)
-        plt.plot(zpos, field[:, comp])
-        plt.plot(segs, obj.get_field(z=segs)[:, comp], 'o')
-        plt.show()
-
-        return sorted(segs)
-
-    def fit_trajectory_segments(self, trajectory, segs, max_size):
+    @staticmethod
+    def fit_trajectory_segments(trajectory, segs, max_size):
         trajx = trajectory[:, 0]
         trajy = trajectory[:, 1]
         trajz = trajectory[:, 2]
@@ -130,7 +77,8 @@ class UndulatorShimming():
 
         index_list = []
         for pos in segs:
-            index_list.append(_np.where(trajz >= pos)[0][0])
+            idx = _np.where(trajz >= pos)[0]
+            index_list.append(idx[0])
         
         last_index = _np.where(trajz >= segs[-1] + max_size)[0]
         if len(last_index) == 0:
@@ -165,99 +113,116 @@ class UndulatorShimming():
 
         return poly_x, poly_y
 
-    def _calc_traj_slope(self, obj, segs, traj):
-        avgtraj = obj.calc_trajectory_avg_over_period(traj)
+    @staticmethod
+    def read_response_matrix(filename):
+        return _np.loadtxt(filename)
 
-        poly_x, poly_y = self.fit_trajectory_segments(
-            avgtraj, segs, self.model.period_length)
+    @staticmethod
+    def read_segs(filename):
+        return _np.loadtxt(filename)
 
-        slope_x = poly_x[:, 1]
-        slope_y = poly_y[:, 1]
+    @staticmethod
+    def read_shims(filename):
+        return _np.loadtxt(filename)
 
-        return slope_x, slope_y
+    @staticmethod
+    def read_error(filename):
+        return _np.loadtxt(filename)
 
-    def calc_slope_and_phase_error(self, obj, segs):
-        slope_x = []
-        slope_y = []
+    @staticmethod
+    def read_results(filename):
+        with open(filename, 'r') as f:
+            results = _json.load(f)
+        return results
 
+    @staticmethod
+    def read_fieldmap(filename, nr_periods, period, gap):
+        data = _insertiondevice.InsertionDeviceData(
+            nr_periods=nr_periods, period_length=period,
+            gap=gap, filename=filename)
+        return data
+
+    def _calc_traj(self, obj):
+        traj = obj.calc_trajectory(
+            self.energy,
+            [self.xpos, self.ypos, self.zmin, 0, 0, 1],
+            self.zmax, self.rkstep)
+        return traj
+
+    def _calc_phase_error(self, obj, traj):
         bx_amp, by_amp, _, _ = obj.calc_field_amplitude()
+        zpe, pe, pe_rms = obj.calc_phase_error(
+            self.energy, traj, bx_amp, by_amp,
+            zmin=self.zmin_pe, zmax=self.zmax_pe,
+            field_comp=self.field_comp)
+        return zpe, pe, pe_rms
 
-        if self.traj_type in ('pos', 'both'):
-            traj_pos = obj.calc_trajectory(
-                self.energy,
-                [self.xpos, self.ypos, self.zmin, 0, 0, 1],
-                self.zmax, self.rkstep)
-            slope_x_pos, slope_y_pos = self._calc_traj_slope(
-                obj, segs, traj_pos)
-            
-            zpe, phase_error, _ = obj.calc_phase_error(
-                self.energy, traj_pos, bx_amp, by_amp,
-                zmin=self.zmin_pe, zmax=self.zmax_pe,
-                field_comp=self.field_comp)
+    def _calc_field_integrals(self, obj):
+        z = _np.linspace(self.zmin, self.zmax, self.znpts)
+        ib, iib = obj.calc_field_integrals(z_list=z)
+        return ib, iib
 
-            slope_x = _np.append(slope_x, slope_x_pos)
-            slope_y = _np.append(slope_y, slope_y_pos)
+    def calc_segments(self, obj, filename=None):
+        zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
+        field = obj.get_field(z=zpos)
+
+        if self.field_comp:
+            comp = self.field_comp
+        else:
+            freqs = _np.array([2*_np.pi/obj.period_length])
+            amps, *_ = _utils.fit_fourier_components(field, freqs, zpos)
+            comp = _np.argmax(amps)
+
+        spos = obj.find_zeros(zpos, field[:, comp])
+
+        if self.segments_type == 'period':
+            segs = spos[::2]
         
-        if self.traj_type in ('neg', 'both'):
-            traj_neg = obj.calc_trajectory(
-                self.energy,
-                [self.xpos, self.ypos, self.zmax, 0, 0, 1],
-                self.zmin, (-1)*self.rkstep)
-            traj_neg = _np.flip(traj_neg, axis=0)
-            slope_x_neg, slope_y_neg = self._calc_traj_slope(
-                obj, segs, traj_neg)
+        elif self.segments_type == 'half_period':
+            segs = spos
 
-            zpe, phase_error, _ = obj.calc_phase_error(
-                self.energy, traj_neg, bx_amp, by_amp,
-                zmin=self.zmin_pe, zmax=self.zmax_pe,
-                field_comp=self.field_comp)
-
-            slope_x = _np.append(slope_x, slope_x_neg)
-            slope_y = _np.append(slope_y, slope_y_neg)
-
-        print('zpe_i: ', zpe[0])
-        print('zpe_f: ', zpe[-1])
-
-        return slope_x, slope_y, phase_error
-
-    def calc_slope(self, obj, segs):
-        slope_x = []
-        slope_y = []
-
-        if self.traj_type in ('pos', 'both'):
-            traj_pos = obj.calc_trajectory(
-                self.energy,
-                [self.xpos, self.ypos, self.zmin, 0, 0, 1],
-                self.zmax, self.rkstep)
-            slope_x_pos, slope_y_pos = self._calc_traj_slope(
-                obj, segs, traj_pos)
-            
-            slope_x = _np.append(slope_x, slope_x_pos)
-            slope_y = _np.append(slope_y, slope_y_pos)
+        segs = _np.insert(
+            segs, 0, segs[0] - obj.period_length)
+        segs = _np.insert(
+            segs, -1, segs[-1] + obj.period_length)
         
-        if self.traj_type in ('neg', 'both'):
-            traj_neg = obj.calc_trajectory(
-                self.energy,
-                [self.xpos, self.ypos, self.zmax, 0, 0, 1],
-                self.zmin, (-1)*self.rkstep)
-            traj_neg = _np.flip(traj_neg, axis=0)
-            slope_x_neg, slope_y_neg = self._calc_traj_slope(
-                obj, segs, traj_neg)
-            
-            slope_x = _np.append(slope_x, slope_x_neg)
-            slope_y = _np.append(slope_y, slope_y_neg)
+        segs = sorted(segs)
 
-        return slope_x, slope_y
+        if filename is not None:
+            _np.savetxt(filename, segs)
 
-    def get_block_names(self):
+        return segs
+
+    def calc_slope_and_phase_error(self, obj, segs, filename=None):
+        traj = self._calc_traj(obj)
+        avgtraj = obj.calc_trajectory_avg_over_period(traj)
+        px, py = self.fit_trajectory_segments(
+            avgtraj, segs, obj.period_length)
+
+        sx = px[:, 1]
+        sy = py[:, 1]
+
+        if self.include_pe:    
+            _, pe, _ = self._calc_phase_error(obj, traj)
+            data = _np.concatenate([sx, sy, pe])
+        else:
+            pe = None
+            data = _np.concatenate([sx, sy])
+
+        if filename is not None:
+            _np.savetxt(filename, data)
+
+        return sx, sy, pe
+
+    def get_block_names(self, model):
         names = []
         for cassette in self.cassettes:
-            blocks = self.get_shimming_blocks(cassette)
+            blocks = self.get_shimming_blocks(model, cassette)
             names.extend([b.name for b in blocks])
         return names
 
-    def get_shimming_blocks(self, cassette):
-        cas = self.model.cassettes[cassette]
+    def get_shimming_blocks(self, model, cassette):
+        cas = model.cassettes[cassette]
         mag = _np.array(cas.magnetization_list)
         mres = _np.sqrt(mag[:, 0]**2 + mag[:, 2]**2)
         
@@ -273,146 +238,113 @@ class UndulatorShimming():
         tol = 0.1
         regular_blocks = []
         for block in blocks:
-            if block.length > (1 - tol)*self.model.period_length/4:
+            if block.length > (1 - tol)*model.period_length/4:
                 regular_blocks.append(block)
         
         return regular_blocks
 
-    def load_response_matrix(self, filename):
-        self._response_matrix = _np.loadtxt(filename)
-
-    def calc_model_slope(self, solved=True):
-        if self.model_segments is None:
-            self.calc_model_segments()
-
-        if solved:
-            self.model.solve()
-        
-        self._model_slope_solved = solved
-
-        sx, sy, pe = self.calc_slope_and_phase_error(
-            self.model, self.model_segments)
-        
-        self._model_slope_x = sx
-        self._model_slope_y = sy
-        self._model_pe = pe
-        return True
-
     def calc_response_matrix(
-            self, filename, shim=0.1, solved=True):
-        self._response_matrix = None
+            self, model, model_segs, filename=None, shim=0.1):
+        response_matrix = None
 
-        if self.model_segments is None:
-            self.calc_model_segments()
+        sx0, sy0, pe0 = self.calc_slope_and_phase_error(
+            model, model_segs)
 
-        if (self._model_slope_solved != solved or 
-                self._model_slope_x is None or self._model_slope_y is None):
-            self.calc_model_slope(solved=solved)
-
-        ext = '.' + filename.split('.')[-1]
-        filename_mx = filename.replace(ext, '_mx' + ext)
-        filename_my = filename.replace(ext, '_my' + ext)
-        filename_mpe = filename.replace(ext, '_mpe' + ext)
-        open(filename_mx, 'w').close()
-        open(filename_my, 'w').close()
-        open(filename_mpe, 'w').close()
+        if filename is not None:
+            ext = '.' + filename.split('.')[-1]
+            filename_mx = filename.replace(ext, '_mx' + ext)
+            filename_my = filename.replace(ext, '_my' + ext)
+            filename_mpe = filename.replace(ext, '_mpe' + ext)
+            open(filename_mx, 'w').close()
+            open(filename_my, 'w').close()
+            open(filename_mpe, 'w').close()
 
         mx = []
         my = []
         mpe = []
         for cassette in self.cassettes:
-            blocks = self.get_shimming_blocks(cassette)
-            
-            print(len(blocks))
+            blocks = self.get_shimming_blocks(model, cassette)
 
             for idx in range(len(blocks)):
-                print(idx)
                 blocks[idx].shift([0, shim, 0])
                 
-                if solved:
-                    self.model.solve()
-                slope_x, slope_y, pe = self.calc_slope_and_phase_error(
-                    self.model, self.model_segments)
+                if self.solved_matrix:
+                    model.solve()
+                sx, sy, pe = self.calc_slope_and_phase_error(
+                    model, model_segs)
 
                 blocks[idx].shift([0, -shim, 0])
 
-                dpx = (slope_x - self._model_slope_x)/shim
-                dpy = (slope_y - self._model_slope_y)/shim
-
-                with open(filename_mx, 'a+') as fx:
-                    strx = '\t'.join('{0:g}'.format(v) for v in dpx)
-                    fx.write(strx + '\n')
-
-                with open(filename_my, 'a+') as fy:
-                    stry = '\t'.join('{0:g}'.format(v) for v in dpy)
-                    fy.write(stry + '\n')
-
+                dpx = (sx - sx0)/shim
                 mx.append(dpx)
+
+                dpy = (sy - sy0)/shim
                 my.append(dpy)
 
                 if self.include_pe:
-                    dpe = (pe - self._model_pe)/shim
-                    with open(filename_mpe, 'a+') as fpe:
-                        strpe = '\t'.join('{0:g}'.format(v) for v in dpe)
-                        fpe.write(strpe + '\n')
+                    dpe = (pe - pe0)/shim
                     mpe.append(dpe)
+
+                if filename is not None:
+                    with open(filename_mx, 'a+') as fx:
+                        strx = '\t'.join('{0:g}'.format(v) for v in dpx)
+                        fx.write(strx + '\n')
+
+                    with open(filename_my, 'a+') as fy:
+                        stry = '\t'.join('{0:g}'.format(v) for v in dpy)
+                        fy.write(stry + '\n')
+
+                    if self.include_pe:
+                        with open(filename_mpe, 'a+') as fpe:
+                            strpe = '\t'.join('{0:g}'.format(v) for v in dpe)
+                            fpe.write(strpe + '\n')
 
         mx = _np.array(mx)
         my = _np.array(my)
+        mpe = _np.array(mpe)
         
         if self.include_pe:
-            mpe = _np.array(mpe)
-            m = _np.transpose(_np.concatenate([mx, my, mpe], axis=1))
+            response_matrix = _np.transpose(_np.concatenate([mx, my, mpe], axis=1))
         else:
-            m = _np.transpose(_np.concatenate([mx, my], axis=1))
+            response_matrix = _np.transpose(_np.concatenate([mx, my], axis=1))
         
-        _np.savetxt(filename, m)
+        if filename is not None:
+            _np.savetxt(filename, response_matrix)
 
-        self._response_matrix = m
+        return response_matrix
 
-        return True
+    def calc_error(
+            self, model, meas, model_segs, meas_segs, filename=None):
+        model_sx, model_sy, model_pe = self.calc_slope_and_phase_error(
+            model, model_segs)
+
+        meas_sx, meas_sy, meas_pe = self.calc_slope_and_phase_error(
+            meas, meas_segs)
+
+        sx_error = model_sx - meas_sx
+        sy_error = model_sy - meas_sy
+
+        if self.include_pe:
+            dpe = model_pe - meas_pe
+            error = _np.concatenate([sx_error, sy_error, dpe])
+        else:
+            error = _np.concatenate([sx_error, sy_error])
+
+        if filename is not None:
+            _np.savetxt(filename, error)
+
+        return error
 
     def calc_shims(
-            self, nsv=None, solved=True, ws=None,
-            slope_error=None, filename=None):
-        if slope_error is None:
-            if self.model_segments is None:
-                self.calc_model_segments()
-
-            if self.meas_segments is None:
-                self.calc_meas_segments()
-
-            if (self._model_slope_solved != solved or 
-                    self._model_slope_x is None or self._model_slope_y is None):
-                self.calc_model_slope(solved=solved)
-
-            slope_x, slope_y, pe = self.calc_slope_and_phase_error(
-                self.meas, self.meas_segments)
-
-            slope_error_x = self._model_slope_x - slope_x
-            slope_error_y = self._model_slope_y - slope_y
-
-            print('sx: ', len(slope_error_x))
-            print('sy: ', len(slope_error_y))
-            print('pe: ', len(pe))
-
-            if self.include_pe:
-                dpe = self._model_pe - pe
-                slope_error = _np.concatenate([slope_error_x, slope_error_y, dpe])
-            else:
-                slope_error = _np.concatenate([slope_error_x, slope_error_y])
-
-            if filename is not None:
-                _np.savetxt(filename, slope_error)
-
+            self, response_matrix, error, nsv=None, ws=None, filename=None):
         if ws is None:
-            ws = [1.0]*self.response_matrix.shape[0]
+            ws = [1.0]*response_matrix.shape[0]
         ws = _np.array(ws)/_np.linalg.norm(ws)
         w = _np.diag(_np.sqrt(ws))
 
-        m = self.response_matrix
+        m = response_matrix
         m = w @ m
-        u, sv, vt = _np.linalg.svd(m, full_matrices=False)
+        u, sv, vt = self.calc_svd(m)
         
         if nsv is None:
             nsv = len(sv)
@@ -421,98 +353,114 @@ class UndulatorShimming():
         svinv[nsv:] = 0
         minv = vt.T*svinv @ u.T
 
-        slope_error = w @ slope_error
+        ws_error = w @ error
 
-        shims = minv @ slope_error
+        shims = minv @ ws_error
 
-        return shims, sv
+        if filename is not None:
+            _np.savetxt(filename, shims)
 
-    def get_rounded_shims(self, shims, possible_shims):
-        shims_round = []
-        for shim in shims:
-            shim_round = min(possible_shims, key=lambda x: abs(x-shim))
-            shims_round.append(shim_round)
-        return shims_round
+        return shims
 
-    def get_shims_signature(self, shims):
+    def calc_shim_signature(self, model, shims, filename=None):
         zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
-        field0 = self.model.get_field(z=zpos)
+        field0 = model.get_field(z=zpos)
         
         count = 0
         for cassette in self.cassettes:
-            blocks = self.get_shimming_blocks(cassette)
+            blocks = self.get_shimming_blocks(model, cassette)
             for idx in range(len(blocks)):
                 blocks[idx].shift([0, shims[count], 0])
                 count += 1
-        self.model.solve()
 
-        field = self.model.get_field(z=zpos)
+        if self.solved_shim:
+            model.solve()
+
+        field = model.get_field(z=zpos)
         dfield = field - field0
 
         count = 0
         for cassette in self.cassettes:
-            blocks = self.get_shimming_blocks(cassette)
+            blocks = self.get_shimming_blocks(model, cassette)
 
             for idx in range(len(blocks)):
                 blocks[idx].shift([0, (-1)*shims[count], 0])
                 count += 1
+
+        if self.solved_shim:
+            model.solve()
 
         x = [self.xpos]*self.znpts
         y = [self.ypos]*self.znpts
         raw_data = _np.transpose(
             [x, y, zpos, dfield[:, 0], dfield[:, 1], dfield[:, 2]])
 
-        return _fieldsource.FieldData(raw_data=raw_data)
+        shim_signature = _insertiondevice.InsertionDeviceData(
+            nr_periods=model.nr_periods,
+            period_length=model.period_length,
+            gap=model.gap,
+            raw_data=raw_data)
 
-    def get_shimmed_meas(self, shims):
+        if filename is not None:
+            shim_signature.save_fieldmap(
+                filename, self.xpos, self.ypos, zpos)
+
+        return shim_signature
+
+    def calc_shimmed_meas(self, meas, shim_signature, filename=None):
         zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
-        field = self.meas.get_field(z=zpos)
+        field = meas.get_field(z=zpos)
         x = [self.xpos]*self.znpts
         y = [self.ypos]*self.znpts
         raw_data = _np.transpose(
             [x, y, zpos, field[:, 0], field[:, 1], field[:, 2]])
-        meas_data = _insertiondevice.InsertionDeviceData(
-            nr_periods=self.meas.nr_periods,
-            period_length=self.meas.period_length,
-            gap=self.meas.gap,
+        shimmed_meas = _insertiondevice.InsertionDeviceData(
+            nr_periods=meas.nr_periods,
+            period_length=meas.period_length,
+            gap=meas.gap,
             raw_data=raw_data)
 
-        shim_signature = self.get_shims_signature(shims)
+        shimmed_meas.add_field(shim_signature)
 
-        meas_data.add_field(shim_signature)
+        if filename is not None:
+            shimmed_meas.save_fieldmap(
+                filename, self.xpos, self.ypos, zpos)
 
-        return meas_data
-
-    def calc_and_plot_results(
-            self, shimmed_meas,
-            table_fontsize=12, table_decimals=1):
-        objs = [self.model, self.meas, shimmed_meas]
-        labels = ['model', 'meas', 'shimmed']
-
+        return shimmed_meas
+    
+    def calc_results(self, objs, labels, filename=None):
         results = {}
         for obj, label in zip(objs, labels):
-            traj = obj.calc_trajectory(
-                self.energy,
-                [self.xpos, self.ypos, self.zmin, 0, 0, 1],
-                self.zmax, self.rkstep)
+            traj = self._calc_traj(obj)
+            zpe, pe, pe_rms = self._calc_phase_error(obj, traj)
+            ib, iib = self._calc_field_integrals(obj)
+            r = {}
+            r['trajx'] = list(traj[:, 0]*1000)
+            r['trajy'] = list(traj[:, 1]*1000)
+            r['trajz'] = list(traj[:, 2])
+            r['trajxl'] = list(traj[:, 3])
+            r['trajyl'] = list(traj[:, 4])
+            r['trajzl'] = list(traj[:, 5])
+            r['zpe'] = list(zpe)
+            r['pe'] = list(pe*180/_np.pi)
+            r['perms'] = pe_rms*180/_np.pi
+            r['ibx'] = list(ib[:, 0])
+            r['iby'] = list(ib[:, 1])
+            r['ibz'] = list(ib[:, 2])
+            r['iibx'] = list(iib[:, 0])
+            r['iiby'] = list(iib[:, 1])
+            r['iibz'] = list(iib[:, 2])
+            results[label] = r
+    
+        if filename is not None:
+            with open(filename, 'w') as f:
+                _json.dump(results, f)
+        return results
 
-            bx0, by0, _, _= obj.calc_field_amplitude()
-            zpe, pe, pe_rms = obj.calc_phase_error(
-                self.energy, traj, bx0, by0,
-                zmin=self.zmin_pe, zmax=self.zmax_pe,
-                field_comp=self.field_comp)
-            
-            z = _np.linspace(self.zmin, self.zmax, self.znpts)
-            ib, iib = obj.calc_field_integrals(z_list=z)
-
-            results[label] = {}
-            results[label]['traj'] = traj
-            results[label]['bx0'] = bx0
-            results[label]['by0'] = by0
-            results[label]['phase_error'] = _np.transpose([zpe, pe*180/_np.pi])
-            results[label]['phase_error_rms'] = pe_rms*180/_np.pi
-            results[label]['ib'] = ib
-            results[label]['iib'] = iib
+    def plot_results(
+            self, results, table_fontsize=12,
+            table_decimals=1, filename=None, suptitle=None):
+        labels = list(results.keys())
 
         spec = _gridspec.GridSpec(
             ncols=2, nrows=2,
@@ -526,18 +474,16 @@ class UndulatorShimming():
 
         values = []
         for label in labels:
-            traj = results[label]['traj']
-            ax0.plot(traj[:, 2], traj[:, 0]*1000, label=label)
-            ax1.plot(traj[:, 2], traj[:, 1]*1000, label=label)
+            data = results[label]
+            ax0.plot(data['trajz'], data['trajx'], label=label)
+            ax1.plot(data['trajz'], data['trajy'], label=label)
 
-            phase_error = results[label]['phase_error']
-            phase_error_rms = results[label]['phase_error_rms']
-            ax2.plot(phase_error[:, 0], phase_error[:, 1], '-o', label=label)
+            ax2.plot(data['zpe'], data['pe'], '-o', label=label)
 
-            ib = results[label]['ib']
-            iib = results[label]['iib']
             values.append(
-                [ib[-1, 0], ib[-1, 1], iib[-1, 0], iib[-1, 1], phase_error_rms])
+                [data['ibx'][-1], data['iby'][-1],
+                data['iibx'][-1], data['iibx'][-1],
+                data['perms']])
 
         ax0.set_xlabel('Z [mm]')
         ax0.set_ylabel('TrajX [um]')
@@ -581,4 +527,11 @@ class UndulatorShimming():
         table.set_fontsize(table_fontsize)
         table.scale(0.7, 2)
 
-        return results
+        if suptitle is not None:
+            _plt.suptitle(suptitle)
+
+        if filename is not None:
+            _plt.savefig(filename, dpi=400)
+
+
+    

@@ -142,10 +142,11 @@ class UndulatorShimming():
             gap=gap, filename=filename)
         return data
 
-    def _calc_traj(self, obj):
+    def _calc_traj(self, obj, xl, yl):
+        zl = _np.sqrt(1 - xl**2 - yl**2)
         traj = obj.calc_trajectory(
             self.energy,
-            [self.xpos, self.ypos, self.zmin, 0, 0, 1],
+            [self.xpos, self.ypos, self.zmin, xl, yl, zl],
             self.zmax, self.rkstep)
         return traj
 
@@ -193,8 +194,8 @@ class UndulatorShimming():
 
         return segs
 
-    def calc_slope_and_phase_error(self, obj, segs, filename=None):
-        traj = self._calc_traj(obj)
+    def calc_slope_and_phase_error(self, obj, segs, xl, yl, filename=None):
+        traj = self._calc_traj(obj, xl, yl)
         avgtraj = obj.calc_trajectory_avg_over_period(traj)
         px, py = self.fit_trajectory_segments(
             avgtraj, segs, obj.period_length)
@@ -248,7 +249,7 @@ class UndulatorShimming():
         response_matrix = None
 
         sx0, sy0, pe0 = self.calc_slope_and_phase_error(
-            model, model_segs)
+            model, model_segs, 0, 0)
 
         if filename is not None:
             ext = '.' + filename.split('.')[-1]
@@ -271,7 +272,7 @@ class UndulatorShimming():
                 if self.solved_matrix:
                     model.solve()
                 sx, sy, pe = self.calc_slope_and_phase_error(
-                    model, model_segs)
+                    model, model_segs, 0, 0)
 
                 blocks[idx].shift([0, -shim, 0])
 
@@ -316,10 +317,10 @@ class UndulatorShimming():
     def calc_error(
             self, model, meas, model_segs, meas_segs, filename=None):
         model_sx, model_sy, model_pe = self.calc_slope_and_phase_error(
-            model, model_segs)
+            model, model_segs, 0, 0)
 
         meas_sx, meas_sy, meas_pe = self.calc_slope_and_phase_error(
-            meas, meas_segs)
+            meas, meas_segs, 0, 0)
 
         sx_error = model_sx - meas_sx
         sy_error = model_sy - meas_sy
@@ -428,10 +429,17 @@ class UndulatorShimming():
 
         return shimmed_meas
     
-    def calc_results(self, objs, labels, filename=None):
+    def calc_results(self, objs, labels, xls=None, yls=None, filename=None):
         results = {}
-        for obj, label in zip(objs, labels):
-            traj = self._calc_traj(obj)
+
+        if xls is None:
+            xls = [0]*len(objs)
+
+        if yls is None:
+            yls = [0]*len(objs)
+
+        for obj, label, xl, yl in zip(objs, labels, xls, yls):
+            traj = self._calc_traj(obj, xl, yl)
             zpe, pe, pe_rms = self._calc_phase_error(obj, traj)
             ib, iib = self._calc_field_integrals(obj)
             r = {}
@@ -453,13 +461,14 @@ class UndulatorShimming():
             results[label] = r
     
         if filename is not None:
-            with open(filename, 'w') as f:
+            with open(filename, '+w') as f:
                 _json.dump(results, f)
         return results
 
     def plot_results(
             self, results, table_fontsize=12,
-            table_decimals=1, filename=None, suptitle=None):
+            table_decimals=1, filename=None, suptitle=None,
+            trajx_lim=None, trajy_lim=None, pe_lim=None):
         labels = list(results.keys())
 
         spec = _gridspec.GridSpec(
@@ -491,18 +500,24 @@ class UndulatorShimming():
         ax0.legend(loc='best')
         ax0.patch.set_edgecolor('black')
         ax0.patch.set_linewidth('2')
+        if trajx_lim is not None:
+            ax0.set_ylim(trajx_lim)
 
         ax1.set_xlabel('Z [mm]')
         ax1.set_ylabel('TrajY [um]')
         ax1.grid(alpha=0.3)
         ax1.patch.set_edgecolor('black')
         ax1.patch.set_linewidth('2')
+        if trajy_lim is not None:
+            ax1.set_ylim(trajy_lim)
 
         ax2.set_xlabel('Z [mm]')
         ax2.set_ylabel('Phase error [deg]')
         ax2.grid(alpha=0.3)
         ax2.patch.set_edgecolor('black')
         ax2.patch.set_linewidth('2')
+        if pe_lim is not None:
+            ax2.set_ylim(pe_lim)
 
         values = _np.round(
             _np.transpose(values), decimals=table_decimals)

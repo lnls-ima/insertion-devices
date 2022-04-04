@@ -63,6 +63,22 @@ class UndulatorShimming():
         return u, sv, vt
 
     @staticmethod
+    def calc_inv_matrix(u, sv, vt, nsv=None):
+        if nsv is None:
+            nsv = len(sv)
+        
+        svinv = 1/sv
+        svinv[nsv:] = 0
+        minv = vt.T*svinv @ u.T
+        return minv
+
+    @staticmethod
+    def get_weights_matrix(weights):
+        weights_norm = _np.array(weights)/_np.linalg.norm(weights)
+        weights_matrix = _np.diag(_np.sqrt(weights_norm))
+        return weights_matrix
+
+    @staticmethod
     def fit_trajectory_segments(trajectory, segs, max_size):
         trajx = trajectory[:, 0]
         trajy = trajectory[:, 1]
@@ -142,6 +158,10 @@ class UndulatorShimming():
             gap=gap, filename=filename)
         return data
 
+    @staticmethod
+    def read_block_names(filename):
+        return _np.loadtxt(filename, dtype=str)
+        
     def _calc_traj(self, obj, xl, yl):
         zl = _np.sqrt(1 - xl**2 - yl**2)
         traj = obj.calc_trajectory(
@@ -215,11 +235,13 @@ class UndulatorShimming():
 
         return sx, sy, pe
 
-    def get_block_names(self, model):
+    def get_block_names(self, model, filename=None):
         names = []
         for cassette in self.cassettes:
             blocks = self.get_shimming_blocks(model, cassette)
             names.extend([b.name for b in blocks])
+        if filename is not None:
+            _np.savetxt(filename, names, fmt='%s')
         return names
 
     def get_shimming_blocks(self, model, cassette):
@@ -340,23 +362,11 @@ class UndulatorShimming():
             self, response_matrix, error, nsv=None, ws=None, filename=None):
         if ws is None:
             ws = [1.0]*response_matrix.shape[0]
-        ws = _np.array(ws)/_np.linalg.norm(ws)
-        w = _np.diag(_np.sqrt(ws))
+        w = self.get_weights_matrix(ws)
 
-        m = response_matrix
-        m = w @ m
-        u, sv, vt = self.calc_svd(m)
-        
-        if nsv is None:
-            nsv = len(sv)
-        
-        svinv = 1/sv
-        svinv[nsv:] = 0
-        minv = vt.T*svinv @ u.T
-
-        ws_error = w @ error
-
-        shims = minv @ ws_error
+        u, sv, vt = self.calc_svd(w @ response_matrix)
+        minv = self.calc_inv_matrix(u, sv, vt, nsv=nsv)
+        shims = minv @ (w @ error)
 
         if filename is not None:
             _np.savetxt(filename, shims)

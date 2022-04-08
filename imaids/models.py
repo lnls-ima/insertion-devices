@@ -1101,6 +1101,59 @@ class Kyma22(APU):
             name=name, **kwargs)
 
 
+class Kyma58(APU):
+    """Kyma commissioning undulador."""
+
+    def __init__(
+            self, block_shape='default',
+            nr_periods=18, period_length=58, gap=15.8, mr=1.32,
+            block_subdivision='default',
+            rectangular=False, longitudinal_distance=0.1,
+            start_blocks_length='default', start_blocks_distance='default',
+            end_blocks_length='default', end_blocks_distance='default',
+            name='kyma_58', **kwargs):
+
+        if block_shape == 'default':
+            block_shape = _blocks.Block.get_predefined_shape(
+                'kyma_58')
+
+        if block_subdivision == 'default':
+            block_subdivision = _blocks.Block.get_predefined_subdivision(
+                'kyma_58')
+
+        block_len = period_length/4 - longitudinal_distance
+        lenghts = [
+            block_len/2, 0, block_len, block_len/2,
+            block_len, block_len]
+        distances = [
+            block_len/4, 0, block_len/4, block_len/4,
+            longitudinal_distance, longitudinal_distance]
+
+        if start_blocks_length == 'default':
+            start_blocks_length = lenghts
+
+        if start_blocks_distance == 'default':
+            start_blocks_distance = distances
+
+        if end_blocks_length == 'default':
+            end_blocks_length = lenghts[0:-1][::-1]
+
+        if end_blocks_distance == 'default':
+            end_blocks_distance = distances[0:-1][::-1]
+
+        super().__init__(
+            nr_periods=nr_periods, period_length=period_length,
+            gap=gap, mr=mr, block_shape=block_shape,
+            block_subdivision=block_subdivision,
+            rectangular=rectangular,
+            longitudinal_distance=longitudinal_distance,
+            start_blocks_length=start_blocks_length,
+            start_blocks_distance=start_blocks_distance,
+            end_blocks_length=end_blocks_length,
+            end_blocks_distance=end_blocks_distance,
+            name=name, **kwargs)
+
+
 class HybridAPU(APU):
     """Hybrid APU undulador."""
 

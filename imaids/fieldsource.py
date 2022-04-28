@@ -431,7 +431,9 @@ class SinusoidalFieldSource(FieldSource):
 
         return bx_amp, by_amp, bz_amp, bxy_phase
 
-    def calc_deflection_parameter(self, bx_amp, by_amp):
+    def calc_deflection_parameter(self, bx_amp=None, by_amp=None):
+        if bx_amp is None or by_amp is None:
+            bx_amp, by_amp, _, _ = self.calc_field_amplitude()
         kh = 0.934*by_amp*(self.period_length/10)
         kv = 0.934*bx_amp*(self.period_length/10)
         return kh, kv

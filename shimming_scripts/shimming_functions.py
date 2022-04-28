@@ -10,7 +10,7 @@ from shimming_files import ShimmingFiles
 from imaids import utils, models, shimming, insertiondevice
 
 
-FILES = ShimmingFiles(label='21periods')
+FILES = ShimmingFiles(label='21periods_shimmingB')
 
 
 def configure_plot():
@@ -206,11 +206,11 @@ def get_phase_error_params(nr_periods):
     return params
 
 
-def load_measurement(nr_periods, polarization, kstr, zshift=0):
+def load_measurement(nr_periods, polarization, kstr, zshift=0, add_label=None):
     period = 52.5
     gap = 13.6
     filename_meas = FILES.get_filename_measurement(
-        polarization=polarization, kstr=kstr)
+        polarization=polarization, kstr=kstr, add_label=add_label)
     meas = insertiondevice.InsertionDeviceData(
         nr_periods=nr_periods, period_length=period,
         gap=gap, filename=filename_meas)
@@ -321,7 +321,7 @@ def rescale_model(model, fres):
     return model_res
 
 
-def calc_kicks(nr_periods, obj):
+def calc_kicks(nr_periods, obj, dz=0):
     filename_matrix = FILES.get_filename_ffmatrix()
     matrix = np.loadtxt(filename_matrix)
 
@@ -337,7 +337,7 @@ def calc_kicks(nr_periods, obj):
     traj = obj.calc_trajectory(
         params['energy'],
         [params['x'], params['y'], params['zmin'], xl, yl, zl],
-        params['zmax']-1,
+        params['zmax']-1-dz,
         params['rkstep'],
     )
 
@@ -639,18 +639,22 @@ def run_calc_response_matrix():
 
 
 def run_apply_shimming():
-    dirname = 'delta_sabia_shimming_a_csd'
-    plot_field = False
+    dirname = 'delta_sabia_shimming_b_add_cte'
+    plot_field = True
     plot_rescale_field = False
     plot_sv = False
 
     nr_periods = 21
-    polarization = 'vp'
+    polarization = 'cp'
     kstr = 'kmed'
-    field_comp = 0
     nsv = 40
 
-    cassettes = ['csd']
+    if polarization == 'vp':
+        field_comp = 0
+    else:
+        field_comp = 1
+
+    cassettes = ['csd', 'cse']
     block_type = 'v'
     segments_type = 'half_period'
     include_pe = True
@@ -671,6 +675,21 @@ def run_apply_shimming():
 
     meas = load_measurement(nr_periods, polarization, kstr)
     print('meas loaded')
+
+    cte = -0.00012
+    raw_data = np.transpose([
+        meas._raw_data[:, 0],
+        meas._raw_data[:, 1],
+        meas._raw_data[:, 2],
+        meas._raw_data[:, 3]*0,
+        meas._raw_data[:, 4]*0 + cte,
+        meas._raw_data[:, 5]*0,
+    ])
+    cte_field = insertiondevice.InsertionDeviceData(
+        nr_periods=nr_periods, gap=model.gap,
+        period_length=model.period_length, raw_data=raw_data)
+    meas.add_field(cte_field)
+    print('adding cte to measure: ', cte)
 
     # meas = load_model(
     #     nr_periods, polarization, kstr,
@@ -812,7 +831,7 @@ def run_apply_shimming():
 
 
 def run_plot_shims():
-    dirname = 'delta_sabia_shimming_a'
+    dirname = 'delta_sabia_shimming_b'
     avg = True
 
     names = [
@@ -898,7 +917,7 @@ def run_plot_shims():
 
 
 def run_calc_joined_shims():
-    dirname = 'delta_sabia_shimming_a'
+    dirname = 'delta_sabia_shimming_b'
     nr_periods = 21
     nsv = 40
 
@@ -1010,7 +1029,7 @@ def run_calc_joined_shims():
 
 
 def run_compare_join_avg_shims():
-    dirname = 'delta_sabia_shimming_a'
+    dirname = 'delta_sabia_shimming_b'
     rounded = False
 
     avg = True
@@ -1034,7 +1053,7 @@ def run_compare_join_avg_shims():
 
 def run_plot_shims_results():
     fast = True
-    dirname_shim = 'delta_sabia_shimming_a'
+    dirname_shim = 'delta_sabia_shimming_b'
     dirname = dirname_shim + '_shims_avg'
     nr_periods = 21
     avg = True
@@ -1249,7 +1268,7 @@ def run_calc_ff_matrix():
 def run_plot_correct_traj():
     nr_periods = 21
     polarization = 'cp'
-    kstr = 'kmed'
+    kstr = 'kmax'
 
     filename_matrix = FILES.get_filename_ffmatrix()
     matrix = np.loadtxt(filename_matrix)
@@ -1483,17 +1502,232 @@ def run_group_shims():
         new_shims_rounded)
 
 
+def run_plot_meas_results():
+    dirname = 'delta_sabia_meas_results_shimming_a_other_phases'
+
+    nr_periods = 21
+    polarization = 'cp'
+    kstr = 'phase10'
+
+    if polarization == 'vp':
+        field_comp = 0
+    else:
+        field_comp = 1
+
+    configure_plot()
+    FILES.mkdir_results(dirname)
+
+    meas_old = load_measurement(
+        nr_periods, polarization, kstr, add_label='old')
+    print('meas loaded old')
+
+    meas = load_measurement(nr_periods, polarization, kstr)
+    print('meas loaded')
+
+    period = 52.5
+    gap = 13.6
+
+    # cte_by = -0.00012
+    # cte_bx = -0.00075
+    # raw_data = np.transpose([
+    #     meas._raw_data[:, 0],
+    #     meas._raw_data[:, 1],
+    #     meas._raw_data[:, 2],
+    #     meas._raw_data[:, 3]*0 + cte_bx,
+    #     meas._raw_data[:, 4]*0 + cte_by,
+    #     meas._raw_data[:, 5]*0,
+    # ])
+    # cte_field = insertiondevice.InsertionDeviceData(
+    #     nr_periods=nr_periods, gap=gap, period_length=period, raw_data=raw_data)
+    # meas.add_field(cte_field)
+
+    # meas_old.add_field(cte_field)
+
+    # raw_data = np.array(meas._raw_data)
+    # raw_data[:, 3] = 0
+    # raw_data[:, 5] = 0
+    # meas = insertiondevice.InsertionDeviceData(
+    #     nr_periods=nr_periods, gap=gap, period_length=period, raw_data=raw_data)
+    # print(np.max(meas.by))
+    # print(np.min(meas.by))
+
+    traj_params = get_trajectory_params(nr_periods)
+    pe_params = get_phase_error_params(nr_periods)
+    sh = shimming.UndulatorShimming(
+        traj_params['zmin'],
+        traj_params['zmax'] - 50,
+        traj_params['znpts'],
+        cassettes=[],
+        zmin_pe=pe_params['zmin'],
+        zmax_pe=pe_params['zmax'],
+        field_comp=field_comp,
+        )
+
+    # filename_shimmed = FILES.get_filename_shimmed(
+    #         dirname, polarization=polarization, kstr=kstr)
+    # shimmed_meas = sh.read_fieldmap(
+    #     filename_shimmed, nr_periods, period, gap)
+    # print('load shimmed meas')
+
+    filename_sig = FILES.get_filename_sig(
+        dirname, polarization=polarization, kstr='kmax')
+    shim_signature = sh.read_fieldmap(
+        filename_sig, nr_periods, period, gap)
+    shim_signature.shift([0, 0, 3*52.5/8 - 52.5/2])
+    print('load shim signature')
+
+    # print(shim_signature.get_field_at_point([0, 0, shim_signature.pz[-1]]))
+    # print(shim_signature.get_field_at_point([0, 0, traj_params['zmax']]))
+
+    filename_shimmed = FILES.get_filename_shimmed(
+        dirname, polarization=polarization, kstr=kstr)
+    shimmed_meas = sh.calc_shimmed_meas(
+        meas_old, shim_signature, filename=filename_shimmed)
+    print('calc shimmed meas')
+
+    filename_results = FILES.get_filename_results(
+        dirname, polarization=polarization, kstr=kstr)
+
+    # z = np.linspace(-800, 800, 801)
+    # plt.plot(shimmed_meas.get_field(z=z)[:, 0])
+    # plt.plot(meas.get_field(z=z)[:, 0])
+    # plt.show()
+
+    objs = [meas_old, shimmed_meas, meas]
+    labels = ['Initial', 'Predicted IterA', 'Measured IterA']
+
+    xls = []
+    yls = []
+    for obj in objs:
+        kicks = calc_kicks(nr_periods, obj, dz=50)
+        xls.append(kicks[0])
+        yls.append(kicks[1])
+        print(kicks)
+    results = sh.calc_results(
+        objs, labels, xls, yls, filename=filename_results)
+    print('calc results')
+    
+    suptitle = polarization.upper() + ' ' + kstr.capitalize()
+    filename_fig = FILES.get_filename_fig(
+        dirname, polarization=polarization, kstr=kstr)
+    sh.plot_results(
+        results, suptitle=suptitle,
+        filename=filename_fig)
+
+    plt.show()
+
+
+def run_compare_model_meas():
+    nr_periods = 21
+    polarization = 'vp'
+    kstr = 'kmed'
+    solve = False
+
+    configure_plot()
+
+    traj_params = get_trajectory_params(nr_periods)
+    z = np.linspace(
+        traj_params['zmin'],
+        traj_params['zmax'],
+        traj_params['znpts'])   
+
+    model = load_model(
+        nr_periods, polarization, kstr,
+        solve=solve,
+        with_errors=False,
+        remove_subdivision=False)
+    print('model loaded')
+
+    bmodel = model.get_field(z=z)
+    print('get field model')
+
+    pv_bx_model = model.find_peaks_and_valleys(bmodel[:, 0])
+    pv_by_model = model.find_peaks_and_valleys(bmodel[:, 1])
+    pv_bz_model = model.find_peaks_and_valleys(bmodel[:, 2])
+
+    meas = load_measurement(nr_periods, polarization, kstr, zshift=1.5)
+    print('meas loaded')
+
+    bmeas = meas.get_field(z=z)
+    print('get field meas')
+
+    pv_bx_meas = meas.find_peaks_and_valleys(bmeas[:, 0])
+    pv_by_meas = meas.find_peaks_and_valleys(bmeas[:, 1])
+    pv_bz_meas = meas.find_peaks_and_valleys(bmeas[:, 2])
+
+    bdiff = bmeas - bmodel
+
+    # cte = -0.00012
+    # raw_data = np.transpose([
+    #     meas._raw_data[:, 0],
+    #     meas._raw_data[:, 1],
+    #     meas._raw_data[:, 2],
+    #     meas._raw_data[:, 3]*0,
+    #     meas._raw_data[:, 4]*0 + cte,
+    #     meas._raw_data[:, 5]*0,
+    # ])
+    # cte_field = insertiondevice.InsertionDeviceData(
+    #     nr_periods=nr_periods, gap=gap, period_length=period, raw_data=raw_data)
+    # meas.add_field(cte_field)
+
+    # raw_data = np.array(meas._raw_data)
+    # raw_data[:, -1] = 0
+    # meas = insertiondevice.InsertionDeviceData(
+    #     nr_periods=nr_periods, gap=gap, period_length=period, raw_data=raw_data)
+    # print(np.max(meas.bz))
+    # print(np.min(meas.bz))
+
+    # print(np.mean(np.array(pv_by_meas) - np.array(pv_by_model)))
+
+    fig, axs = plt.subplots(3)
+    for idx, comp in enumerate(['bx', 'by', 'bz']):      
+        axs[idx].plot(z, bmodel[:, idx])
+        axs[idx].plot(z, bmeas[:, idx])
+        axs[idx].grid(alpha=0.3)
+        axs[idx].set_ylabel(comp + ' [T]')
+    axs[2].set_xlabel('z [mm]')
+
+    fig, axs = plt.subplots(3)
+    for idx, comp in enumerate(['bx', 'by', 'bz']):      
+        axs[idx].plot(z, bdiff[:, idx])
+        axs[idx].grid(alpha=0.3)
+        axs[idx].set_ylabel('diff' + comp + ' [T]')
+    axs[2].set_xlabel('z [mm]')
+   
+    fig, axs = plt.subplots(3)
+    for idx, comp in enumerate(['bx', 'by', 'bz']):
+        if comp == 'bx':
+            pv_model = pv_bx_model
+            pv_meas = pv_bx_meas
+        elif comp == 'by':
+            pv_model = pv_by_model
+            pv_meas = pv_by_meas
+        else:
+            pv_model = pv_bz_model
+            pv_meas = pv_bz_meas
+        
+        axs[idx].plot(np.abs(bmodel[pv_model, idx])[2:-2], '-o')
+        axs[idx].plot(np.abs(bmeas[pv_meas, idx])[2:-2], '-o')
+        axs[idx].grid(alpha=0.3)
+        axs[idx].set_ylabel('diff' + comp + ' [T]')
+    axs[2].set_xlabel('z [mm]')
+
+    plt.show()
+
 
 print('start')
 t0 = time.time()
 
 utils.set_len_tol()
+# run_apply_shimming()
 # run_plot_shims()
 # run_calc_joined_shims()
 # run_compare_join_avg_shims()
 # run_group_shims()
-run_plot_shims_results()
+# run_plot_shims_results()
 # run_add_column_to_excel()
+run_plot_meas_results()
+# run_compare_model_meas()
 
 print('end')
 print(time.time() - t0)

@@ -494,14 +494,20 @@ class UndulatorShimming():
         values = []
         for label in labels:
             data = results[label]
-            ax0.plot(data['trajz'], data['trajx'], label=label)
-            ax1.plot(data['trajz'], data['trajy'], label=label)
 
-            ax2.plot(data['zpe'], data['pe'], '-o', label=label)
+            if 'predicted' in label.lower():
+                alpha = 0.5
+            else:
+                alpha = 1.0
+
+            ax0.plot(data['trajz'], data['trajx'], label=label, alpha=alpha)
+            ax1.plot(data['trajz'], data['trajy'], label=label, alpha=alpha)
+
+            ax2.plot(data['zpe'], data['pe'], '-o', label=label, alpha=alpha)
 
             values.append(
                 [data['ibx'][-1], data['iby'][-1],
-                data['iibx'][-1], data['iibx'][-1],
+                data['iibx'][-1], data['iiby'][-1],
                 data['perms']])
 
         ax0.set_xlabel('Z [mm]')

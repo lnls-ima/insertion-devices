@@ -18,6 +18,30 @@ class UndulatorShimming():
             zmin_pe=None, zmax_pe=None,
             include_pe=False, field_comp=None,
             solved_shim=True, solved_matrix=False):
+        """_summary_
+
+        Args:
+            zmin (_type_): _description_
+            zmax (_type_): _description_
+            znpts (_type_): _description_
+            cassettes (_type_): _description_
+            block_type (str, optional): _description_. Defaults to 'v'.
+            segments_type (str, optional): _description_. Defaults to 'half_period'.
+            energy (float, optional): _description_. Defaults to 3.0.
+            rkstep (float, optional): _description_. Defaults to 0.5.
+            xpos (float, optional): _description_. Defaults to 0.0.
+            ypos (float, optional): _description_. Defaults to 0.0.
+            zmin_pe (_type_, optional): _description_. Defaults to None.
+            zmax_pe (_type_, optional): _description_. Defaults to None.
+            include_pe (bool, optional): _description_. Defaults to False.
+            field_comp (_type_, optional): _description_. Defaults to None.
+            solved_shim (bool, optional): _description_. Defaults to True.
+            solved_matrix (bool, optional): _description_. Defaults to False.
+
+        Raises:
+            ValueError: _description_
+            ValueError: _description_
+        """
         if block_type not in ('v', 'vpos', 'vneg'):
             raise ValueError(
                 'Invalid block_type value. Valid options: "v", "vpos", "vneg"')
@@ -51,6 +75,15 @@ class UndulatorShimming():
 
     @staticmethod
     def get_rounded_shims(shims, possible_shims):
+        """_summary_
+
+        Args:
+            shims (_type_): _description_
+            possible_shims (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         shims_round = []
         for shim in shims:
             shim_round = min(possible_shims, key=lambda x: abs(x-shim))
@@ -59,11 +92,30 @@ class UndulatorShimming():
 
     @staticmethod
     def calc_svd(response_matrix):
+        """_summary_
+
+        Args:
+            response_matrix (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         u, sv, vt = _np.linalg.svd(response_matrix, full_matrices=False)
         return u, sv, vt
 
     @staticmethod
     def calc_inv_matrix(u, sv, vt, nsv=None):
+        """_summary_
+
+        Args:
+            u (_type_): _description_
+            sv (_type_): _description_
+            vt (_type_): _description_
+            nsv (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         if nsv is None:
             nsv = len(sv)
         
@@ -74,12 +126,30 @@ class UndulatorShimming():
 
     @staticmethod
     def get_weights_matrix(weights):
+        """_summary_
+
+        Args:
+            weights (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         weights_norm = _np.array(weights)/_np.linalg.norm(weights)
         weights_matrix = _np.diag(_np.sqrt(weights_norm))
         return weights_matrix
 
     @staticmethod
     def fit_trajectory_segments(trajectory, segs, max_size):
+        """_summary_
+
+        Args:
+            trajectory (_type_): _description_
+            segs (_type_): _description_
+            max_size (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         trajx = trajectory[:, 0]
         trajy = trajectory[:, 1]
         trajz = trajectory[:, 2]
@@ -131,28 +201,79 @@ class UndulatorShimming():
 
     @staticmethod
     def read_response_matrix(filename):
+        """_summary_
+
+        Args:
+            filename (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return _np.loadtxt(filename)
 
     @staticmethod
     def read_segs(filename):
+        """_summary_
+
+        Args:
+            filename (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return _np.loadtxt(filename)
 
     @staticmethod
     def read_shims(filename):
+        """_summary_
+
+        Args:
+            filename (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return _np.loadtxt(filename)
 
     @staticmethod
     def read_error(filename):
+        """_summary_
+
+        Args:
+            filename (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return _np.loadtxt(filename)
 
     @staticmethod
     def read_results(filename):
+        """_summary_
+
+        Args:
+            filename (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         with open(filename, 'r') as f:
             results = _json.load(f)
         return results
 
     @staticmethod
     def read_fieldmap(filename, nr_periods, period, gap):
+        """_summary_
+
+        Args:
+            filename (_type_): _description_
+            nr_periods (_type_): _description_
+            period (_type_): _description_
+            gap (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         data = _insertiondevice.InsertionDeviceData(
             nr_periods=nr_periods, period_length=period,
             gap=gap, filename=filename)
@@ -160,9 +281,27 @@ class UndulatorShimming():
 
     @staticmethod
     def read_block_names(filename):
+        """_summary_
+
+        Args:
+            filename (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return _np.loadtxt(filename, dtype=str)
         
     def _calc_traj(self, obj, xl, yl):
+        """_summary_
+
+        Args:
+            obj (_type_): _description_
+            xl (_type_): _description_
+            yl (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         zl = _np.sqrt(1 - xl**2 - yl**2)
         traj = obj.calc_trajectory(
             self.energy,
@@ -171,6 +310,15 @@ class UndulatorShimming():
         return traj
 
     def _calc_phase_error(self, obj, traj):
+        """_summary_
+
+        Args:
+            obj (_type_): _description_
+            traj (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         bx_amp, by_amp, _, _ = obj.calc_field_amplitude()
         zpe, pe, pe_rms = obj.calc_phase_error(
             self.energy, traj, bx_amp, by_amp,
@@ -179,11 +327,28 @@ class UndulatorShimming():
         return zpe, pe, pe_rms
 
     def _calc_field_integrals(self, obj):
+        """_summary_
+
+        Args:
+            obj (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         z = _np.linspace(self.zmin, self.zmax, self.znpts)
         ib, iib = obj.calc_field_integrals(z_list=z)
         return ib, iib
 
     def calc_segments(self, obj, filename=None):
+        """_summary_
+
+        Args:
+            obj (_type_): _description_
+            filename (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
         field = obj.get_field(z=zpos)
 
@@ -215,6 +380,18 @@ class UndulatorShimming():
         return segs
 
     def calc_slope_and_phase_error(self, obj, segs, xl, yl, filename=None):
+        """_summary_
+
+        Args:
+            obj (_type_): _description_
+            segs (_type_): _description_
+            xl (_type_): _description_
+            yl (_type_): _description_
+            filename (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         traj = self._calc_traj(obj, xl, yl)
         avgtraj = obj.calc_trajectory_avg_over_period(traj)
         px, py = self.fit_trajectory_segments(
@@ -236,6 +413,15 @@ class UndulatorShimming():
         return sx, sy, pe
 
     def get_block_names(self, model, filename=None):
+        """_summary_
+
+        Args:
+            model (_type_): _description_
+            filename (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         names = []
         for cassette in self.cassettes:
             blocks = self.get_shimming_blocks(model, cassette)
@@ -245,6 +431,15 @@ class UndulatorShimming():
         return names
 
     def get_shimming_blocks(self, model, cassette):
+        """_summary_
+
+        Args:
+            model (_type_): _description_
+            cassette (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         cas = model.cassettes[cassette]
         mag = _np.array(cas.magnetization_list)
         mres = _np.sqrt(mag[:, 0]**2 + mag[:, 2]**2)
@@ -268,6 +463,17 @@ class UndulatorShimming():
 
     def calc_response_matrix(
             self, model, model_segs, filename=None, shim=0.1):
+        """_summary_
+
+        Args:
+            model (_type_): _description_
+            model_segs (_type_): _description_
+            filename (_type_, optional): _description_. Defaults to None.
+            shim (float, optional): _description_. Defaults to 0.1.
+
+        Returns:
+            _type_: _description_
+        """
         response_matrix = None
 
         sx0, sy0, pe0 = self.calc_slope_and_phase_error(
@@ -338,6 +544,18 @@ class UndulatorShimming():
 
     def calc_error(
             self, model, meas, model_segs, meas_segs, filename=None):
+        """_summary_
+
+        Args:
+            model (_type_): _description_
+            meas (_type_): _description_
+            model_segs (_type_): _description_
+            meas_segs (_type_): _description_
+            filename (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         model_sx, model_sy, model_pe = self.calc_slope_and_phase_error(
             model, model_segs, 0, 0)
 
@@ -360,6 +578,18 @@ class UndulatorShimming():
 
     def calc_shims(
             self, response_matrix, error, nsv=None, ws=None, filename=None):
+        """_summary_
+
+        Args:
+            response_matrix (_type_): _description_
+            error (_type_): _description_
+            nsv (_type_, optional): _description_. Defaults to None.
+            ws (_type_, optional): _description_. Defaults to None.
+            filename (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         if ws is None:
             ws = [1.0]*response_matrix.shape[0]
         w = self.get_weights_matrix(ws)
@@ -374,6 +604,16 @@ class UndulatorShimming():
         return shims
 
     def calc_shim_signature(self, model, shims, filename=None):
+        """_summary_
+
+        Args:
+            model (_type_): _description_
+            shims (_type_): _description_
+            filename (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
         field0 = model.get_field(z=zpos)
         
@@ -419,6 +659,16 @@ class UndulatorShimming():
         return shim_signature
 
     def calc_shimmed_meas(self, meas, shim_signature, filename=None):
+        """_summary_
+
+        Args:
+            meas (_type_): _description_
+            shim_signature (_type_): _description_
+            filename (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
         field = meas.get_field(z=zpos)
         x = [self.xpos]*self.znpts
@@ -440,6 +690,18 @@ class UndulatorShimming():
         return shimmed_meas
     
     def calc_results(self, objs, labels, xls=None, yls=None, filename=None):
+        """_summary_
+
+        Args:
+            objs (_type_): _description_
+            labels (_type_): _description_
+            xls (_type_, optional): _description_. Defaults to None.
+            yls (_type_, optional): _description_. Defaults to None.
+            filename (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         results = {}
 
         if xls is None:
@@ -479,6 +741,18 @@ class UndulatorShimming():
             self, results, table_fontsize=12,
             table_decimals=1, filename=None, suptitle=None,
             trajx_lim=None, trajy_lim=None, pe_lim=None):
+        """_summary_
+
+        Args:
+            results (_type_): _description_
+            table_fontsize (int, optional): _description_. Defaults to 12.
+            table_decimals (int, optional): _description_. Defaults to 1.
+            filename (_type_, optional): _description_. Defaults to None.
+            suptitle (_type_, optional): _description_. Defaults to None.
+            trajx_lim (_type_, optional): _description_. Defaults to None.
+            trajy_lim (_type_, optional): _description_. Defaults to None.
+            pe_lim (_type_, optional): _description_. Defaults to None.
+        """
         labels = list(results.keys())
 
         spec = _gridspec.GridSpec(

@@ -14,6 +14,20 @@ class InsertionDeviceData(
             self, nr_periods=None, period_length=None,
             gap=None, name='', filename=None,
             raw_data=None, selected_y=0):
+        """_summary_
+
+        Args:
+            nr_periods (_type_, optional): _description_. Defaults to None.
+            period_length (_type_, optional): _description_. Defaults to None.
+            gap (_type_, optional): _description_. Defaults to None.
+            name (str, optional): _description_. Defaults to ''.
+            filename (_type_, optional): _description_. Defaults to None.
+            raw_data (_type_, optional): _description_. Defaults to None.
+            selected_y (int, optional): _description_. Defaults to 0.
+
+        Raises:
+            ValueError: _description_
+        """
         if gap is not None and gap <= 0:
             raise ValueError('gap must be > 0.')
 
@@ -37,6 +51,17 @@ class InsertionDeviceData(
 
     def get_fieldmap_header(
             self, kh, kv, field_phase=None, polarization_name=None):
+        """_summary_
+
+        Args:
+            kh (_type_): _description_
+            kv (_type_): _description_
+            field_phase (_type_, optional): _description_. Defaults to None.
+            polarization_name (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         if field_phase is None:
             field_phase_str = '--'
         else:
@@ -81,6 +106,18 @@ class InsertionDeviceModel(
     def __init__(
             self, nr_periods=None, period_length=None, gap=None, name=None,
             init_radia_object=True, **kwargs):
+        """_summary_
+
+        Args:
+            nr_periods (_type_, optional): _description_. Defaults to None.
+            period_length (_type_, optional): _description_. Defaults to None.
+            gap (_type_, optional): _description_. Defaults to None.
+            name (_type_, optional): _description_. Defaults to None.
+            init_radia_object (bool, optional): _description_. Defaults to True.
+
+        Raises:
+            ValueError: _description_
+        """
         _fieldsource.SinusoidalFieldSource.__init__(
             self, nr_periods=nr_periods, period_length=period_length)
 
@@ -153,7 +190,14 @@ class InsertionDeviceModel(
 
     @classmethod
     def load_state(cls, filename):
-        """Load state from file."""
+        """Load state from file.
+
+        Args:
+            filename (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         with open(filename) as f:
             kwargs = _json.load(f)
 
@@ -174,6 +218,17 @@ class InsertionDeviceModel(
 
     def get_fieldmap_header(
             self, kh, kv, field_phase=None, polarization_name=None):
+        """_summary_
+
+        Args:
+            kh (_type_): _description_
+            kv (_type_): _description_
+            field_phase (_type_, optional): _description_. Defaults to None.
+            polarization_name (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         if field_phase is None:
             field_phase_str = '--'
         else:
@@ -211,7 +266,14 @@ class InsertionDeviceModel(
         return header
 
     def save_state(self, filename):
-        """Save state to file."""
+        """Save state to file.
+
+        Args:
+            filename (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         with open(filename, 'w') as f:
             _json.dump(self.state, f)
         return True

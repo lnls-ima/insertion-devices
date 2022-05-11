@@ -89,6 +89,25 @@ class Block(_fieldsource.FieldModel):
             magnetization=[0, 1.37, 0], subdivision=None, rectangular=False,
             init_radia_object=True, name='',
             material=None, **kwargs):
+        """_summary_
+
+        Args:
+            shape (_type_): _description_
+            length (_type_): _description_
+            longitudinal_position (_type_): _description_
+            magnetization (list, optional): _description_. Defaults to [0, 1.37, 0].
+            subdivision (_type_, optional): _description_. Defaults to None.
+            rectangular (bool, optional): _description_. Defaults to False.
+            init_radia_object (bool, optional): _description_. Defaults to True.
+            name (str, optional): _description_. Defaults to ''.
+            material (_type_, optional): _description_. Defaults to None.
+
+        Raises:
+            ValueError: _description_
+            ValueError: _description_
+            ValueError: _description_
+            ValueError: _description_
+        """
 
         if _utils.depth(shape) != 3:
             self._shape = [shape]
@@ -181,17 +200,38 @@ class Block(_fieldsource.FieldModel):
 
     @classmethod
     def get_predefined_shape(cls, device_name):
-        """Get predefined block shape for the device."""
+        """Get predefined block shape for the device.
+
+        Args:
+            device_name (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return cls.PREDEFINED_SHAPES.get(device_name)
 
     @classmethod
     def get_predefined_subdivision(cls, device_name):
-        """Get predefined block subdivision for the device."""
+        """Get predefined block subdivision for the device.
+
+        Args:
+            device_name (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return cls.PREDEFINED_SUBDIVISION.get(device_name)
 
     @classmethod
     def load_state(cls, filename):
-        """Load state from file."""
+        """Load state from file.
+
+        Args:
+            filename (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         with open(filename) as f:
             kwargs = _json.load(f)
         return cls(init_radia_object=True, **kwargs)
@@ -241,7 +281,14 @@ class Block(_fieldsource.FieldModel):
             self._radia_object = _rad.ObjCnt(subblock_list)
 
     def save_state(self, filename):
-        """Save state to file."""
+        """Save state to file.
+
+        Args:
+            filename (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         with open(filename, 'w') as f:
             _json.dump(self.state, f)
         return True

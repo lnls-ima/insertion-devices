@@ -24,25 +24,80 @@ class FieldSource():
 
     @staticmethod
     def find_peaks(data, prominence=0.05):
+        """_summary_
+
+        Args:
+            data (_type_): _description_
+            prominence (float, optional): _description_. Defaults to 0.05.
+
+        Returns:
+            _type_: _description_
+        """
         return _utils.find_peaks(data, prominence=prominence)
 
     @staticmethod
     def find_valleys(data, prominence=0.05):
+        """_summary_
+
+        Args:
+            data (_type_): _description_
+            prominence (float, optional): _description_. Defaults to 0.05.
+
+        Returns:
+            _type_: _description_
+        """
         return _utils.find_valleys(data, prominence=prominence)
 
     @staticmethod
     def find_peaks_and_valleys(data, prominence=0.05):
+        """_summary_
+
+        Args:
+            data (_type_): _description_
+            prominence (float, optional): _description_. Defaults to 0.05.
+
+        Returns:
+            _type_: _description_
+        """
         return _utils.find_peaks_and_valleys(data, prominence=prominence)
 
     @staticmethod
     def find_zeros(pos, data):
+        """_summary_
+
+        Args:
+            pos (_type_): _description_
+            data (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return _utils.find_zeros(pos, data)
 
     @staticmethod
     def delete_all():
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         return _utils.delete_all()
 
     def calc_field_integrals(self, z_list, x=0, y=0, field_list=None):
+        """_summary_
+
+        Args:
+            z_list (_type_): _description_
+            x (int, optional): _description_. Defaults to 0.
+            y (int, optional): _description_. Defaults to 0.
+            field_list (_type_, optional): _description_. Defaults to None.
+
+        Raises:
+            ValueError: _description_
+
+        Returns:
+            _type_: _description_
+        """
         if field_list is not None:
             if len(field_list) != len(z_list):
                 raise ValueError(
@@ -67,6 +122,19 @@ class FieldSource():
 
     def calc_trajectory(
             self, energy, r0, zmax, rkstep, dz=0, on_axis_field=False):
+        """_summary_
+
+        Args:
+            energy (_type_): _description_
+            r0 (_type_): _description_
+            zmax (_type_): _description_
+            rkstep (_type_): _description_
+            dz (int, optional): _description_. Defaults to 0.
+            on_axis_field (bool, optional): _description_. Defaults to False.
+
+        Returns:
+            _type_: _description_
+        """
         r1 = _np.zeros(6, dtype=float)
         r2 = _np.zeros(6, dtype=float)
         r3 = _np.zeros(6, dtype=float)
@@ -128,6 +196,19 @@ class FieldSource():
         return trajectory
 
     def get_field(self, x=0, y=0, z=0):
+        """_summary_
+
+        Args:
+            x (int, optional): _description_. Defaults to 0.
+            y (int, optional): _description_. Defaults to 0.
+            z (int, optional): _description_. Defaults to 0.
+
+        Raises:
+            ValueError: _description_
+
+        Returns:
+            _type_: _description_
+        """
         if isinstance(x, (float, int)):
             x = [x]
         if isinstance(y, (float, int)):
@@ -153,6 +234,18 @@ class FieldSource():
         raise NotImplementedError
 
     def save_fieldmap(self, filename, x_list, y_list, z_list, header=None):
+        """_summary_
+
+        Args:
+            filename (_type_): _description_
+            x_list (_type_): _description_
+            y_list (_type_): _description_
+            z_list (_type_): _description_
+            header (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         if header is None:
             header = []
 
@@ -192,6 +285,17 @@ class FieldSource():
         return True
 
     def save_fieldmap_spectra(self, filename, x_list, y_list, z_list):
+        """_summary_
+
+        Args:
+            filename (_type_): _description_
+            x_list (_type_): _description_
+            y_list (_type_): _description_
+            z_list (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         if isinstance(x_list, (float, int)):
             x_list = [x_list]
 
@@ -243,6 +347,20 @@ class FieldSource():
 
     def save_kickmap(
             self, filename, energy, x_list, y_list, zmin, zmax, rkstep):
+        """_summary_
+
+        Args:
+            filename (_type_): _description_
+            energy (_type_): _description_
+            x_list (_type_): _description_
+            y_list (_type_): _description_
+            zmin (_type_): _description_
+            zmax (_type_): _description_
+            rkstep (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         _, light_speed = _utils.get_constants()
         brho = energy*1e9/light_speed
 
@@ -353,6 +471,16 @@ class SinusoidalFieldSource(FieldSource):
     """Sinusoidal field source."""
 
     def __init__(self, nr_periods=None, period_length=None):
+        """_summary_
+
+        Args:
+            nr_periods (_type_, optional): _description_. Defaults to None.
+            period_length (_type_, optional): _description_. Defaults to None.
+
+        Raises:
+            ValueError: _description_
+            ValueError: _description_
+        """
         if nr_periods is not None and nr_periods <= 0:
             raise ValueError('nr_periods must be > 0.')
 
@@ -374,12 +502,37 @@ class SinusoidalFieldSource(FieldSource):
 
     @staticmethod
     def calc_cosine_amplitude(z_list, field_list, freq_guess, maxfev=5000):
+        """_summary_
+
+        Args:
+            z_list (_type_): _description_
+            field_list (_type_): _description_
+            freq_guess (_type_): _description_
+            maxfev (int, optional): _description_. Defaults to 5000.
+
+        Returns:
+            _type_: _description_
+        """
         return _utils.calc_cosine_amplitude(
             z_list, field_list, freq_guess, maxfev=maxfev)
 
     def calc_avg_period_length(
             self, z_list, field_list=None, x=0, y=0,
             period_length_guess=20, maxfev=5000, prominence=1):
+        """_summary_
+
+        Args:
+            z_list (_type_): _description_
+            field_list (_type_, optional): _description_. Defaults to None.
+            x (int, optional): _description_. Defaults to 0.
+            y (int, optional): _description_. Defaults to 0.
+            period_length_guess (int, optional): _description_. Defaults to 20.
+            maxfev (int, optional): _description_. Defaults to 5000.
+            prominence (int, optional): _description_. Defaults to 1.
+
+        Returns:
+            _type_: _description_
+        """
         if field_list is None:
             field_list = self.get_field(x=x, y=y, z=z_list)
 
@@ -399,6 +552,19 @@ class SinusoidalFieldSource(FieldSource):
     def calc_field_amplitude(
             self, z_list=None, field_list=None,
             x=0, y=0, npts_per_period=101, maxfev=10000):
+        """_summary_
+
+        Args:
+            z_list (_type_, optional): _description_. Defaults to None.
+            field_list (_type_, optional): _description_. Defaults to None.
+            x (int, optional): _description_. Defaults to 0.
+            y (int, optional): _description_. Defaults to 0.
+            npts_per_period (int, optional): _description_. Defaults to 101.
+            maxfev (int, optional): _description_. Defaults to 10000.
+
+        Returns:
+            _type_: _description_
+        """
         if self.nr_periods > 1:
             zmin = -self._period_length*(self.nr_periods - 1)/2
             zmax = self._period_length*(self.nr_periods - 1)/2
@@ -432,6 +598,15 @@ class SinusoidalFieldSource(FieldSource):
         return bx_amp, by_amp, bz_amp, bxy_phase
 
     def calc_deflection_parameter(self, bx_amp=None, by_amp=None):
+        """_summary_
+
+        Args:
+            bx_amp (_type_, optional): _description_. Defaults to None.
+            by_amp (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         if bx_amp is None or by_amp is None:
             bx_amp, by_amp, _, _ = self.calc_field_amplitude()
         kh = 0.934*by_amp*(self.period_length/10)
@@ -439,6 +614,14 @@ class SinusoidalFieldSource(FieldSource):
         return kh, kv
 
     def calc_trajectory_avg_over_period(self, trajectory):
+        """_summary_
+
+        Args:
+            trajectory (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         trajz = [t for t in trajectory[:, 2]]
         step = _np.abs(trajz[1] - trajz[0])
         navg = int(self.period_length/step)
@@ -456,6 +639,14 @@ class SinusoidalFieldSource(FieldSource):
         return avgtraj
 
     def calc_trajectory_length(self, trajectory):
+        """_summary_
+
+        Args:
+            trajectory (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         traj_pos = trajectory[:, 0:3]
         traj_diff = _np.diff(traj_pos, axis=0)
         traj_len = _np.append(
@@ -463,6 +654,16 @@ class SinusoidalFieldSource(FieldSource):
         return traj_len
 
     def calc_radiation_phase(self, energy, trajectory, wavelength):
+        """_summary_
+
+        Args:
+            energy (_type_): _description_
+            trajectory (_type_): _description_
+            wavelength (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         beta, *_ = _utils.calc_beam_parameters(energy)
         traj_z = trajectory[:, 2]
         traj_len = self.calc_trajectory_length(trajectory)
@@ -470,6 +671,17 @@ class SinusoidalFieldSource(FieldSource):
 
     def calc_radiation_wavelength(
             self, energy, bx_amp, by_amp, harmonic=1):
+        """_summary_
+
+        Args:
+            energy (_type_): _description_
+            bx_amp (_type_): _description_
+            by_amp (_type_): _description_
+            harmonic (int, optional): _description_. Defaults to 1.
+
+        Returns:
+            _type_: _description_
+        """
         _, gamma, _ = _utils.calc_beam_parameters(energy)
         kh, kv = self.calc_deflection_parameter(bx_amp, by_amp)
         wl = (self.period_length/(2*harmonic*(gamma**2)))*(
@@ -479,6 +691,21 @@ class SinusoidalFieldSource(FieldSource):
     def calc_phase_error(
             self, energy, trajectory, bx_amp, by_amp,
             skip_poles=0, zmin=None, zmax=None, field_comp=None):
+        """_summary_
+
+        Args:
+            energy (_type_): _description_
+            trajectory (_type_): _description_
+            bx_amp (_type_): _description_
+            by_amp (_type_): _description_
+            skip_poles (int, optional): _description_. Defaults to 0.
+            zmin (_type_, optional): _description_. Defaults to None.
+            zmax (_type_, optional): _description_. Defaults to None.
+            field_comp (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         if field_comp is None:
             z_from_by = by_amp >= bx_amp
         elif field_comp == 0:
@@ -517,6 +744,22 @@ class SinusoidalFieldSource(FieldSource):
             self, date, x_list, y_list, z_list, kh, kv,
             polarization_name=None, add_label=None,
             file_extension='.fld'):
+        """_summary_
+
+        Args:
+            date (_type_): _description_
+            x_list (_type_): _description_
+            y_list (_type_): _description_
+            z_list (_type_): _description_
+            kh (_type_): _description_
+            kv (_type_): _description_
+            polarization_name (_type_, optional): _description_. Defaults to None.
+            add_label (_type_, optional): _description_. Defaults to None.
+            file_extension (str, optional): _description_. Defaults to '.fld'.
+
+        Returns:
+            _type_: _description_
+        """
         filename = '{0:s}'.format(date)
 
         if isinstance(x_list, (float, int)):
@@ -561,6 +804,11 @@ class SinusoidalFieldSource(FieldSource):
 class FieldModel(FieldSource):
 
     def __init__(self, radia_object=None):
+        """_summary_
+
+        Args:
+            radia_object (_type_, optional): _description_. Defaults to None.
+        """
         self._radia_object = radia_object
 
     @property
@@ -569,6 +817,11 @@ class FieldModel(FieldSource):
         return self._radia_object
 
     def draw(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         if self._radia_object is None:
             return False
 
@@ -577,12 +830,37 @@ class FieldModel(FieldSource):
         return True
 
     def get_field_at_point(self, point):
+        """_summary_
+
+        Args:
+            point (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return _rad.Fld(self._radia_object, "b", point)
 
     def solve(self, prec=0.00001, max_iter=1000):
+        """_summary_
+
+        Args:
+            prec (float, optional): _description_. Defaults to 0.00001.
+            max_iter (int, optional): _description_. Defaults to 1000.
+
+        Returns:
+            _type_: _description_
+        """
         return _rad.Solve(self._radia_object, prec, max_iter)
 
     def shift(self, value):
+        """_summary_
+
+        Args:
+            value (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         if self._radia_object is not None:
             self._radia_object = _rad.TrfOrnt(
                 self._radia_object, _rad.TrfTrsl(value))
@@ -591,6 +869,16 @@ class FieldModel(FieldSource):
             return False
 
     def rotate(self, point, vector, angle):
+        """_summary_
+
+        Args:
+            point (_type_): _description_
+            vector (_type_): _description_
+            angle (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         if self._radia_object is not None:
             self._radia_object = _rad.TrfOrnt(
                 self._radia_object, _rad.TrfRot(point, vector, angle))
@@ -599,6 +887,15 @@ class FieldModel(FieldSource):
             return False
 
     def mirror(self, point, normal):
+        """_summary_
+
+        Args:
+            point (_type_): _description_
+            normal (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         if self._radia_object is not None:
             self._radia_object = _rad.TrfOrnt(
                 self._radia_object, _rad.TrfPlSym(point, normal))
@@ -610,6 +907,13 @@ class FieldModel(FieldSource):
 class FieldData(FieldSource):
 
     def __init__(self, filename=None, raw_data=None, selected_y=0):
+        """_summary_
+
+        Args:
+            filename (_type_, optional): _description_. Defaults to None.
+            raw_data (_type_, optional): _description_. Defaults to None.
+            selected_y (int, optional): _description_. Defaults to 0.
+        """
         self._filename = None
         self._raw_data = None
         self._nx = None
@@ -658,6 +962,11 @@ class FieldData(FieldSource):
         return self._bz
 
     def _update_interpolation_functions(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         if self._nx == 1:
             self._bx_func = _interpolate.interp1d(
                 self._pz, self._bx, bounds_error=False)
@@ -682,6 +991,11 @@ class FieldData(FieldSource):
         return True
 
     def add_field(self, other):
+        """_summary_
+
+        Args:
+            other (_type_): _description_
+        """
         px = [i for i in self._px]
         py = [i for i in self._py]
         pz = [i for i in self._pz]
@@ -697,6 +1011,11 @@ class FieldData(FieldSource):
         self.read_raw_data(raw_data=raw_data)
 
     def sub_field(self, other):
+        """_summary_
+
+        Args:
+            other (_type_): _description_
+        """
         px = [i for i in self._px]
         py = [i for i in self._py]
         pz = [i for i in self._pz]
@@ -712,6 +1031,8 @@ class FieldData(FieldSource):
         self.read_raw_data(raw_data=raw_data)
 
     def clear(self):
+        """_summary_
+        """
         self._filename = None
         self._raw_data = None
         self._nx = None
@@ -730,6 +1051,16 @@ class FieldData(FieldSource):
     def correct_angles(
             self, angxy=0.15, angxz=-0.21, angyx=-0.01,
             angyz=-0.02, angzx=0.01, angzy=-0.74):
+        """_summary_
+
+        Args:
+            angxy (float, optional): _description_. Defaults to 0.15.
+            angxz (float, optional): _description_. Defaults to -0.21.
+            angyx (float, optional): _description_. Defaults to -0.01.
+            angyz (float, optional): _description_. Defaults to -0.02.
+            angzx (float, optional): _description_. Defaults to 0.01.
+            angzy (float, optional): _description_. Defaults to -0.74.
+        """
         tmp_bx = _np.copy(self._bx)
         tmp_by = _np.copy(self._by)
         tmp_bz = _np.copy(self._bz)
@@ -751,6 +1082,13 @@ class FieldData(FieldSource):
     def correct_cross_talk(
             self, k0=7.56863157e-06, k1=-1.67524756e-02,
             k2=-6.78110439e-03):
+        """_summary_
+
+        Args:
+            k0 (_type_, optional): _description_. Defaults to 7.56863157e-06.
+            k1 (_type_, optional): _description_. Defaults to -1.67524756e-02.
+            k2 (_type_, optional): _description_. Defaults to -6.78110439e-03.
+        """
         tmp_bx = _np.copy(self._bx)
         tmp_by = _np.copy(self._by)
         tmp_bz = _np.copy(self._bz)
@@ -767,6 +1105,14 @@ class FieldData(FieldSource):
         self._update_interpolation_functions()
 
     def get_field_at_point(self, point):
+        """_summary_
+
+        Args:
+            point (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         if self._nx == 1:
             bx = self._bx_func(point[2])[0]
             by = self._by_func(point[2])[0]
@@ -782,6 +1128,11 @@ class FieldData(FieldSource):
         return [bx, by, bz]
 
     def shift(self, value):
+        """_summary_
+
+        Args:
+            value (_type_): _description_
+        """
         self._px += value[0]
         self._py += value[1]
         self._pz += value[2]
@@ -791,6 +1142,15 @@ class FieldData(FieldSource):
         raise NotImplementedError
 
     def read_file(self, filename, selected_y=0):
+        """_summary_
+
+        Args:
+            filename (_type_): _description_
+            selected_y (int, optional): _description_. Defaults to 0.
+
+        Returns:
+            _type_: _description_
+        """
         self._filename = filename
 
         header_size = 2000
@@ -806,6 +1166,15 @@ class FieldData(FieldSource):
         return True
 
     def read_raw_data(self, raw_data, selected_y=0):
+        """_summary_
+
+        Args:
+            raw_data (_type_): _description_
+            selected_y (int, optional): _description_. Defaults to 0.
+
+        Returns:
+            _type_: _description_
+        """
         self._raw_data = raw_data
 
         px = self._raw_data[:, 0]

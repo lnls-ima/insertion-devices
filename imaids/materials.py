@@ -16,7 +16,18 @@ class Material():
             ksipar=0.06, ksiper=0.17,
             hlist=None, mlist=None,
             init_radia_object=True, name=''):
+        """_summary_
 
+        Args:
+            linear (bool, optional): _description_. Defaults to True.
+            mr (float, optional): _description_. Defaults to 1.37.
+            ksipar (float, optional): _description_. Defaults to 0.06.
+            ksiper (float, optional): _description_. Defaults to 0.17.
+            hlist (_type_, optional): _description_. Defaults to None.
+            mlist (_type_, optional): _description_. Defaults to None.
+            init_radia_object (bool, optional): _description_. Defaults to True.
+            name (str, optional): _description_. Defaults to ''.
+        """
         self._linear = linear
         self._mr = mr
         self._ksipar = ksipar
@@ -88,12 +99,21 @@ class Material():
 
     @classmethod
     def load_state(cls, filename):
-        """Load state from file."""
+        """Load state from file.
+
+        Args:
+            filename (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         with open(filename) as f:
             kwargs = _json.load(f)
         return cls(init_radia_object=True, **kwargs)
 
     def create_radia_object(self):
+        """_summary_
+        """
         if self.linear:
             self._radia_object = _rad.MatLin(
                 [self.ksipar, self.ksiper], self.mr)
@@ -102,7 +122,14 @@ class Material():
                 _np.transpose([self.hlist, self.mlist]).tolist())
 
     def save_state(self, filename):
-        """Save state to file."""
+        """Save state to file.
+
+        Args:
+            filename (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         with open(filename, 'w') as f:
             _json.dump(self.state, f)
         return True

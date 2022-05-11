@@ -62,6 +62,13 @@ class Delta(_insertiondevice.InsertionDeviceModel):
             block_names_dict=None,
             magnetization_dict=None,
             position_err_dict=None):
+        """_summary_
+
+        Args:
+            block_names_dict (_type_, optional): _description_. Defaults to None.
+            magnetization_dict (_type_, optional): _description_. Defaults to None.
+            position_err_dict (_type_, optional): _description_. Defaults to None.
+        """
         self._cassettes = {}
 
         if block_names_dict is None:
@@ -129,9 +136,17 @@ class Delta(_insertiondevice.InsertionDeviceModel):
         self.rotate([0, 0, 0], [0, 0, 1], -_np.pi/4)
 
     def set_cassete_positions(self, dp=None, dcp=None, dgv=None, dgh=None):
-        """
-        Change longitudinal cassette positions to adjust
+        """Change longitudinal cassette positions to adjust
         polarization and energy.
+
+        Args:
+            dp (_type_, optional): _description_. Defaults to None.
+            dcp (_type_, optional): _description_. Defaults to None.
+            dgv (_type_, optional): _description_. Defaults to None.
+            dgh (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
         """
         if dp is None:
             dp = self._dp
@@ -176,6 +191,17 @@ class Delta(_insertiondevice.InsertionDeviceModel):
 
     def get_fieldmap_header(
             self, kh, kv, field_phase, polarization_name):
+        """_summary_
+
+        Args:
+            kh (_type_): _description_
+            kv (_type_): _description_
+            field_phase (_type_): _description_
+            polarization_name (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         if polarization_name == '':
             polarization_name = '--'
 
@@ -258,6 +284,13 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
             block_names_dict=None,
             magnetization_dict=None,
             position_err_dict=None):
+        """_summary_
+
+        Args:
+            block_names_dict (_type_, optional): _description_. Defaults to None.
+            magnetization_dict (_type_, optional): _description_. Defaults to None.
+            position_err_dict (_type_, optional): _description_. Defaults to None.
+        """
         self._cassettes = {}
 
         if block_names_dict is None:
@@ -325,9 +358,16 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
         self.rotate([0, 0, 0], [0, 0, 1], -_np.pi/4)
 
     def set_cassete_positions(self, dp=None, dcp=None, dg=None):
-        """
-        Change longitudinal cassette positions to adjust
+        """Change longitudinal cassette positions to adjust
         polarization and energy.
+
+        Args:
+            dp (_type_, optional): _description_. Defaults to None.
+            dcp (_type_, optional): _description_. Defaults to None.
+            dg (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
         """
         if dp is None:
             dp = self._dp
@@ -364,6 +404,17 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
 
     def get_fieldmap_header(
             self, kh, kv, field_phase, polarization_name):
+        """_summary_
+
+        Args:
+            kh (_type_): _description_
+            kv (_type_): _description_
+            field_phase (_type_): _description_
+            polarization_name (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         if polarization_name == '':
             polarization_name = '--'
 
@@ -445,6 +496,13 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
             block_names_dict=None,
             magnetization_dict=None,
             position_err_dict=None):
+        """_summary_
+
+        Args:
+            block_names_dict (_type_, optional): _description_. Defaults to None.
+            magnetization_dict (_type_, optional): _description_. Defaults to None.
+            position_err_dict (_type_, optional): _description_. Defaults to None.
+        """
         self._cassettes = {}
 
         if block_names_dict is None:
@@ -512,7 +570,16 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
             [c.radia_object for c in [csd, cse, cid, cie]])
 
     def set_cassete_positions(self, dp=None, dcp=None, dg=None):
-        """Change longitudinal cassette positions and gap."""
+        """Change longitudinal cassette positions and gap.
+
+        Args:
+            dp (_type_, optional): _description_. Defaults to None.
+            dcp (_type_, optional): _description_. Defaults to None.
+            dg (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         if dp is None:
             dp = self._dp
 
@@ -568,6 +635,13 @@ class APU(_insertiondevice.InsertionDeviceModel):
             block_names_dict=None,
             magnetization_dict=None,
             position_err_dict=None):
+        """_summary_
+
+        Args:
+            block_names_dict (_type_, optional): _description_. Defaults to None.
+            magnetization_dict (_type_, optional): _description_. Defaults to None.
+            position_err_dict (_type_, optional): _description_. Defaults to None.
+        """
         self._cassettes = {}
 
         if block_names_dict is None:
@@ -608,7 +682,14 @@ class APU(_insertiondevice.InsertionDeviceModel):
             [c.radia_object for c in [cs, ci]])
 
     def set_cassete_positions(self, dg=None):
-        """Change longitudinal cassette position."""
+        """Change longitudinal cassette position.
+
+        Args:
+            dg (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         if dg is None:
             dg = self._dg
 
@@ -643,6 +724,13 @@ class Planar(_insertiondevice.InsertionDeviceModel):
             block_names_dict=None,
             magnetization_dict=None,
             position_err_dict=None):
+        """_summary_
+
+        Args:
+            block_names_dict (_type_, optional): _description_. Defaults to None.
+            magnetization_dict (_type_, optional): _description_. Defaults to None.
+            position_err_dict (_type_, optional): _description_. Defaults to None.
+        """
         self._cassettes = {}
 
         if block_names_dict is None:
@@ -683,7 +771,14 @@ class Planar(_insertiondevice.InsertionDeviceModel):
             [c.radia_object for c in [cs, ci]])
 
     def set_cassete_positions(self, dg=None):
-        """Change longitudinal cassette position."""
+        """Change longitudinal cassette position.
+
+        Args:
+            dg (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         if dg is None:
             dg = self._dg
 
@@ -710,6 +805,23 @@ class DeltaPrototype(Delta):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='delta_prototype', **kwargs):
+        """_summary_
+
+        Args:
+            block_shape (str, optional): _description_. Defaults to 'default'.
+            nr_periods (int, optional): _description_. Defaults to 60.
+            period_length (int, optional): _description_. Defaults to 20.
+            gap (int, optional): _description_. Defaults to 7.
+            mr (float, optional): _description_. Defaults to 1.36.
+            block_subdivision (str, optional): _description_. Defaults to 'default'.
+            rectangular (bool, optional): _description_. Defaults to False.
+            longitudinal_distance (int, optional): _description_. Defaults to 0.
+            start_blocks_length (str, optional): _description_. Defaults to 'default'.
+            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            end_blocks_length (str, optional): _description_. Defaults to 'default'.
+            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            name (str, optional): _description_. Defaults to 'delta_prototype'.
+        """
 
         if block_shape == 'default':
             block_shape = _blocks.Block.get_predefined_shape(
@@ -756,6 +868,23 @@ class DeltaSabia(Delta):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='delta_sabia', **kwargs):
+        """_summary_
+
+        Args:
+            block_shape (str, optional): _description_. Defaults to 'default'.
+            nr_periods (int, optional): _description_. Defaults to 21.
+            period_length (float, optional): _description_. Defaults to 52.5.
+            gap (float, optional): _description_. Defaults to 13.6.
+            mr (float, optional): _description_. Defaults to 1.39.
+            block_subdivision (str, optional): _description_. Defaults to 'default'.
+            rectangular (bool, optional): _description_. Defaults to False.
+            longitudinal_distance (float, optional): _description_. Defaults to 0.125.
+            start_blocks_length (str, optional): _description_. Defaults to 'default'.
+            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            end_blocks_length (str, optional): _description_. Defaults to 'default'.
+            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            name (str, optional): _description_. Defaults to 'delta_sabia'.
+        """
 
         if block_shape == 'default':
             block_shape = _blocks.Block.get_predefined_shape(
@@ -807,6 +936,23 @@ class DeltaCarnauba(Delta):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='delta_carnauba', **kwargs):
+        """_summary_
+
+        Args:
+            block_shape (str, optional): _description_. Defaults to 'default'.
+            nr_periods (int, optional): _description_. Defaults to 52.
+            period_length (int, optional): _description_. Defaults to 22.
+            gap (int, optional): _description_. Defaults to 7.
+            mr (float, optional): _description_. Defaults to 1.37.
+            block_subdivision (str, optional): _description_. Defaults to 'default'.
+            rectangular (bool, optional): _description_. Defaults to False.
+            longitudinal_distance (float, optional): _description_. Defaults to 0.05.
+            start_blocks_length (str, optional): _description_. Defaults to 'default'.
+            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            end_blocks_length (str, optional): _description_. Defaults to 'default'.
+            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            name (str, optional): _description_. Defaults to 'delta_carnauba'.
+        """
 
         if block_shape == 'default':
             block_shape = _blocks.Block.get_predefined_shape(
@@ -859,6 +1005,23 @@ class AppleXSabia(AppleX):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='applex_sabia', **kwargs):
+        """_summary_
+
+        Args:
+            block_shape (str, optional): _description_. Defaults to 'default'.
+            nr_periods (int, optional): _description_. Defaults to 21.
+            period_length (float, optional): _description_. Defaults to 52.5.
+            gap (float, optional): _description_. Defaults to 13.6.
+            mr (float, optional): _description_. Defaults to 1.39.
+            block_subdivision (str, optional): _description_. Defaults to 'default'.
+            rectangular (bool, optional): _description_. Defaults to False.
+            longitudinal_distance (float, optional): _description_. Defaults to 0.125.
+            start_blocks_length (str, optional): _description_. Defaults to 'default'.
+            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            end_blocks_length (str, optional): _description_. Defaults to 'default'.
+            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            name (str, optional): _description_. Defaults to 'applex_sabia'.
+        """
 
         if block_shape == 'default':
             block_shape = _blocks.Block.get_predefined_shape(
@@ -910,6 +1073,23 @@ class AppleXCarnauba(AppleX):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='applex_carnauba', **kwargs):
+        """_summary_
+
+        Args:
+            block_shape (str, optional): _description_. Defaults to 'default'.
+            nr_periods (int, optional): _description_. Defaults to 53.
+            period_length (int, optional): _description_. Defaults to 22.
+            gap (int, optional): _description_. Defaults to 7.
+            mr (float, optional): _description_. Defaults to 1.39.
+            block_subdivision (str, optional): _description_. Defaults to 'default'.
+            rectangular (bool, optional): _description_. Defaults to False.
+            longitudinal_distance (float, optional): _description_. Defaults to 0.1.
+            start_blocks_length (str, optional): _description_. Defaults to 'default'.
+            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            end_blocks_length (str, optional): _description_. Defaults to 'default'.
+            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            name (str, optional): _description_. Defaults to 'applex_carnauba'.
+        """
 
         if block_shape == 'default':
             block_shape = _blocks.Block.get_predefined_shape(
@@ -960,6 +1140,23 @@ class AppleIISabia(AppleII):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='apple_sabia', **kwargs):
+        """_summary_
+
+        Args:
+            block_shape (str, optional): _description_. Defaults to 'default'.
+            nr_periods (int, optional): _description_. Defaults to 21.
+            period_length (float, optional): _description_. Defaults to 52.5.
+            gap (float, optional): _description_. Defaults to 13.6.
+            mr (float, optional): _description_. Defaults to 1.39.
+            block_subdivision (str, optional): _description_. Defaults to 'default'.
+            rectangular (bool, optional): _description_. Defaults to True.
+            longitudinal_distance (float, optional): _description_. Defaults to 0.125.
+            start_blocks_length (str, optional): _description_. Defaults to 'default'.
+            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            end_blocks_length (str, optional): _description_. Defaults to 'default'.
+            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            name (str, optional): _description_. Defaults to 'apple_sabia'.
+        """
 
         if block_shape == 'default':
             block_shape = _blocks.Block.get_predefined_shape(
@@ -1010,6 +1207,23 @@ class AppleIICarnauba(AppleII):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='apple_carnauba', **kwargs):
+        """_summary_
+
+        Args:
+            block_shape (str, optional): _description_. Defaults to 'default'.
+            nr_periods (int, optional): _description_. Defaults to 53.
+            period_length (int, optional): _description_. Defaults to 22.
+            gap (int, optional): _description_. Defaults to 7.
+            mr (float, optional): _description_. Defaults to 1.39.
+            block_subdivision (str, optional): _description_. Defaults to 'default'.
+            rectangular (bool, optional): _description_. Defaults to False.
+            longitudinal_distance (float, optional): _description_. Defaults to 0.1.
+            start_blocks_length (str, optional): _description_. Defaults to 'default'.
+            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            end_blocks_length (str, optional): _description_. Defaults to 'default'.
+            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            name (str, optional): _description_. Defaults to 'apple_carnauba'.
+        """
 
         if block_shape == 'default':
             block_shape = _blocks.Block.get_predefined_shape(
@@ -1059,6 +1273,23 @@ class Kyma22(APU):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='kyma_22', **kwargs):
+        """_summary_
+
+        Args:
+            block_shape (str, optional): _description_. Defaults to 'default'.
+            nr_periods (int, optional): _description_. Defaults to 51.
+            period_length (int, optional): _description_. Defaults to 22.
+            gap (int, optional): _description_. Defaults to 8.
+            mr (float, optional): _description_. Defaults to 1.32.
+            block_subdivision (str, optional): _description_. Defaults to 'default'.
+            rectangular (bool, optional): _description_. Defaults to False.
+            longitudinal_distance (float, optional): _description_. Defaults to 0.1.
+            start_blocks_length (str, optional): _description_. Defaults to 'default'.
+            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            end_blocks_length (str, optional): _description_. Defaults to 'default'.
+            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            name (str, optional): _description_. Defaults to 'kyma_22'.
+        """
 
         if block_shape == 'default':
             block_shape = _blocks.Block.get_predefined_shape(
@@ -1112,6 +1343,23 @@ class Kyma58(APU):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='kyma_58', **kwargs):
+        """_summary_
+
+        Args:
+            block_shape (str, optional): _description_. Defaults to 'default'.
+            nr_periods (int, optional): _description_. Defaults to 18.
+            period_length (int, optional): _description_. Defaults to 58.
+            gap (float, optional): _description_. Defaults to 15.8.
+            mr (float, optional): _description_. Defaults to 1.32.
+            block_subdivision (str, optional): _description_. Defaults to 'default'.
+            rectangular (bool, optional): _description_. Defaults to False.
+            longitudinal_distance (float, optional): _description_. Defaults to 0.1.
+            start_blocks_length (str, optional): _description_. Defaults to 'default'.
+            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            end_blocks_length (str, optional): _description_. Defaults to 'default'.
+            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            name (str, optional): _description_. Defaults to 'kyma_58'.
+        """
 
         if block_shape == 'default':
             block_shape = _blocks.Block.get_predefined_shape(
@@ -1167,6 +1415,28 @@ class HybridAPU(APU):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='hybrid_planar', **kwargs):
+        """_summary_
+
+        Args:
+            block_shape (str, optional): _description_. Defaults to 'default'.
+            nr_periods (int, optional): _description_. Defaults to 10.
+            period_length (float, optional): _description_. Defaults to 19.9.
+            gap (float, optional): _description_. Defaults to 5.2.
+            mr (float, optional): _description_. Defaults to 1.34.
+            block_subdivision (str, optional): _description_. Defaults to 'default'.
+            hybrid (bool, optional): _description_. Defaults to True.
+            pole_shape (str, optional): _description_. Defaults to 'default'.
+            pole_length (str, optional): _description_. Defaults to 'default'.
+            pole_material (str, optional): _description_. Defaults to 'default'.
+            pole_subdivision (str, optional): _description_. Defaults to 'default'.
+            rectangular (bool, optional): _description_. Defaults to False.
+            longitudinal_distance (float, optional): _description_. Defaults to 0.1.
+            start_blocks_length (str, optional): _description_. Defaults to 'default'.
+            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            end_blocks_length (str, optional): _description_. Defaults to 'default'.
+            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            name (str, optional): _description_. Defaults to 'hybrid_planar'.
+        """
 
         if block_shape == 'default':
             block_shape = _blocks.Block.get_predefined_shape(
@@ -1240,6 +1510,28 @@ class HybridPlanar(Planar):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='hybrid_planar', **kwargs):
+        """_summary_
+
+        Args:
+            block_shape (str, optional): _description_. Defaults to 'default'.
+            nr_periods (int, optional): _description_. Defaults to 10.
+            period_length (float, optional): _description_. Defaults to 19.9.
+            gap (float, optional): _description_. Defaults to 5.2.
+            mr (float, optional): _description_. Defaults to 1.34.
+            block_subdivision (str, optional): _description_. Defaults to 'default'.
+            hybrid (bool, optional): _description_. Defaults to True.
+            pole_shape (str, optional): _description_. Defaults to 'default'.
+            pole_length (str, optional): _description_. Defaults to 'default'.
+            pole_material (str, optional): _description_. Defaults to 'default'.
+            pole_subdivision (str, optional): _description_. Defaults to 'default'.
+            rectangular (bool, optional): _description_. Defaults to False.
+            longitudinal_distance (float, optional): _description_. Defaults to 0.1.
+            start_blocks_length (str, optional): _description_. Defaults to 'default'.
+            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            end_blocks_length (str, optional): _description_. Defaults to 'default'.
+            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
+            name (str, optional): _description_. Defaults to 'hybrid_planar'.
+        """
 
         if block_shape == 'default':
             block_shape = _blocks.Block.get_predefined_shape(
@@ -1312,6 +1604,23 @@ class MiniPlanarSabia(Planar):
             start_blocks_length=None, start_blocks_distance=None,
             end_blocks_length=None, end_blocks_distance=None,
             name='mini_planar_sabia', **kwargs):
+        """_summary_
+
+        Args:
+            block_shape (str, optional): _description_. Defaults to 'default'.
+            nr_periods (int, optional): _description_. Defaults to 3.
+            period_length (float, optional): _description_. Defaults to 52.5.
+            gap (float, optional): _description_. Defaults to 13.6.
+            mr (float, optional): _description_. Defaults to 1.39.
+            block_subdivision (str, optional): _description_. Defaults to 'default'.
+            rectangular (bool, optional): _description_. Defaults to False.
+            longitudinal_distance (float, optional): _description_. Defaults to 0.125.
+            start_blocks_length (_type_, optional): _description_. Defaults to None.
+            start_blocks_distance (_type_, optional): _description_. Defaults to None.
+            end_blocks_length (_type_, optional): _description_. Defaults to None.
+            end_blocks_distance (_type_, optional): _description_. Defaults to None.
+            name (str, optional): _description_. Defaults to 'mini_planar_sabia'.
+        """
 
         if block_shape == 'default':
             block_shape = _blocks.Block.get_predefined_shape(

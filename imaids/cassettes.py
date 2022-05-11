@@ -23,6 +23,38 @@ class Cassette(
             start_blocks_length=None, start_blocks_distance=None,
             end_blocks_length=None, end_blocks_distance=None,
             name='', init_radia_object=True):
+        """_summary_
+
+        Args:
+            nr_periods (_type_, optional): _description_. Defaults to None.
+            period_length (_type_, optional): _description_. Defaults to None.
+            mr (_type_, optional): _description_. Defaults to None.
+            block_shape (_type_, optional): _description_. Defaults to None.
+            upper_cassette (bool, optional): _description_. Defaults to False.
+            longitudinal_distance (int, optional): _description_. Defaults to 0.
+            block_subdivision (_type_, optional): _description_. Defaults to None.
+            rectangular (bool, optional): _description_. Defaults to False.
+            ksipar (float, optional): _description_. Defaults to 0.06.
+            ksiper (float, optional): _description_. Defaults to 0.17.
+            hybrid (bool, optional): _description_. Defaults to False.
+            pole_shape (_type_, optional): _description_. Defaults to None.
+            pole_length (_type_, optional): _description_. Defaults to None.
+            pole_material (_type_, optional): _description_. Defaults to None.
+            pole_subdivision (_type_, optional): _description_. Defaults to None.
+            start_blocks_length (_type_, optional): _description_. Defaults to None.
+            start_blocks_distance (_type_, optional): _description_. Defaults to None.
+            end_blocks_length (_type_, optional): _description_. Defaults to None.
+            end_blocks_distance (_type_, optional): _description_. Defaults to None.
+            name (str, optional): _description_. Defaults to ''.
+            init_radia_object (bool, optional): _description_. Defaults to True.
+
+        Raises:
+            ValueError: _description_
+            ValueError: _description_
+            ValueError: _description_
+            ValueError: _description_
+            ValueError: _description_
+        """
         _fieldsource.SinusoidalFieldSource.__init__(
             self, nr_periods=nr_periods, period_length=period_length)
 
@@ -259,8 +291,14 @@ class Cassette(
 
     @classmethod
     def load_state(cls, filename):
-        """Load state from file."""
+        """Load state from file.
 
+        Args:
+            filename (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         with open(filename) as f:
             kwargs = _json.load(f)
 
@@ -280,7 +318,17 @@ class Cassette(
             block_names=None,
             magnetization_list=None,
             position_err=None):
-        """Create radia object."""
+        """Create radia object.
+
+        Args:
+            block_names (_type_, optional): _description_. Defaults to None.
+            magnetization_list (_type_, optional): _description_. Defaults to None.
+            position_err (_type_, optional): _description_. Defaults to None.
+
+        Raises:
+            ValueError: _description_
+            ValueError: _description_
+        """
         if self._radia_object is not None:
             _rad.UtiDel(self._radia_object)
 
@@ -371,8 +419,11 @@ class Cassette(
         self._radia_object = _rad.ObjCnt(rad_obj_list)
 
     def get_ideal_magnetization_list(self):
-        """
-        List of magnetization vector without amplitude and angular errors.
+        """List of magnetization vector without amplitude and
+        angular errors.
+
+        Returns:
+            _type_: _description_
         """
         if self._upper_cassette:
             first_core_block = 2
@@ -394,9 +445,17 @@ class Cassette(
     def get_random_errors_magnetization_list(
             self, max_amplitude_error=0, max_angular_error=0,
             termination_errors=True, core_errors=True):
-        """
-        List of magnetization vector with random amplitude
+        """List of magnetization vector with random amplitude
         and angular errors.
+
+        Args:
+            max_amplitude_error (int, optional): _description_. Defaults to 0.
+            max_angular_error (int, optional): _description_. Defaults to 0.
+            termination_errors (bool, optional): _description_. Defaults to True.
+            core_errors (bool, optional): _description_. Defaults to True.
+
+        Returns:
+            _type_: _description_
         """
         magnetization_list = self.get_ideal_magnetization_list()
 
@@ -425,6 +484,18 @@ class Cassette(
             self, max_horizontal_error=0,
             max_vertical_error=0, max_longitudinal_error=0,
             termination_errors=True, core_errors=True):
+        """_summary_
+
+        Args:
+            max_horizontal_error (int, optional): _description_. Defaults to 0.
+            max_vertical_error (int, optional): _description_. Defaults to 0.
+            max_longitudinal_error (int, optional): _description_. Defaults to 0.
+            termination_errors (bool, optional): _description_. Defaults to True.
+            core_errors (bool, optional): _description_. Defaults to True.
+
+        Returns:
+            _type_: _description_
+        """
         position_err = []
 
         nr_start = self.nr_start_blocks
@@ -446,7 +517,14 @@ class Cassette(
         return position_err
 
     def save_state(self, filename):
-        """Save state to file."""
+        """Save state to file.
+
+        Args:
+            filename (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         with open(filename, 'w') as f:
             _json.dump(self.state, f)
         return True

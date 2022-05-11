@@ -6,18 +6,52 @@ import radia as _rad
 
 
 def set_len_tol(absolute=1e-12, relative=1e-12):
+    """_summary_
+
+    Args:
+        absolute (_type_, optional): _description_. Defaults to 1e-12.
+        relative (_type_, optional): _description_. Defaults to 1e-12.
+
+    Returns:
+        _type_: _description_
+    """
     return _rad.FldLenTol(absolute, relative)
 
 
 def delete_all():
+    """_summary_
+
+    Returns:
+        _type_: _description_
+    """
     return _rad.UtiDelAll()
 
 
 def cosine_function(z, bamp, freq, phase):
+    """_summary_
+
+    Args:
+        z (_type_): _description_
+        bamp (_type_): _description_
+        freq (_type_): _description_
+        phase (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     return bamp*_np.cos(freq*z + phase)
 
 
 def hybrid_undulator_pole_length(gap, period_length):
+    """_summary_
+
+    Args:
+        gap (_type_): _description_
+        period_length (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     a = 5.939
     b = -11.883
     c = 16.354
@@ -29,15 +63,17 @@ def hybrid_undulator_pole_length(gap, period_length):
 
 def fitting_matrix(tim, freqs):
     """Create the matrix used for fitting of fourier components.
-        The ordering of the matrix is the following:
-           mat[i, 2*j] = cos(2*pi*freqs[j]*tim[i])
-           mat[i, 2*j+1] = sin(2*pi*freqs[j]*tim[i])
-        Args:
-            tim (numpy.ndarray): array with times
-            freqs (numpy.ndarray): array with frequencies to fit.
-        Returns:
-            numpy.ndarray: fitting matrix (len(tim), 2*len(freqs))
-        """
+    The ordering of the matrix is the following:
+        mat[i, 2*j] = cos(2*pi*freqs[j]*tim[i])
+        mat[i, 2*j+1] = sin(2*pi*freqs[j]*tim[i])
+
+    Args:
+        tim (numpy.ndarray): array with times
+        freqs (numpy.ndarray): array with frequencies to fit.
+
+    Returns:
+        numpy.ndarray: fitting matrix (len(tim), 2*len(freqs))
+    """
     mat = _np.zeros((tim.size, 2*freqs.size))
     arg = freqs[None, :]*tim[:, None]
     cos = _np.cos(arg)
@@ -49,17 +85,19 @@ def fitting_matrix(tim, freqs):
 
 def fit_fourier_components(data, freqs, tim):
     """Fit Fourier components in signal for the given frequencies.
-        Args:
-            data (numpy.ndarray, NxM): signal to be fitted consisting of M
-                columns of data.
-            freqs (numpy.ndarray, K): K frequencies to fit Fourier components.
-            tim (numpy.ndarray, N): time vector for data columns.
-        Returns:
-            numpy.ndarray, KxM: Fourier amplitudes.
-            numpy.ndarray, KxM: Fourier phases (phase==0 means pure sine).
-            numpy.ndarray, KxM: Fourier cosine coefficients.
-            numpy.ndarray, KxM: Fourier sine coefficients.
-        """
+
+    Args:
+        data (numpy.ndarray, NxM): signal to be fitted consisting of M
+            columns of data.
+        freqs (numpy.ndarray, K): K frequencies to fit Fourier components.
+        tim (numpy.ndarray, N): time vector for data columns.
+
+    Returns:
+        numpy.ndarray, KxM: Fourier amplitudes.
+        numpy.ndarray, KxM: Fourier phases (phase==0 means pure sine).
+        numpy.ndarray, KxM: Fourier cosine coefficients.
+        numpy.ndarray, KxM: Fourier sine coefficients.
+    """
     mat = fitting_matrix(tim, freqs)
     coeffs, *_ = _np.linalg.lstsq(mat, data, rcond=None)
     cos = coeffs[::2]
@@ -71,6 +109,20 @@ def fit_fourier_components(data, freqs, tim):
 
 def calc_cosine_amplitude(
         pos_list, values_list, freq_guess, maxfev=5000):
+    """_summary_
+
+    Args:
+        pos_list (_type_): _description_
+        values_list (_type_): _description_
+        freq_guess (_type_): _description_
+        maxfev (int, optional): _description_. Defaults to 5000.
+
+    Raises:
+        ValueError: _description_
+
+    Returns:
+        _type_: _description_
+    """
     if len(pos_list) != len(values_list):
         raise ValueError(
             'Inconsistent length between values and position lists.')
@@ -123,20 +175,49 @@ def calc_cosine_amplitude(
 
 
 def depth(lst):
+    """_summary_
+
+    Args:
+        lst (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     return isinstance(lst, list) and max(map(depth, lst)) + 1
 
 
 def flatten(lst):
+    """_summary_
+
+    Args:
+        lst (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     return [item for sublist in lst for item in sublist]
 
 
 def get_constants():
+    """_summary_
+
+    Returns:
+        _type_: _description_
+    """
     electron_rest_energy = 510998.92811  # [eV]
     light_speed = 299792458  # [m/s]
     return electron_rest_energy, light_speed
 
 
 def calc_beam_parameters(energy):
+    """_summary_
+
+    Args:
+        energy (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     electron_rest_energy, light_speed = get_constants()
     gamma = energy*1e9/electron_rest_energy
     beta = _np.sqrt(1 - 1/((energy*1e9/electron_rest_energy)**2))
@@ -145,6 +226,16 @@ def calc_beam_parameters(energy):
 
 
 def newton_lorentz_equation(a, r, b):
+    """_summary_
+
+    Args:
+        a (_type_): _description_
+        r (_type_): _description_
+        b (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     drds = _np.zeros(6)
     drds[0] = r[3]
     drds[1] = r[4]
@@ -156,6 +247,15 @@ def newton_lorentz_equation(a, r, b):
 
 
 def rotation_matrix(axis, theta):
+    """_summary_
+
+    Args:
+        axis (_type_): _description_
+        theta (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     axis = _np.asarray(axis)
     axis = axis / _np.sqrt(_np.dot(axis, axis))
     a = _np.cos(theta / 2.0)
@@ -171,22 +271,58 @@ def rotation_matrix(axis, theta):
 
 
 def find_peaks(data, prominence=0.05):
+    """_summary_
+
+    Args:
+        data (_type_): _description_
+        prominence (float, optional): _description_. Defaults to 0.05.
+
+    Returns:
+        _type_: _description_
+    """
     peaks, _ = _signal.find_peaks(data, prominence=prominence)
     return peaks
 
 
 def find_valleys(data, prominence=0.05):
+    """_summary_
+
+    Args:
+        data (_type_): _description_
+        prominence (float, optional): _description_. Defaults to 0.05.
+
+    Returns:
+        _type_: _description_
+    """
     valleys, _ = _signal.find_peaks(data*(-1), prominence=prominence)
     return valleys
 
 
 def find_peaks_and_valleys(data, prominence=0.05):
+    """_summary_
+
+    Args:
+        data (_type_): _description_
+        prominence (float, optional): _description_. Defaults to 0.05.
+
+    Returns:
+        _type_: _description_
+    """
     peaks = find_peaks(data, prominence=prominence)
     valleys = find_valleys(data, prominence=prominence)
     return sorted(_np.append(peaks, valleys))
 
 
 def find_zeros(pos, data):
+    """_summary_
+
+    Args:
+        pos (_type_): _description_
+        data (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     s = _np.sign(data)
     idxb = (s[0:-1] + s[1:] == 0).nonzero()[0]
     idxa = idxb + 1

@@ -244,7 +244,7 @@ class Block(_fieldsource.FieldModel):
         return cls(**kwargs)
 
     def create_radia_object(self):
-        """Create radia object."""
+        """Creates the radia object."""
         if self._radia_object is not None:
             _rad.UtiDel(self._radia_object)
 

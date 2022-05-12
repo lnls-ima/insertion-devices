@@ -14,19 +14,26 @@ class Material():
     def __init__(
             self, linear=True, mr=1.37,
             ksipar=0.06, ksiper=0.17,
-            hlist=None, mlist=None,
-            init_radia_object=True, name=''):
-        """_summary_
+            hlist=None, mlist=None, name=''):
+        """Creates the radia object for a magnetic material.
 
         Args:
-            linear (bool, optional): _description_. Defaults to True.
-            mr (float, optional): _description_. Defaults to 1.37.
-            ksipar (float, optional): _description_. Defaults to 0.06.
-            ksiper (float, optional): _description_. Defaults to 0.17.
-            hlist (_type_, optional): _description_. Defaults to None.
-            mlist (_type_, optional): _description_. Defaults to None.
-            init_radia_object (bool, optional): _description_. Defaults to True.
-            name (str, optional): _description_. Defaults to ''.
+            linear (bool, optional): If True the object is create using the
+                radia fuction MatLin. If False the object is create using
+                the radia function MatSatIsoTab. Defaults to True.
+            mr (float, optional): magnitude of the remanent magnetization
+                vector in Tesla. Defaults to 1.37.
+            ksipar (float, optional): magnetic susceptibility value parallel 
+                to easy magnetization axis. Defaults to 0.06.
+            ksiper (float, optional): magnetic susceptibility value
+                perpendicular to easy magnetization axis. Defaults to 0.17.
+            hlist (list, optional): field strength H values in Tesla, of
+                the M versus H curve for a nonlinear isotropic magnetic 
+                material. Defaults to None.
+            mlist (list, optional): magnetization M values in Tesla, of the 
+                M versus H curve for a nonlinear isotropic magnetic material.
+                Defaults to None.
+            name (str, optional): Material name. Defaults to ''.
         """
         self._linear = linear
         self._mr = mr
@@ -37,8 +44,7 @@ class Material():
         self.name = name
 
         self._radia_object = None
-        if init_radia_object:
-            self.create_radia_object()
+        self.create_radia_object()
 
     def __str__(self):
         """Printable string representation of the object."""
@@ -102,18 +108,14 @@ class Material():
         """Load state from file.
 
         Args:
-            filename (_type_): _description_
-
-        Returns:
-            _type_: _description_
+            filename (str): path to file.
         """
         with open(filename) as f:
             kwargs = _json.load(f)
-        return cls(init_radia_object=True, **kwargs)
+        return cls(**kwargs)
 
     def create_radia_object(self):
-        """_summary_
-        """
+        """Creates the radia object."""
         if self.linear:
             self._radia_object = _rad.MatLin(
                 [self.ksipar, self.ksiper], self.mr)
@@ -125,10 +127,10 @@ class Material():
         """Save state to file.
 
         Args:
-            filename (_type_): _description_
+            filename (str): path to file.
 
         Returns:
-            _type_: _description_
+            bool: returns True if the state was save to file.
         """
         with open(filename, 'w') as f:
             _json.dump(self.state, f)

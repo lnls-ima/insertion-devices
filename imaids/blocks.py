@@ -232,17 +232,6 @@ class Block(_fieldsource.FieldModel):
         """
         return cls.PREDEFINED_SUBDIVISION.get(device_name)
 
-    @classmethod
-    def load_state(cls, filename):
-        """Load state from file.
-
-        Args:
-            filename (str): path to file.
-        """
-        with open(filename) as f:
-            kwargs = _json.load(f)
-        return cls(**kwargs)
-
     def create_radia_object(self):
         """Creates the radia object."""
         if self._radia_object is not None:
@@ -286,16 +275,3 @@ class Block(_fieldsource.FieldModel):
                 subblock = _rad.ObjDivMag(subblock, div, 'Frame->Lab')
                 subblock_list.append(subblock)
             self._radia_object = _rad.ObjCnt(subblock_list)
-
-    def save_state(self, filename):
-        """Save state to file.
-
-        Args:
-            filename (str): path to file.
-
-        Returns:
-            bool: returns True if the state was save to file.
-        """
-        with open(filename, 'w') as f:
-            _json.dump(self.state, f)
-        return True

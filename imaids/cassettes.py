@@ -26,10 +26,13 @@ class Cassette(
         """_summary_
 
         Args:
-            nr_periods (_type_, optional): _description_. Defaults to None.
-            period_length (_type_, optional): _description_. Defaults to None.
-            mr (_type_, optional): _description_. Defaults to None.
-            block_shape (_type_, optional): _description_. Defaults to None.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to None.
+            period_length (float, optional): Period length in mm.
+                Defaults to None.
+            mr (float, optional): magnitude of the remanent magnetization
+                vector in Tesla. Defaults to None.
+            block_shape (list, optional): _description_. Defaults to None.
             upper_cassette (bool, optional): _description_. Defaults to False.
             longitudinal_distance (int, optional): _description_. Defaults to 0.
             block_subdivision (_type_, optional): _description_. Defaults to None.
@@ -515,16 +518,3 @@ class Cassette(
                 position_err.append([herr, verr, lerr])
 
         return position_err
-
-    def save_state(self, filename):
-        """Save state to file.
-
-        Args:
-            filename (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        with open(filename, 'w') as f:
-            _json.dump(self.state, f)
-        return True

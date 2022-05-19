@@ -1,4 +1,5 @@
 
+import json as _json
 import numpy as _np
 from scipy import integrate as _integrate
 from scipy import interpolate as _interpolate
@@ -816,6 +817,21 @@ class FieldModel(FieldSource):
         """Number of the radia object."""
         return self._radia_object
 
+    @property
+    def state(self):
+        return {}
+
+    @classmethod
+    def load_state(cls, filename):
+        """Load state from file.
+
+        Args:
+            filename (str): path to file.
+        """
+        with open(filename) as f:
+            kwargs = _json.load(f)
+        return cls(**kwargs)
+
     def draw(self):
         """_summary_
 
@@ -839,6 +855,19 @@ class FieldModel(FieldSource):
             _type_: _description_
         """
         return _rad.Fld(self._radia_object, "b", point)
+
+    def save_state(self, filename):
+        """Save state to file.
+
+        Args:
+            filename (str): path to file.
+
+        Returns:
+            bool: returns True if the state was save to file.
+        """
+        with open(filename, 'w') as f:
+            _json.dump(self.state, f)
+        return True
 
     def solve(self, prec=0.00001, max_iter=1000):
         """_summary_

@@ -9,29 +9,41 @@ mu0 = 4*_np.pi*1e-7
 
 
 class Material():
-    """Magnetic material."""
+    """Magnetic materials base class."""
 
     def __init__(
             self, linear=True, mr=1.37,
             ksipar=0.06, ksiper=0.17,
             hlist=None, mlist=None, name=''):
-        """Creates the radia object for a magnetic material.
+        """Initializes attributes and executes Radia object creation method.        
 
         Args:
             linear (bool, optional): If True the object is create using the
                 radia fuction MatLin. If False the object is create using
                 the radia function MatSatIsoTab. Defaults to True.
             mr (float, optional): magnitude of the remanent magnetization
-                vector in Tesla. Defaults to 1.37.
+                vector in Tesla. Used for creating Radia Object when
+                linear==True. Defaults to 1.37.
+                    Direction of the remanent magnetization is not set for the
+                    material, but defined by the initial magnetization vector
+                    of the object to which the material is applyed
+                    (if mr<0, remanent vector is antiparallel to the provided
+                    magnetization for the object using the material).
             ksipar (float, optional): magnetic susceptibility value parallel 
-                to easy magnetization axis. Defaults to 0.06.
+                to easy magnetization axis. Used for creating Radia Object when
+                linear==True. Defaults to 0.06.
             ksiper (float, optional): magnetic susceptibility value
-                perpendicular to easy magnetization axis. Defaults to 0.17.
+                perpendicular to easy magnetization axis. Used for creating
+                Radia Object when linear==True. Defaults to 0.17.
+                    The easy magnetization axis is defined by the direction of
+                    the remanent magnetization vector, explained above.
             hlist (list, optional): field strength H values in Tesla, of
                 the M versus H curve for a nonlinear isotropic magnetic 
-                material. Defaults to None.
+                material. Used for creating Radia Object when
+                linear==False. Defaults to None.
             mlist (list, optional): magnetization M values in Tesla, of the 
                 M versus H curve for a nonlinear isotropic magnetic material.
+                Used for creating Radia Object when linear==False.
                 Defaults to None.
             name (str, optional): Material name. Defaults to ''.
         """
@@ -65,7 +77,7 @@ class Material():
 
     @property
     def mr(self):
-        """Block remanent magnetization [T]."""
+        """Remanent magnetization magnitude [T]."""
         return self._mr
 
     @property
@@ -80,18 +92,22 @@ class Material():
 
     @property
     def hlist(self):
+        """H values of MxH curve for nonlinear isotropic material [T]"""
         return _deepcopy(self._hlist)
 
     @property
     def mlist(self):
+        """M values of MxH curve for nonlinear isotropic material [T]"""
         return _deepcopy(self._mlist)
 
     @property
     def radia_object(self):
+        """int value referencing Radia object."""
         return self._radia_object
 
     @property
     def state(self):
+        """Dictionary storing attribute values"""
         data = {
             'linear': self.linear,
             'mr': self.mr,
@@ -105,10 +121,15 @@ class Material():
 
     @classmethod
     def load_state(cls, filename):
-        """Load state from file.
+        """Create Material object from state loaded from file.
 
         Args:
-            filename (str): path to file.
+            filename (str): Path to file.
+        
+        Returns:
+            Material: New object created with attribute
+            values read from input file.
+        
         """
         with open(filename) as f:
             kwargs = _json.load(f)
@@ -138,11 +159,22 @@ class Material():
 
 
 class NdFeB(Material):
+    """Material class derivate with NdFeB values as default"""
 
     def __init__(
             self, linear=True, mr=1.37,
             ksipar=0.06, ksiper=0.17,
             name='ndfeb', **kwargs):
+        """Initializes Material attributes.
+
+        Args:
+            linear (bool, optional): Defaults to True.
+            mr (float, optional): Defaults to 1.37.
+            ksipar (float, optional): Defaults to 0.06.
+            ksiper (float, optional): Defaults to 0.17.
+            name (str, optional): Defaults to 'ndfeb'.
+            kwargs: Keyword arguments passed to Material initialization.
+        """
         super().__init__(
             linear=linear, mr=mr,
             ksipar=ksipar, ksiper=ksiper,
@@ -151,10 +183,23 @@ class NdFeB(Material):
 
 
 class VanadiumPermendur(Material):
-
+    """Material class derivate with VanadiumPermendur values as default"""
     def __init__(
             self, linear=False, hlist='default',
             mlist='default', name='iron', **kwargs):
+        """Initializes Material attributes.      
+
+        Args:
+            linear (bool, optional): Defaults to False.
+            hlist (str or list, optional): If hlist=='default', default list
+            for VanadiumPermendur will be used. Otherwise, hlist must be
+            list-like. Defaults to 'default'.
+            mlist (list, optional):  If mlist=='default', default list
+            for VanadiumPermendur will be used. Otherwise, hlist must be
+            list-like. Defaults to 'default'.
+            name (str, optional): Material name. Defaults to 'iron'.
+            kwargs: Keyword arguments passed to Material initialization.
+        """
         _h = [
             0.0,
             71.4,

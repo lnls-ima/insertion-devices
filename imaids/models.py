@@ -1134,7 +1134,7 @@ class AppleIISabia(AppleII):
 
     def __init__(
             self, block_shape='default',
-            nr_periods=21, period_length=52.5, gap=13.6, mr=1.39,
+            nr_periods=21, period_length=52.5, gap=8, mr=1.32,
             block_subdivision='default',
             rectangular=True, longitudinal_distance=0.125,
             start_blocks_length='default', start_blocks_distance='default',

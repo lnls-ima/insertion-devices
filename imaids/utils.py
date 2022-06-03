@@ -5,6 +5,9 @@ from scipy import optimize as _optimize
 import radia as _rad
 
 
+mu0 = 4*_np.pi*1e-7
+
+
 def set_len_tol(absolute=1e-12, relative=1e-12):
     """Set absolute and relative randomization for Radia lengths.
 
@@ -247,6 +250,84 @@ def flatten(lst):
         list: 1D list of the input matrix elements.
     """
     return [item for sublist in lst for item in sublist]
+
+
+def paramag_model(h, sat, ksi):
+    """Simple paramagnet-like magnetization curve model.
+
+    Model given by sat*tanh(b*ski/sat).
+
+    Args:
+        h (float or numpy.ndarray): Field or array of fields for calculating
+            magnetization(s).
+        sat (float): Saturation magnetization, in the same units as h.
+        ksi (float): Zero-field Magnetic susceptibility, dimensionles.
+    
+    Returns:
+        float or numpy.ndarray: Magnetization sat*tanh(b*ski/sat).
+    """
+    return sat*_np.tanh(h*ksi/sat)
+
+
+def mh_tesla_curve(hlist, mlist=None, blist=None, msksi=None):
+    """Returns M x H curve in Tesla.
+
+    M and H are multiplied by the vaccum permeability resulting in the curve
+    values given in Tesla (mu0*H x mu0*M). Such magnetization curve format is
+    required as input for defining non-linear Radia materials.
+
+    The function takes the H field as a required arguments and provides three
+    options for calculating magnetization (B field, A/m magnetization OR
+    saturation-susceptibility pair(s)). 
+
+    Args:
+        hlist (list): H field list defining curve domain, in A/m.
+            Output H list for MxH curve is: hlist*mu0
+        mlist (list, optional): Magnetizations list, in A/m. Defaults to None.
+            If provided, output M list for MxH curve is: mu0*mlist
+        blist (list, optional): B field list, in Tesla. Defaults to None.
+            If provided, output M list for MxH curve is: blist - mu0*hlist
+        msksi (list, optional): [[ms1, ks1], [ms2, ks2], ...]
+            Parameters for a paramagnet-like magnetization curve:
+                ms1, ... - saturation magnetization values (in T)
+                ksi1, ... - magnetic susceptibility values (dimensionless)
+            Output M for MxH curve is a sum of all the terms:
+                msi*tanh(mu0_hlist*ksii/msi)    with: mu0_hlist=hlist*mu0
+            for all (msi, ksii) pairs in the msksi input list.
+    
+    Raises:
+        ValueError: If more than one or no value one between
+            (mlist, blist, msksi) is provided.
+        ValueError: If msksi does not have depth=2.
+
+    Returns:
+        numpy.ndarray: H field values for MxH curve, in T (M*mu0).
+        numpy.ndarray: Magnetization values for MxH curve, in T (M*mu0).    
+    """
+    
+    not_none = int(sum(x is not None for x in [mlist, blist, msksi]))
+
+    if not_none == 1:
+
+        mu0_hlist = _np.array(hlist)*mu0
+
+        if mlist is not None:
+            mu0_mlist = _np.array(mlist)*mu0
+
+        elif blist is not None:
+            mu0_mlist = _np.array(blist) - _np.array(hlist)*mu0
+        
+        elif msksi is not None:
+            if depth(msksi) == 2:
+                mu0_mlist = sum(paramag_model(mu0_hlist, *l) for l in msksi)
+            else:
+                raise ValueError('msksi has wrong depth (must be 2)')
+
+    else:
+        raise ValueError('{:d} inputs were given '.format(not_none) + \
+            'for calculating magnetization (must use 1)')
+
+    return mu0_hlist, mu0_mlist
 
 
 def get_constants():

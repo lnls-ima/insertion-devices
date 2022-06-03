@@ -15,6 +15,9 @@ setup(
     author='lnls-ima',
     license='MIT License',
     packages=['imaids'],
+    package_data={
+        'imaids':['presets/*']
+    },
     install_requires=[
         'numpy',
         'scipy',

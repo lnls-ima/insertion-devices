@@ -1,5 +1,7 @@
 
 from copy import deepcopy as _deepcopy
+import importlib.resources as _resources
+import pathlib as _pathlib
 import json as _json
 import numpy as _np
 import radia as _rad
@@ -120,20 +122,59 @@ class Material():
         return data
 
     @classmethod
-    def load_state(cls, filename):
-        """Create Material object from state loaded from file.
+    def load_state(cls, filename, **kwargs):
+        """Create Material object from state file in .json format.
 
         Args:
             filename (str): Path to file.
+            **kwargs: Keyword arguments passed to Material initialization,
+                will ovewride only correspondent values read from state file.
         
         Returns:
             Material: New object created with attribute
-            values read from input file.
-        
+                values read from input file.   
         """
         with open(filename) as f:
-            kwargs = _json.load(f)
-        return cls(**kwargs)
+            file_kwargs = _json.load(f)
+
+        file_kwargs.update(kwargs)
+
+        return cls(**file_kwargs)
+
+
+    @classmethod
+    def preset(cls, presetname, **kwargs):
+        """Create Material object from preset.
+        
+        Presets are built-in .json state files. Available options are:
+            [linear anisotropic]
+                presetname = 'Ferrite'
+                presetname = 'NdFeB'
+                presetname = 'Sm2Co17'
+                presetname = 'SmCo5'
+            [non-linear isotropic]
+                presetname = 'AFK1'
+                presetname = 'AFK502'
+                presetname = 'Steel37'
+                presetname = 'Steel42'
+                presetname = 'VanadiumPermendur'
+                presetname = 'Xc06'
+
+        Args:
+            presetname (str): Preset name.       
+            **kwargs: Keyword arguments passed to Material initialization,
+                will ovewride only correspondent values read from preset state.
+        
+        Returns:
+            Material: New object created with attribute
+                values read from preset.        
+        """
+
+        with _resources.path(__package__, 'presets') as p:
+            presetfile = p / (presetname + '.json')
+
+        return cls.load_state(presetfile, **kwargs)
+
 
     def create_radia_object(self):
         """Creates the radia object."""
@@ -159,8 +200,10 @@ class Material():
 
 
 class NdFeB(Material):
-    """Material class derivate with NdFeB values as default"""
-
+    """Material class derivate with NdFeB values as default
+    
+       LEGACY FUNCTION - use Material.preset('NdFeB') instead
+    """
     def __init__(
             self, linear=True, mr=1.37,
             ksipar=0.06, ksiper=0.17,
@@ -181,9 +224,11 @@ class NdFeB(Material):
             name=name, **kwargs)
 
 
-
 class VanadiumPermendur(Material):
-    """Material class derivate with VanadiumPermendur values as default"""
+    """Material class derivate with VanadiumPermendur values as default
+    
+       LEGACY FUNCTION - use Material.preset('VanadiumPermendur') instead
+    """
     def __init__(
             self, linear=False, hlist='default',
             mlist='default', name='iron', **kwargs):

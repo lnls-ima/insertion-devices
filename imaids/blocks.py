@@ -91,34 +91,57 @@ class Block(_fieldsource.FieldModel):
         """Create the radia object for a block with magnetization. 
 
         Args:
-            shape (list): nested list specifying the block cross section in 2D.
-                Each list in shape should define a convex polyhedron vertex 
-                points in mm.
-            length (float): block longitudinal length in mm. Must be a positive
-                number. If the length is 0, the radia object will not be
-                created.
-            longitudinal_position (float): longitudinal position of the
-                block center in mm.
+            shape (list, Mx2 or NxMx2): nested list specifying cross sections
+                of N subblocks in (x,y) as N lists of M points. Each M points
+                list should define vertex points of a convex polyhedron. In mm.
+                The N lists of points represent subblocks which will be grouped
+                in a single container Radia object. Subblocks are useful for
+                specifying a non-convex block as composed by convex subblocks.
+                This argument also defines the block position in the x,y plane. 
+                For N=1 (no subblocks), a Mx2 list of points may be provided.
+            length (float): block longitudinal (z) length in mm. Must be a
+                positive number. If the length is 0, the radia object will 
+                not be created.
+            longitudinal_position (float): longitudinal (z) position of the
+                block center in mm. Transversal (xy) position is defined by
+                the points position in the shape attribute.
             magnetization (list, optional): list of three real numbers
                 specifying the magnetization vector of the block in Tesla.
+                If material argument is also provided, this vector determines
+                only the magnetization direction (and easy axis for anisotropic
+                material), while the modulus is determined by the material.
+                If material=None, the default material is linear and uses this
+                argument for determining the magnetization modulus as well.
                 Can be set to [0, 0, 0]. Defaults to [0, 1.37, 0].
-            subdivision (list, optional): nested list specifying the 
-                subdivisions of each subblock in the planes [x, y, z].
-                Defaults to None.
+            subdivision (list, 3 or Nx3, optional): nested list specifying 
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z].
+                For N=1 (no subblocks), a len=3 [x, y, z] list may be provided.
+                Defaults to None (no subdivision).
             rectangular (bool, optional): If True the block is created using 
                 the radia function ObjRecMag. If False the block is create 
-                using the radia function ObjThckPgn. Defaults to False.
+                using the radia function ObjThckPgn. Either way, cross-section
+                and thickness of the block must be specifyed by the shape
+                and length attributes. Defaults to False.
             name (str, optional): Block label. Defaults to ''.
             material (Material, optional): Material object to apply to block.
-                Defaults to None, which means that a material with the default
-                properties will be used.
+                Defaults to None, in which case a default material is used.
+                Default material is created with default arguments (including
+                linear=True) except for the magnetization modulus, which is
+                defined as the modulus of the magnetization vector argument.
+            **kwargs: if material==None additional keyword arguments are passed
+                to the Material initialization, overriding default arguments.
+                Default magnetization can not be overwridden, in this case
+                the magnetization vector modulus should be adjusted instead.
+                Note that if default material linearity is overridden, the
+                modulus of the magnetization vector argument is ignored.
 
         Raises:
             ValueError: if the block length is a negative number.
             ValueError: if the length of the magnetization list is different
                 from three.
             ValueError: if the lengths of block_sudivision and block_shape
-                arguments are inconsistent.
+                arguments (numbers of subblocks) are inconsistent.
         """
         if _utils.depth(shape) != 3:
             self._shape = [shape]
@@ -184,7 +207,7 @@ class Block(_fieldsource.FieldModel):
 
     @property
     def subdivision(self):
-        """Block shape subdivision."""
+        """Block list of shape subdivisions."""
         return _deepcopy(self._subdivision)
 
     @property
@@ -208,27 +231,27 @@ class Block(_fieldsource.FieldModel):
 
     @classmethod
     def get_predefined_shape(cls, device_name):
-        """Get predefined block shape for the device.
+        """Get predefined block shape(s) for the device.
 
         Args:
             device_name (str): name of the device. See the options defined in
-                the PREDEFINED_SHAPES attribute.
+                the PREDEFINED_SHAPES class attribute.
 
         Returns:
-            list: list specifying the block shape.
+            list: nested list specifying the block shape(s).
         """
         return cls.PREDEFINED_SHAPES.get(device_name)
 
     @classmethod
     def get_predefined_subdivision(cls, device_name):
-        """Get predefined block subdivision for the device.
+        """Get predefined block subdivision(s) for the device.
 
         Args:
             device_name (str): name of the device. See the options defined in
-                the PREDEFINED_SUBDIVISION atribute.
+                the PREDEFINED_SUBDIVISION class atribute.
 
         Returns:
-            list: list specifying the block subdivision.
+            list: nested list specifying the block subdivision(s).
         """
         return cls.PREDEFINED_SUBDIVISION.get(device_name)
 
@@ -239,6 +262,11 @@ class Block(_fieldsource.FieldModel):
 
         if self._length == 0:
             return
+
+        # In both ObjRecMag and ObjThckPgn, 'Frame->Lab' is used so that
+        # div determines the number of divisions in each cartesian direction.
+        # The default option, ('Frame->Loc') would use a local reference
+        # system in which the x direction is the extrusion direction.
 
         if self._rectangular:
             center = []

@@ -14,19 +14,24 @@ class InsertionDeviceData(
             self, nr_periods=None, period_length=None,
             gap=None, name='', filename=None,
             raw_data=None, selected_y=0):
-        """_summary_
+        """Insertion device field data class.
 
         Args:
-            nr_periods (_type_, optional): _description_. Defaults to None.
-            period_length (_type_, optional): _description_. Defaults to None.
-            gap (_type_, optional): _description_. Defaults to None.
-            name (str, optional): _description_. Defaults to ''.
-            filename (_type_, optional): _description_. Defaults to None.
-            raw_data (_type_, optional): _description_. Defaults to None.
-            selected_y (int, optional): _description_. Defaults to 0.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to None.
+            period_length (float, optional): Period length (in mm).
+                Defaults to None.
+            gap (float, optional): Insertion device magnetic gap (in mm).
+                Defaults to None.
+            name (str, optional): Insertion device name. Defaults to ''.
+            filename (str, optional): Path to file. Defaults to None.
+            raw_data (list, optional): List of x, y, z positions and
+                bx, by, bz fields to load. Defaults to None.
+            selected_y (int, optional): y position to get field data
+                (in mm). Defaults to 0.
 
         Raises:
-            ValueError: _description_
+            ValueError: Magnetic gap must be bigger than zero.
         """
         if gap is not None and gap <= 0:
             raise ValueError('gap must be > 0.')
@@ -51,16 +56,19 @@ class InsertionDeviceData(
 
     def get_fieldmap_header(
             self, kh, kv, field_phase=None, polarization_name=None):
-        """_summary_
+        """Get fieldmap header to save in file.
 
         Args:
-            kh (_type_): _description_
-            kv (_type_): _description_
-            field_phase (_type_, optional): _description_. Defaults to None.
-            polarization_name (_type_, optional): _description_. Defaults to None.
+            kh (float): Horizontal deflection parameter (in T.mm).
+            kv (float): Vertical deflection parameter (in T.mm).
+            field_phase (float, optional): Field phase (in deg).
+                Defaults to None.
+            polarization_name (str, optional): Name of the polarization
+                to save in file. Defaults to None.
 
         Returns:
-            _type_: _description_
+            list: List of strings containing the main parameters of the
+                insertion device to use as the file's header.
         """
         if field_phase is None:
             field_phase_str = '--'
@@ -106,17 +114,21 @@ class InsertionDeviceModel(
     def __init__(
             self, nr_periods=None, period_length=None, gap=None, name=None,
             init_radia_object=True, **kwargs):
-        """_summary_
+        """Insertion device model class.
 
         Args:
-            nr_periods (_type_, optional): _description_. Defaults to None.
-            period_length (_type_, optional): _description_. Defaults to None.
-            gap (_type_, optional): _description_. Defaults to None.
-            name (_type_, optional): _description_. Defaults to None.
-            init_radia_object (bool, optional): _description_. Defaults to True.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to None.
+            period_length (float, optional): Period length (in mm).
+                Defaults to None.
+            gap (float, optional): Insertion device magnetic gap (in mm).
+                Defaults to None.
+            name (str, optional): Insertion device name. Defaults to None.
+            init_radia_object (bool, optional): If True, create a radia
+                object. Defaults to True.
 
         Raises:
-            ValueError: _description_
+            ValueError: Magnetic gap must be bigger than zero.
         """
         _fieldsource.SinusoidalFieldSource.__init__(
             self, nr_periods=nr_periods, period_length=period_length)
@@ -149,6 +161,7 @@ class InsertionDeviceModel(
 
     @property
     def block_names_dict(self):
+        """Blocks names dictionary."""
         name_dict = {}
 
         for key, value in self._cassettes.items():
@@ -158,6 +171,7 @@ class InsertionDeviceModel(
 
     @property
     def magnetization_dict(self):
+        """Blocks magnetization dictionary."""
         mag_dict = {}
 
         for key, value in self._cassettes.items():
@@ -167,6 +181,7 @@ class InsertionDeviceModel(
 
     @property
     def position_err_dict(self):
+        """Blocks position errors dictionary."""
         pos_err_dict = {}
 
         for key, value in self._cassettes.items():
@@ -176,6 +191,7 @@ class InsertionDeviceModel(
 
     @property
     def state(self):
+        """Insertion device properties dictionary."""
         data = {
             'nr_periods': self.nr_periods,
             'period_length': self.period_length,
@@ -193,10 +209,11 @@ class InsertionDeviceModel(
         """Load state from file.
 
         Args:
-            filename (_type_): _description_
+            filename (str): Path to file.
 
         Returns:
-            _type_: _description_
+            imaids.insertiondevice.InsertionDeviceModel:
+                Created insertion device.
         """
         with open(filename) as f:
             kwargs = _json.load(f)
@@ -218,16 +235,19 @@ class InsertionDeviceModel(
 
     def get_fieldmap_header(
             self, kh, kv, field_phase=None, polarization_name=None):
-        """_summary_
+        """Get fieldmap header to save in file.
 
         Args:
-            kh (_type_): _description_
-            kv (_type_): _description_
-            field_phase (_type_, optional): _description_. Defaults to None.
-            polarization_name (_type_, optional): _description_. Defaults to None.
+            kh (float): Horizontal deflection parameter (in T.mm).
+            kv (float): Vertical deflection parameter (in T.mm).
+            field_phase (float, optional): Field phase (in deg).
+                Defaults to None.
+            polarization_name (str, optional): Name of the polarization
+                to save in file. Defaults to None.
 
         Returns:
-            _type_: _description_
+            list: List of strings containing the main parameters of the
+                insertion device to use as a file's header.
         """
         if field_phase is None:
             field_phase_str = '--'
@@ -269,10 +289,10 @@ class InsertionDeviceModel(
         """Save state to file.
 
         Args:
-            filename (_type_): _description_
+            filename (str): Path to file.
 
         Returns:
-            _type_: _description_
+            bool: True.
         """
         with open(filename, 'w') as f:
             _json.dump(self.state, f)

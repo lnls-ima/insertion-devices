@@ -62,12 +62,15 @@ class Delta(_insertiondevice.InsertionDeviceModel):
             block_names_dict=None,
             magnetization_dict=None,
             position_err_dict=None):
-        """_summary_
+        """Create Delta model radia object.
 
         Args:
-            block_names_dict (_type_, optional): _description_. Defaults to None.
-            magnetization_dict (_type_, optional): _description_. Defaults to None.
-            position_err_dict (_type_, optional): _description_. Defaults to None.
+            block_names_dict (dict, optional): Blocks names dictionary.
+                Defaults to None.
+            magnetization_dict (dict, optional): Blocks magnetization
+                dictionary (in T). Defaults to None.
+            position_err_dict (dict, optional): Blocks position errors
+                dictionary (in mm). Defaults to None.
         """
         self._cassettes = {}
 
@@ -140,13 +143,17 @@ class Delta(_insertiondevice.InsertionDeviceModel):
         polarization and energy.
 
         Args:
-            dp (_type_, optional): _description_. Defaults to None.
-            dcp (_type_, optional): _description_. Defaults to None.
-            dgv (_type_, optional): _description_. Defaults to None.
-            dgh (_type_, optional): _description_. Defaults to None.
+            dp (float, optional): Phase displacement (in mm).
+                Defaults to None.
+            dcp (float, optional): Opposite phase displacement (in mm).
+                Defaults to None.
+            dgv (float, optional): Energy adjust (GV) (in mm).
+                Defaults to None.
+            dgh (float, optional): Energy adjust (GH) (in mm).
+                Defaults to None.
 
         Returns:
-            _type_: _description_
+            bool: True.
         """
         if dp is None:
             dp = self._dp
@@ -191,16 +198,18 @@ class Delta(_insertiondevice.InsertionDeviceModel):
 
     def get_fieldmap_header(
             self, kh, kv, field_phase, polarization_name):
-        """_summary_
+        """Get fieldmap header to save in file.
 
         Args:
-            kh (_type_): _description_
-            kv (_type_): _description_
-            field_phase (_type_): _description_
-            polarization_name (_type_): _description_
+            kh (float): Horizontal deflection parameter (in T.mm).
+            kv (float): Vertical deflection parameter (in T.mm).
+            field_phase (float): Field phase (in deg).
+            polarization_name (str): Name of the polarization
+                to save in file.
 
         Returns:
-            _type_: _description_
+            list: List of strings containing the main parameters of the
+                insertion device to use as a file's header.
         """
         if polarization_name == '':
             polarization_name = '--'
@@ -284,12 +293,15 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
             block_names_dict=None,
             magnetization_dict=None,
             position_err_dict=None):
-        """_summary_
+        """Create AppleX radia object.
 
         Args:
-            block_names_dict (_type_, optional): _description_. Defaults to None.
-            magnetization_dict (_type_, optional): _description_. Defaults to None.
-            position_err_dict (_type_, optional): _description_. Defaults to None.
+            block_names_dict (dict, optional): Blocks names dictionary.
+                Defaults to None.
+            magnetization_dict (dict, optional): Blocks magnetization
+                dictionary (in T). Defaults to None.
+            position_err_dict (dict, optional): Blocks position errors
+                dictionary (in mm). Defaults to None.
         """
         self._cassettes = {}
 
@@ -362,12 +374,15 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
         polarization and energy.
 
         Args:
-            dp (_type_, optional): _description_. Defaults to None.
-            dcp (_type_, optional): _description_. Defaults to None.
-            dg (_type_, optional): _description_. Defaults to None.
+            dp (float, optional): Phase displacement (in mm).
+                Defaults to None.
+            dcp (float, optional): Opposite phase displacement (in mm).
+                Defaults to None.
+            dg (float, optional): Energy adjust (in mm).
+                Defaults to None.
 
         Returns:
-            _type_: _description_
+            bool: True.
         """
         if dp is None:
             dp = self._dp
@@ -404,16 +419,18 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
 
     def get_fieldmap_header(
             self, kh, kv, field_phase, polarization_name):
-        """_summary_
+        """Get fieldmap header to save in file.
 
         Args:
-            kh (_type_): _description_
-            kv (_type_): _description_
-            field_phase (_type_): _description_
-            polarization_name (_type_): _description_
+            kh (float): Horizontal deflection parameter (in T.mm).
+            kv (float): Vertical deflection parameter (in T.mm).
+            field_phase (float): Field phase (in deg).
+            polarization_name (str): Name of the polarization
+                to save in file.
 
         Returns:
-            _type_: _description_
+            list: List of strings containing the main parameters of the
+                insertion device to use as a file's header.
         """
         if polarization_name == '':
             polarization_name = '--'
@@ -496,12 +513,15 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
             block_names_dict=None,
             magnetization_dict=None,
             position_err_dict=None):
-        """_summary_
+        """Create AppleII radia object.
 
         Args:
-            block_names_dict (_type_, optional): _description_. Defaults to None.
-            magnetization_dict (_type_, optional): _description_. Defaults to None.
-            position_err_dict (_type_, optional): _description_. Defaults to None.
+            block_names_dict (dict, optional): Blocks names dictionary.
+                Defaults to None.
+            magnetization_dict (dict, optional): Blocks magnetization
+                dictionary (in T). Defaults to None.
+            position_err_dict (dict, optional): Blocks position errors
+                dictionary (in mm). Defaults to None.
         """
         self._cassettes = {}
 
@@ -573,12 +593,15 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
         """Change longitudinal cassette positions and gap.
 
         Args:
-            dp (_type_, optional): _description_. Defaults to None.
-            dcp (_type_, optional): _description_. Defaults to None.
-            dg (_type_, optional): _description_. Defaults to None.
+            dp (float, optional): Phase displacement (in mm).
+                Defaults to None.
+            dcp (float, optional): Opposite phase displacement (in mm).
+                Defaults to None.
+            dg (float, optional): Energy adjust (in mm).
+                Defaults to None.
 
         Returns:
-            _type_: _description_
+            bool: True.
         """
         if dp is None:
             dp = self._dp
@@ -635,12 +658,15 @@ class APU(_insertiondevice.InsertionDeviceModel):
             block_names_dict=None,
             magnetization_dict=None,
             position_err_dict=None):
-        """_summary_
+        """Create APU radia model.
 
         Args:
-            block_names_dict (_type_, optional): _description_. Defaults to None.
-            magnetization_dict (_type_, optional): _description_. Defaults to None.
-            position_err_dict (_type_, optional): _description_. Defaults to None.
+            block_names_dict (dict, optional): Blocks names dictionary.
+                Defaults to None.
+            magnetization_dict (dict, optional): Blocks magnetization
+                dictionary (in T). Defaults to None.
+            position_err_dict (dict, optional): Blocks position errors
+                dictionary (in mm). Defaults to None.
         """
         self._cassettes = {}
 
@@ -685,10 +711,11 @@ class APU(_insertiondevice.InsertionDeviceModel):
         """Change longitudinal cassette position.
 
         Args:
-            dg (_type_, optional): _description_. Defaults to None.
+            dg (float, optional): Energy adjust (in mm).
+                Defaults to None.
 
         Returns:
-            _type_: _description_
+            bool: True.
         """
         if dg is None:
             dg = self._dg
@@ -724,12 +751,15 @@ class Planar(_insertiondevice.InsertionDeviceModel):
             block_names_dict=None,
             magnetization_dict=None,
             position_err_dict=None):
-        """_summary_
+        """Create Planar radia model.
 
         Args:
-            block_names_dict (_type_, optional): _description_. Defaults to None.
-            magnetization_dict (_type_, optional): _description_. Defaults to None.
-            position_err_dict (_type_, optional): _description_. Defaults to None.
+            block_names_dict (dict, optional): Blocks names dictionary.
+                Defaults to None.
+            magnetization_dict (dict, optional): Blocks magnetization
+                dictionary (in T). Defaults to None.
+            position_err_dict (dict, optional): Blocks position errors
+                dictionary (in mm). Defaults to None.
         """
         self._cassettes = {}
 
@@ -774,10 +804,11 @@ class Planar(_insertiondevice.InsertionDeviceModel):
         """Change longitudinal cassette position.
 
         Args:
-            dg (_type_, optional): _description_. Defaults to None.
+            dg (float, optional): Energy adjust (in mm).
+                Defaults to None.
 
         Returns:
-            _type_: _description_
+            bool: True.
         """
         if dg is None:
             dg = self._dg
@@ -805,22 +836,38 @@ class DeltaPrototype(Delta):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='delta_prototype', **kwargs):
-        """_summary_
+        """Create Delta Prototype model.
 
         Args:
-            block_shape (str, optional): _description_. Defaults to 'default'.
-            nr_periods (int, optional): _description_. Defaults to 60.
-            period_length (int, optional): _description_. Defaults to 20.
-            gap (int, optional): _description_. Defaults to 7.
-            mr (float, optional): _description_. Defaults to 1.36.
-            block_subdivision (str, optional): _description_. Defaults to 'default'.
-            rectangular (bool, optional): _description_. Defaults to False.
-            longitudinal_distance (int, optional): _description_. Defaults to 0.
-            start_blocks_length (str, optional): _description_. Defaults to 'default'.
-            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            end_blocks_length (str, optional): _description_. Defaults to 'default'.
-            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            name (str, optional): _description_. Defaults to 'delta_prototype'.
+            block_shape (str or list, optional): List of points [x, y] to
+                create blocks shape (in mm). Defaults to 'default'.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to 60.
+            period_length (int or float, optional): Period length (in mm).
+                Defaults to 20.
+            gap (int or float, optional): Insertion device magnetic gap
+                (in mm). Defaults to 7.
+            mr (float, optional): Remanent magnetization (in T).
+                Defaults to 1.36.
+            block_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            rectangular (bool, optional): If True, create model with
+                rectangular blocks. Defaults to False.
+            longitudinal_distance (int or float, optional): Longitunal
+                distance between blocks (in mm). Defaults to 0.
+            start_blocks_length (str or list, optional): List of block lengths
+                in the start of the cassette (in mm). Defaults to 'default'.
+            start_blocks_distance (str or list, optional): List of distance
+                between blocks in the start of the cassette (in mm).
+                Defaults to 'default'.
+            end_blocks_length (str or list, optional): List of block lengths
+                in the end of the cassette (in mm). Defaults to 'default'.
+            end_blocks_distance (str or list, optional): List of distance
+                between blocks in the end of the cassette (in mm).
+                Defaults to 'default'.
+            name (str, optional): Insertion device name.
+                Defaults to 'delta_prototype'.
         """
 
         if block_shape == 'default':
@@ -868,22 +915,38 @@ class DeltaSabia(Delta):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='delta_sabia', **kwargs):
-        """_summary_
+        """Create Delta Sabia beamline model.
 
         Args:
-            block_shape (str, optional): _description_. Defaults to 'default'.
-            nr_periods (int, optional): _description_. Defaults to 21.
-            period_length (float, optional): _description_. Defaults to 52.5.
-            gap (float, optional): _description_. Defaults to 13.6.
-            mr (float, optional): _description_. Defaults to 1.39.
-            block_subdivision (str, optional): _description_. Defaults to 'default'.
-            rectangular (bool, optional): _description_. Defaults to False.
-            longitudinal_distance (float, optional): _description_. Defaults to 0.125.
-            start_blocks_length (str, optional): _description_. Defaults to 'default'.
-            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            end_blocks_length (str, optional): _description_. Defaults to 'default'.
-            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            name (str, optional): _description_. Defaults to 'delta_sabia'.
+            block_shape (str, optional): List of points [x, y] to
+                create blocks shape (in mm). Defaults to 'default'.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to 21.
+            period_length (float, optional): Period length (in mm).
+                Defaults to 52.5.
+            gap (float, optional): Insertion device magnetic gap
+                (in mm). Defaults to 13.6.
+            mr (float, optional): Remanent magnetization (in T).
+                Defaults to 1.39.
+            block_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            rectangular (bool, optional): If True, create model with
+                rectangular blocks. Defaults to False.
+            longitudinal_distance (float, optional): Longitunal
+                distance between blocks (in mm). Defaults to 0.125.
+            start_blocks_length (str or list, optional): List of block lengths
+                in the start of the cassette (in mm). Defaults to 'default'.
+            start_blocks_distance (str or list, optional): List of distance
+                between blocks in the start of the cassette (in mm).
+                Defaults to 'default'.
+            end_blocks_length (str or list, optional): List of block lengths
+                in the end of the cassette (in mm). Defaults to 'default'.
+            end_blocks_distance (str or list, optional): List of distance
+                between blocks in the end of the cassette (in mm).
+                Defaults to 'default'.
+            name (str, optional): Insertion device name.
+                Defaults to 'delta_sabia'.
         """
 
         if block_shape == 'default':
@@ -936,22 +999,38 @@ class DeltaCarnauba(Delta):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='delta_carnauba', **kwargs):
-        """_summary_
+        """Create Delta Carnauba beamline model.
 
         Args:
-            block_shape (str, optional): _description_. Defaults to 'default'.
-            nr_periods (int, optional): _description_. Defaults to 52.
-            period_length (int, optional): _description_. Defaults to 22.
-            gap (int, optional): _description_. Defaults to 7.
-            mr (float, optional): _description_. Defaults to 1.37.
-            block_subdivision (str, optional): _description_. Defaults to 'default'.
-            rectangular (bool, optional): _description_. Defaults to False.
-            longitudinal_distance (float, optional): _description_. Defaults to 0.05.
-            start_blocks_length (str, optional): _description_. Defaults to 'default'.
-            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            end_blocks_length (str, optional): _description_. Defaults to 'default'.
-            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            name (str, optional): _description_. Defaults to 'delta_carnauba'.
+            block_shape (str, optional): List of points [x, y] to
+                create blocks shape (in mm). Defaults to 'default'.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to 52.
+            period_length (int or float, optional): Period length (in mm).
+                Defaults to 22.
+            gap (int or float, optional): Insertion device magnetic gap
+                (in mm). Defaults to 7.
+            mr (float, optional): Remanent magnetization (in T).
+                Defaults to 1.37.
+            block_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            rectangular (bool, optional): If True, create model with
+                rectangular blocks. Defaults to False.
+            longitudinal_distance (float, optional): Longitunal
+                distance between blocks (in mm). Defaults to 0.05.
+            start_blocks_length (str or list, optional): List of block lengths
+                in the start of the cassette (in mm). Defaults to 'default'.
+            start_blocks_distance (str or list, optional): List of distance
+                between blocks in the start of the cassette (in mm).
+                Defaults to 'default'.
+            end_blocks_length (str or list, optional): List of block lengths
+                in the end of the cassette (in mm). Defaults to 'default'.
+            end_blocks_distance (str or list, optional): List of distance
+                between blocks in the end of the cassette (in mm).
+                Defaults to 'default'.
+            name (str, optional): Insertion device name.
+                Defaults to 'delta_carnauba'.
         """
 
         if block_shape == 'default':
@@ -1005,22 +1084,38 @@ class AppleXSabia(AppleX):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='applex_sabia', **kwargs):
-        """_summary_
+        """Create AppleX Sabia beamline model.
 
         Args:
-            block_shape (str, optional): _description_. Defaults to 'default'.
-            nr_periods (int, optional): _description_. Defaults to 21.
-            period_length (float, optional): _description_. Defaults to 52.5.
-            gap (float, optional): _description_. Defaults to 13.6.
-            mr (float, optional): _description_. Defaults to 1.39.
-            block_subdivision (str, optional): _description_. Defaults to 'default'.
-            rectangular (bool, optional): _description_. Defaults to False.
-            longitudinal_distance (float, optional): _description_. Defaults to 0.125.
-            start_blocks_length (str, optional): _description_. Defaults to 'default'.
-            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            end_blocks_length (str, optional): _description_. Defaults to 'default'.
-            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            name (str, optional): _description_. Defaults to 'applex_sabia'.
+            block_shape (str, optional): List of points [x, y] to
+                create blocks shape (in mm). Defaults to 'default'.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to 21.
+            period_length (float, optional): Period length (in mm).
+                Defaults to 52.5.
+            gap (float, optional): Insertion device magnetic gap
+                (in mm). Defaults to 13.6.
+            mr (float, optional): Remanent magnetization (in T).
+                Defaults to 1.39.
+            block_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            rectangular (bool, optional): If True, create model with
+                rectangular blocks. Defaults to False.
+            longitudinal_distance (float, optional): Longitunal
+                distance between blocks (in mm). Defaults to 0.125.
+            start_blocks_length (str or list, optional): List of block lengths
+                in the start of the cassette (in mm). Defaults to 'default'.
+            start_blocks_distance (str or list, optional): List of distance
+                between blocks in the start of the cassette (in mm).
+                Defaults to 'default'.
+            end_blocks_length (str or list, optional): List of block lengths
+                in the end of the cassette (in mm). Defaults to 'default'.
+            end_blocks_distance (str or list, optional): List of distance
+                between blocks in the end of the cassette (in mm).
+                Defaults to 'default'.
+            name (str, optional): Insertion device name.
+                Defaults to 'applex_sabia'.
         """
 
         if block_shape == 'default':
@@ -1073,22 +1168,38 @@ class AppleXCarnauba(AppleX):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='applex_carnauba', **kwargs):
-        """_summary_
+        """Create AppleX Carnauba beamline model.
 
         Args:
-            block_shape (str, optional): _description_. Defaults to 'default'.
-            nr_periods (int, optional): _description_. Defaults to 53.
-            period_length (int, optional): _description_. Defaults to 22.
-            gap (int, optional): _description_. Defaults to 7.
-            mr (float, optional): _description_. Defaults to 1.39.
-            block_subdivision (str, optional): _description_. Defaults to 'default'.
-            rectangular (bool, optional): _description_. Defaults to False.
-            longitudinal_distance (float, optional): _description_. Defaults to 0.1.
-            start_blocks_length (str, optional): _description_. Defaults to 'default'.
-            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            end_blocks_length (str, optional): _description_. Defaults to 'default'.
-            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            name (str, optional): _description_. Defaults to 'applex_carnauba'.
+            block_shape (str, optional): List of points [x, y] to
+                create blocks shape (in mm). Defaults to 'default'.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to 53.
+            period_length (int or float, optional): Period length (in mm).
+                Defaults to 22.
+            gap (int or float, optional): Insertion device magnetic gap
+                (in mm). Defaults to 7.
+            mr (float, optional): Remanent magnetization (in T).
+                Defaults to 1.39.
+            block_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            rectangular (bool, optional): If True, create model with
+                rectangular blocks. Defaults to False.
+            longitudinal_distance (float, optional): Longitunal
+                distance between blocks (in mm). Defaults to 0.1.
+            start_blocks_length (str or list, optional): List of block lengths
+                in the start of the cassette (in mm). Defaults to 'default'.
+            start_blocks_distance (str or list, optional): List of distance
+                between blocks in the start of the cassette (in mm).
+                Defaults to 'default'.
+            end_blocks_length (str or list, optional): List of block lengths
+                in the end of the cassette (in mm). Defaults to 'default'.
+            end_blocks_distance (str or list, optional): List of distance
+                between blocks in the end of the cassette (in mm).
+                Defaults to 'default'.
+            name (str, optional): Insertion device name.
+                Defaults to 'applex_carnauba'.
         """
 
         if block_shape == 'default':
@@ -1140,22 +1251,38 @@ class AppleIISabia(AppleII):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='apple_sabia', **kwargs):
-        """_summary_
+        """Create AppleII with same parameters as DeltaSabia model.
 
         Args:
-            block_shape (str, optional): _description_. Defaults to 'default'.
-            nr_periods (int, optional): _description_. Defaults to 21.
-            period_length (float, optional): _description_. Defaults to 52.5.
-            gap (float, optional): _description_. Defaults to 13.6.
-            mr (float, optional): _description_. Defaults to 1.39.
-            block_subdivision (str, optional): _description_. Defaults to 'default'.
-            rectangular (bool, optional): _description_. Defaults to True.
-            longitudinal_distance (float, optional): _description_. Defaults to 0.125.
-            start_blocks_length (str, optional): _description_. Defaults to 'default'.
-            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            end_blocks_length (str, optional): _description_. Defaults to 'default'.
-            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            name (str, optional): _description_. Defaults to 'apple_sabia'.
+            block_shape (str, optional): List of points [x, y] to
+                create blocks shape (in mm). Defaults to 'default'.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to 21.
+            period_length (float, optional): Period length (in mm).
+                Defaults to 52.5.
+            gap (float, optional): Insertion device magnetic gap
+                (in mm). Defaults to 13.6.
+            mr (float, optional): Remanent magnetization (in T).
+                Defaults to 1.39.
+            block_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            rectangular (bool, optional): If True, create model with
+                rectangular blocks. Defaults to True.
+            longitudinal_distance (float, optional): Longitunal
+                distance between blocks (in mm). Defaults to 0.125.
+            start_blocks_length (str or list, optional): List of block lengths
+                in the start of the cassette (in mm). Defaults to 'default'.
+            start_blocks_distance (str or list, optional): List of distance
+                between blocks in the start of the cassette (in mm).
+                Defaults to 'default'.
+            end_blocks_length (str or list, optional): List of block lengths
+                in the end of the cassette (in mm). Defaults to 'default'.
+            end_blocks_distance (str or list, optional): List of distance
+                between blocks in the end of the cassette (in mm).
+                Defaults to 'default'.
+            name (str, optional): Insertion device name.
+                Defaults to 'apple_sabia'.
         """
 
         if block_shape == 'default':
@@ -1207,22 +1334,38 @@ class AppleIICarnauba(AppleII):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='apple_carnauba', **kwargs):
-        """_summary_
+        """Create AppleII with same parameters as DeltaCarnauba.
 
         Args:
-            block_shape (str, optional): _description_. Defaults to 'default'.
-            nr_periods (int, optional): _description_. Defaults to 53.
-            period_length (int, optional): _description_. Defaults to 22.
-            gap (int, optional): _description_. Defaults to 7.
-            mr (float, optional): _description_. Defaults to 1.39.
-            block_subdivision (str, optional): _description_. Defaults to 'default'.
-            rectangular (bool, optional): _description_. Defaults to False.
-            longitudinal_distance (float, optional): _description_. Defaults to 0.1.
-            start_blocks_length (str, optional): _description_. Defaults to 'default'.
-            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            end_blocks_length (str, optional): _description_. Defaults to 'default'.
-            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            name (str, optional): _description_. Defaults to 'apple_carnauba'.
+            block_shape (str, optional): List of points [x, y] to
+                create blocks shape (in mm). Defaults to 'default'.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to 53.
+            period_length (int or float, optional): Period length (in mm).
+                Defaults to 22.
+            gap (int or float, optional): Insertion device magnetic gap
+                (in mm). Defaults to 7.
+            mr (float, optional): Remanent magnetization (in T).
+                Defaults to 1.39.
+            block_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            rectangular (bool, optional): If True, create model with
+                rectangular blocks. Defaults to False.
+            longitudinal_distance (float, optional): Longitunal
+                distance between blocks (in mm). Defaults to 0.1.
+            start_blocks_length (str or list, optional): List of block lengths
+                in the start of the cassette (in mm). Defaults to 'default'.
+            start_blocks_distance (str or list, optional): List of distance
+                between blocks in the start of the cassette (in mm).
+                Defaults to 'default'.
+            end_blocks_length (str or list, optional): List of block lengths
+                in the end of the cassette (in mm). Defaults to 'default'.
+            end_blocks_distance (str or list, optional): List of distance
+                between blocks in the end of the cassette (in mm).
+                Defaults to 'default'.
+            name (str, optional): Insertion device name.
+                Defaults to 'apple_carnauba'.
         """
 
         if block_shape == 'default':
@@ -1273,22 +1416,38 @@ class Kyma22(APU):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='kyma_22', **kwargs):
-        """_summary_
+        """Create Kyma22 model.
 
         Args:
-            block_shape (str, optional): _description_. Defaults to 'default'.
-            nr_periods (int, optional): _description_. Defaults to 51.
-            period_length (int, optional): _description_. Defaults to 22.
-            gap (int, optional): _description_. Defaults to 8.
-            mr (float, optional): _description_. Defaults to 1.32.
-            block_subdivision (str, optional): _description_. Defaults to 'default'.
-            rectangular (bool, optional): _description_. Defaults to False.
-            longitudinal_distance (float, optional): _description_. Defaults to 0.1.
-            start_blocks_length (str, optional): _description_. Defaults to 'default'.
-            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            end_blocks_length (str, optional): _description_. Defaults to 'default'.
-            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            name (str, optional): _description_. Defaults to 'kyma_22'.
+            block_shape (str, optional): List of points [x, y] to
+                create blocks shape (in mm). Defaults to 'default'.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to 51.
+            period_length (int or float, optional): Period length (in mm).
+                Defaults to 22.
+            gap (int or float, optional): Insertion device magnetic gap
+                (in mm). Defaults to 8.
+            mr (float, optional): Remanent magnetization (in T).
+                Defaults to 1.32.
+            block_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            rectangular (bool, optional): If True, create model with
+                rectangular blocks. Defaults to False.
+            longitudinal_distance (float, optional): Longitunal
+                distance between blocks (in mm). Defaults to 0.1.
+            start_blocks_length (str or list, optional): List of block lengths
+                in the start of the cassette (in mm). Defaults to 'default'.
+            start_blocks_distance (str or list, optional): List of distance
+                between blocks in the start of the cassette (in mm).
+                Defaults to 'default'.
+            end_blocks_length (str or list, optional): List of block lengths
+                in the end of the cassette (in mm). Defaults to 'default'.
+            end_blocks_distance (str or list, optional): List of distance
+                between blocks in the end of the cassette (in mm).
+                Defaults to 'default'.
+            name (str, optional): Insertion device name.
+                Defaults to 'kyma_22'.
         """
 
         if block_shape == 'default':
@@ -1343,22 +1502,38 @@ class Kyma58(APU):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='kyma_58', **kwargs):
-        """_summary_
+        """Create Kyma58 model.
 
         Args:
-            block_shape (str, optional): _description_. Defaults to 'default'.
-            nr_periods (int, optional): _description_. Defaults to 18.
-            period_length (int, optional): _description_. Defaults to 58.
-            gap (float, optional): _description_. Defaults to 15.8.
-            mr (float, optional): _description_. Defaults to 1.32.
-            block_subdivision (str, optional): _description_. Defaults to 'default'.
-            rectangular (bool, optional): _description_. Defaults to False.
-            longitudinal_distance (float, optional): _description_. Defaults to 0.1.
-            start_blocks_length (str, optional): _description_. Defaults to 'default'.
-            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            end_blocks_length (str, optional): _description_. Defaults to 'default'.
-            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            name (str, optional): _description_. Defaults to 'kyma_58'.
+            block_shape (str, optional): List of points [x, y] to
+                create blocks shape (in mm). Defaults to 'default'.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to 18.
+            period_length (int or float, optional): Period length (in mm).
+                Defaults to 58.
+            gap (float, optional): Insertion device magnetic gap
+                (in mm). Defaults to 15.8.
+            mr (float, optional): Remanent magnetization (in T).
+                Defaults to 1.32.
+            block_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            rectangular (bool, optional): If True, create model with
+                rectangular blocks. Defaults to False.
+            longitudinal_distance (float, optional): Longitunal
+                distance between blocks (in mm). Defaults to 0.1.
+            start_blocks_length (str or list, optional): List of block lengths
+                in the start of the cassette (in mm). Defaults to 'default'.
+            start_blocks_distance (str or list, optional): List of distance
+                between blocks in the start of the cassette (in mm).
+                Defaults to 'default'.
+            end_blocks_length (str or list, optional): List of block lengths
+                in the end of the cassette (in mm). Defaults to 'default'.
+            end_blocks_distance (str or list, optional): List of distance
+                between blocks in the end of the cassette (in mm).
+                Defaults to 'default'.
+            name (str, optional): Insertion device name.
+                Defaults to 'kyma_58'.
         """
 
         if block_shape == 'default':
@@ -1415,27 +1590,49 @@ class HybridAPU(APU):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='hybrid_planar', **kwargs):
-        """_summary_
+        """Create Hybrid APU model.
 
         Args:
-            block_shape (str, optional): _description_. Defaults to 'default'.
-            nr_periods (int, optional): _description_. Defaults to 10.
-            period_length (float, optional): _description_. Defaults to 19.9.
-            gap (float, optional): _description_. Defaults to 5.2.
-            mr (float, optional): _description_. Defaults to 1.34.
-            block_subdivision (str, optional): _description_. Defaults to 'default'.
-            hybrid (bool, optional): _description_. Defaults to True.
-            pole_shape (str, optional): _description_. Defaults to 'default'.
-            pole_length (str, optional): _description_. Defaults to 'default'.
-            pole_material (str, optional): _description_. Defaults to 'default'.
-            pole_subdivision (str, optional): _description_. Defaults to 'default'.
-            rectangular (bool, optional): _description_. Defaults to False.
-            longitudinal_distance (float, optional): _description_. Defaults to 0.1.
-            start_blocks_length (str, optional): _description_. Defaults to 'default'.
-            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            end_blocks_length (str, optional): _description_. Defaults to 'default'.
-            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            name (str, optional): _description_. Defaults to 'hybrid_planar'.
+            block_shape (str or list, optional): List of points [x, y] to
+                create blocks shape (in mm). Defaults to 'default'.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to 10.
+            period_length (float, optional): Period length (in mm).
+                Defaults to 19.9.
+            gap (float, optional): Insertion device magnetic gap
+                (in mm). Defaults to 5.2.
+            mr (float, optional): Remanent magnetization (in T).
+                Defaults to 1.34.
+            block_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            hybrid (bool, optional): If True, creates a hybrid device.
+                Defaults to True.
+            pole_shape (str or list, optional): List of points [x, y] to
+                create poles shape (in mm). Defaults to 'default'.
+            pole_length (str or float, optional): Pole longitudinal length
+                (in mm). Defaults to 'default'.
+            pole_material (str or imaids.materials, optional): Material object
+                to apply to pole. Defaults to 'default'.
+            pole_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subpole in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            rectangular (bool, optional): If True, create model with
+                rectangular blocks. Defaults to False.
+            longitudinal_distance (float, optional): Longitunal
+                distance between blocks (in mm). Defaults to 0.1.
+            start_blocks_length (str or list, optional): List of block lengths
+                in the start of the cassette (in mm). Defaults to 'default'.
+            start_blocks_distance (str or list, optional): List of distance
+                between blocks in the start of the cassette (in mm).
+                Defaults to 'default'.
+            end_blocks_length (str or list, optional): List of block lengths
+                in the end of the cassette (in mm). Defaults to 'default'.
+            end_blocks_distance (str or list, optional): List of distance
+                between blocks in the end of the cassette (in mm).
+                Defaults to 'default'.
+            name (str, optional): Insertion device name.
+                Defaults to 'hybrid_planar'.
         """
 
         if block_shape == 'default':
@@ -1510,27 +1707,49 @@ class HybridPlanar(Planar):
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
             name='hybrid_planar', **kwargs):
-        """_summary_
+        """Create Hybrid planar model.
 
         Args:
-            block_shape (str, optional): _description_. Defaults to 'default'.
-            nr_periods (int, optional): _description_. Defaults to 10.
-            period_length (float, optional): _description_. Defaults to 19.9.
-            gap (float, optional): _description_. Defaults to 5.2.
-            mr (float, optional): _description_. Defaults to 1.34.
-            block_subdivision (str, optional): _description_. Defaults to 'default'.
-            hybrid (bool, optional): _description_. Defaults to True.
-            pole_shape (str, optional): _description_. Defaults to 'default'.
-            pole_length (str, optional): _description_. Defaults to 'default'.
-            pole_material (str, optional): _description_. Defaults to 'default'.
-            pole_subdivision (str, optional): _description_. Defaults to 'default'.
-            rectangular (bool, optional): _description_. Defaults to False.
-            longitudinal_distance (float, optional): _description_. Defaults to 0.1.
-            start_blocks_length (str, optional): _description_. Defaults to 'default'.
-            start_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            end_blocks_length (str, optional): _description_. Defaults to 'default'.
-            end_blocks_distance (str, optional): _description_. Defaults to 'default'.
-            name (str, optional): _description_. Defaults to 'hybrid_planar'.
+            block_shape (str or list, optional): List of points [x, y] to
+                create blocks shape (in mm). Defaults to 'default'.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to 10.
+            period_length (float, optional): Period length (in mm).
+                Defaults to 19.9.
+            gap (float, optional): Insertion device magnetic gap
+                (in mm). Defaults to 5.2.
+            mr (float, optional): Remanent magnetization (in T).
+                Defaults to 1.34.
+            block_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            hybrid (bool, optional): If True, creates a hybrid device.
+                Defaults to True.
+            pole_shape (str or list, optional): List of points [x, y] to
+                create poles shape (in mm). Defaults to 'default'.
+            pole_length (str or float, optional): Pole longitudinal length
+                (in mm). Defaults to 'default'.
+            pole_material (str or imaids.materials, optional): Material object
+                to apply to pole. Defaults to 'default'.
+            pole_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subpole in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            rectangular (bool, optional): If True, create model with
+                rectangular blocks. Defaults to False.
+            longitudinal_distance (float, optional): Longitunal
+                distance between blocks (in mm). Defaults to 0.1.
+            start_blocks_length (str or list, optional): List of block lengths
+                in the start of the cassette (in mm). Defaults to 'default'.
+            start_blocks_distance (str or list, optional): List of distance
+                between blocks in the start of the cassette (in mm).
+                Defaults to 'default'.
+            end_blocks_length (str or list, optional): List of block lengths
+                in the end of the cassette (in mm). Defaults to 'default'.
+            end_blocks_distance (str or list, optional): List of distance
+                between blocks in the end of the cassette (in mm).
+                Defaults to 'default'.
+            name (str, optional): Insertion device name.
+                Defaults to 'hybrid_planar'.
         """
 
         if block_shape == 'default':
@@ -1604,22 +1823,38 @@ class MiniPlanarSabia(Planar):
             start_blocks_length=None, start_blocks_distance=None,
             end_blocks_length=None, end_blocks_distance=None,
             name='mini_planar_sabia', **kwargs):
-        """_summary_
+        """Create Mini planar with the same blocks as Delta Sabia model.
 
         Args:
-            block_shape (str, optional): _description_. Defaults to 'default'.
-            nr_periods (int, optional): _description_. Defaults to 3.
-            period_length (float, optional): _description_. Defaults to 52.5.
-            gap (float, optional): _description_. Defaults to 13.6.
-            mr (float, optional): _description_. Defaults to 1.39.
-            block_subdivision (str, optional): _description_. Defaults to 'default'.
-            rectangular (bool, optional): _description_. Defaults to False.
-            longitudinal_distance (float, optional): _description_. Defaults to 0.125.
-            start_blocks_length (_type_, optional): _description_. Defaults to None.
-            start_blocks_distance (_type_, optional): _description_. Defaults to None.
-            end_blocks_length (_type_, optional): _description_. Defaults to None.
-            end_blocks_distance (_type_, optional): _description_. Defaults to None.
-            name (str, optional): _description_. Defaults to 'mini_planar_sabia'.
+            block_shape (str, optional): List of points [x, y] to
+                create blocks shape (in mm). Defaults to 'default'.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to 3.
+            period_length (float, optional): Period length (in mm).
+                Defaults to 52.5.
+            gap (float, optional): Insertion device magnetic gap
+                (in mm). Defaults to 13.6.
+            mr (float, optional): Remanent magnetization (in T).
+                Defaults to 1.39.
+            block_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            rectangular (bool, optional): If True, create model with
+                rectangular blocks. Defaults to False.
+            longitudinal_distance (float, optional): Longitunal
+                distance between blocks (in mm). Defaults to 0.125.
+            start_blocks_length (str or list, optional): List of block lengths
+                in the start of the cassette (in mm). Defaults to None.
+            start_blocks_distance (str or list, optional): List of distance
+                between blocks in the start of the cassette (in mm).
+                Defaults to None.
+            end_blocks_length (str or list, optional): List of block lengths
+                in the end of the cassette (in mm). Defaults to None.
+            end_blocks_distance (str or list, optional): List of distance
+                between blocks in the end of the cassette (in mm).
+                Defaults to None.
+            name (str, optional): Insertion device name.
+                Defaults to 'mini_planar_sabia'.
         """
 
         if block_shape == 'default':

@@ -498,7 +498,7 @@ class Cassette(
         if self.hybrid:
             block_length = (
                 self._period_length/2 - self._pole_length -
-                self._longitudinal_distance)
+                2*self._longitudinal_distance)
         else:
             block_length = self._period_length/4 - self._longitudinal_distance
 

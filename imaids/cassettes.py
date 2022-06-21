@@ -704,7 +704,7 @@ class Cassette(
             else:
                 f = 1 + _np.random.uniform(-1, 1)*max_amplitude_error
                 rot_angle = _np.random.uniform(-1, 1)*max_angular_error
-                rot_axis = _np.random.uniform(-1, 1, size=3)
+                rot_axis = _utils.random_direction()
                 rot_matrix = _utils.rotation_matrix(rot_axis, rot_angle)
                 magnetization_list_with_errors.append(list(
                     _np.dot(rot_matrix, f*_np.array(magnetization))))

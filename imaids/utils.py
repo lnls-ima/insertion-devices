@@ -435,6 +435,18 @@ def rotation_matrix(axis, theta):
         ])
     return matrix
 
+def random_direction():
+    """Returns a unit vector pointing to a random direction.
+
+    Returns:
+        list, 3: Unit vector in 3D.
+    """
+    u = _np.random.uniform(-1, 1)
+    v = _np.random.uniform(0, 1)
+    x = _np.sqrt(1-u*u)*_np.cos(2*_np.pi*v)
+    y = _np.sqrt(1-u*u)*_np.sin(2*_np.pi*v)
+    z = u
+    return([x,y,z])
 
 def find_peaks(data, prominence=0.05):
     """Find the indices of peaks in data list.

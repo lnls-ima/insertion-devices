@@ -146,19 +146,9 @@ class Material():
     def preset(cls, presetname, **kwargs):
         """Create Material object from preset.
         
-        Presets are built-in .json state files. Available options are:
-            [linear anisotropic]
-                presetname = 'Ferrite'
-                presetname = 'NdFeB'
-                presetname = 'Sm2Co17'
-                presetname = 'SmCo5'
-            [non-linear isotropic]
-                presetname = 'AFK1'
-                presetname = 'AFK502'
-                presetname = 'Steel37'
-                presetname = 'Steel42'
-                presetname = 'VanadiumPermendur'
-                presetname = 'Xc06'
+        Presets are built-in .json state files.
+        Available options may be consulted by the call:
+            materials.Material.dir_presets()
 
         Args:
             presetname (str): Preset name.       
@@ -174,6 +164,19 @@ class Material():
             presetfile = p / (presetname + '.json')
 
         return cls.load_state(presetfile, **kwargs)
+
+    
+    @staticmethod
+    def dir_presets():
+        """List of available material presets.        
+    
+        Returns:
+            list: Available .json material presets on repository. 
+        """
+        with _resources.path(__package__, 'presets') as p:
+            presets = [f.stem for f in p.glob('*.json')]
+        
+        return presets
 
 
     def create_radia_object(self):

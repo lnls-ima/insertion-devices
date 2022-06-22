@@ -124,12 +124,27 @@ class Cassette(
             name (str, optional): Name labeling the cassette. Defaults to ''.             
             init_radia_object (bool, optional): If True, Radia object is
                 created at object initialization. Defaults to True.
-
-        Note: length of core blocks is not given by an initialization argumnt,
+            
+        Note1: length of core blocks is not given by an initialization argumnt,
         but determind by the number of periods, period length, longitudinal
         distance and (possibly, if hybrid==True) pole length. Such length
         determination is performed by the create_radia_object method.
-
+        
+        Note2: 4 arguments may be provided for defining cassette materials:
+            mr, ksipar, ksiper, pole_material.
+            Blocks have linear anisotropic material, with ksipar and ksiper.
+                Magnetization modulus is mr and its direction is defined by
+                by the casset directions array (defived from a Halbach array).
+                (if magnetization_list is passed directly to init_radia_object
+                it defines both mr and directions directly instead)
+            Poles will have material defined by pole material. This material
+                is tipically non-linear and contains an MxH curve (if it were
+                linear, would conatin mr, ksipar and ksiper).
+                Pole magnetization direction is [0,0,0] (initial value).
+            * Radia is used by imaids in such a way that magnetization
+              direction is always defined at the object level, never at
+              material level.
+            
         Raises:
             ValueError: If mr < 0.
             ValueError: If longitudinal_distance < 0.
@@ -574,12 +589,24 @@ class Cassette(
         for length, position, magnetization in zip(
                 length_list, position_list, magnetization_list):
             if self.hybrid and not count % 2:
+                #POLE:  pole_material completely defines material properties
+                #       (by an MxH curve if linear, which is the tipical case).                #.
+                #       Magnetization direction direction is always [0,0,0].
+                #       blocks.Block object uses pole_material and [0,0,0]
+                #       directly.
                 block = _blocks.Block(
                     self._pole_shape, length, position, [0, 0, 0],
                     subdivision=self._pole_subdivision,
                     rectangular=self._rectangular,
                     material=self._pole_material)
             else:
+                #BLOCK: magnetion vector (direction and modulus) is passed to
+                #       blocks.Block object, defining magnetization modulus and
+                #       magnetization direction of a new linear material.
+                #       (if magnetization_list is not passed, this vector
+                #        was previously created using mr and a Halbach array).
+                #       ksipar and ksiper are also passed to the block object
+                #       completing the linear material definition.
                 block = _blocks.Block(
                     self._block_shape, length, position, magnetization,
                     subdivision=self._block_subdivision,

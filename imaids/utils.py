@@ -296,7 +296,7 @@ def mh_tesla_curve(hlist, mlist=None, blist=None, msksi=None):
             for all (msi, ksii) pairs in the msksi input list.
     
     Raises:
-        ValueError: If more than one or no value one between
+        ValueError: If more than one or no value between
             (mlist, blist, msksi) is provided.
         ValueError: If msksi does not have depth=2.
 

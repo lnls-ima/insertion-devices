@@ -131,15 +131,15 @@ class Cassette(
         determination is performed by the create_radia_object method.
         
         Note2: 4 arguments may be provided for defining cassette materials:
-            mr, ksipar, ksiper, pole_material.
+            mr, ksipar, ksiper and pole_material.
             Blocks have linear anisotropic material, with ksipar and ksiper.
                 Magnetization modulus is mr and its direction is defined by
-                by the casset directions array (defived from a Halbach array).
+                by the cassette directions array (from a Halbach array).
                 (if magnetization_list is passed directly to init_radia_object
-                it defines both mr and directions directly instead)
-            Poles will have material defined by pole material. This material
-                is tipically non-linear and contains an MxH curve (if it were
-                linear, would conatin mr, ksipar and ksiper).
+                it defines both mr and magnetization directions instead)
+            Poles will have material defined by pole_material. This material
+                is typically non-linear and contains an MxH curve (if it were
+                linear, it would contain mr, ksipar and ksiper).
                 Pole magnetization direction is [0,0,0] (initial value).
             * Radia is used by imaids in such a way that magnetization
               direction is always defined at the object level, never at
@@ -590,8 +590,8 @@ class Cassette(
                 length_list, position_list, magnetization_list):
             if self.hybrid and not count % 2:
                 #POLE:  pole_material completely defines material properties
-                #       (by an MxH curve if linear, which is the tipical case).                #.
-                #       Magnetization direction direction is always [0,0,0].
+                #       (by an MxH curve if linear, which is the typical case).                #.
+                #       Magnetization direction is always [0,0,0].
                 #       blocks.Block object uses pole_material and [0,0,0]
                 #       directly.
                 block = _blocks.Block(
@@ -600,9 +600,9 @@ class Cassette(
                     rectangular=self._rectangular,
                     material=self._pole_material)
             else:
-                #BLOCK: magnetion vector (direction and modulus) is passed to
-                #       blocks.Block object, defining magnetization modulus and
-                #       magnetization direction of a new linear material.
+                #BLOCK: magnetizationn vector (direction and modulus) is passed
+                #       to blocks.Block object, defining magnetization modulus
+                #       and direction of a new linear material.
                 #       (if magnetization_list is not passed, this vector
                 #        was previously created using mr and a Halbach array).
                 #       ksipar and ksiper are also passed to the block object

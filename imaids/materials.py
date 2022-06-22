@@ -128,7 +128,7 @@ class Material():
         Args:
             filename (str): Path to file.
             **kwargs: Keyword arguments passed to Material initialization,
-                will ovewride only correspondent values read from state file.
+                will override only correspondent values read from state file.
         
         Returns:
             Material: New object created with attribute
@@ -153,7 +153,7 @@ class Material():
         Args:
             presetname (str): Preset name.       
             **kwargs: Keyword arguments passed to Material initialization,
-                will ovewride only correspondent values read from preset state.
+                will override only correspondent values read from preset state.
         
         Returns:
             Material: New object created with attribute

@@ -43,8 +43,8 @@ class Cassette(
     """
 
     def __init__(
-            self, nr_periods=None, period_length=None, mr=None,
-            block_shape=None, upper_cassette=False, longitudinal_distance=0,
+            self, nr_periods, period_length, block_shape,
+            mr=1.37, upper_cassette=False, longitudinal_distance=0,
             block_subdivision=None, rectangular=False,
             ksipar=0.06, ksiper=0.17, hybrid=False,
             pole_shape=None, pole_length=None, pole_material=None,
@@ -56,17 +56,15 @@ class Cassette(
             creating Radia object.
 
         Args:
-            nr_periods (int, optional): Number of complete periods.
-                Defaults to None.
-            period_length (float, optional): Period length in mm.
-                Defaults to None.
-            mr (float, optional): magnitude of remanent magnetization vector
-                Defines magnetization vector modulus for linear material used
-                at the blocks. In Tesla. Must be >= 0. Defaults to None.               
-            block_shape (list, Mx2 or NxMx2,  optional): List defining blocks
+            nr_periods (int): Number of complete periods.
+            period_length (float, optional): Period length in mm.             
+            block_shape (list, Mx2 or NxMx2): List defining blocks
                 geometry. Single list or N nested lists of M 2D points defining
                 convex polygons which form the cross-section of a block (as
-                described in blocks.Bolocks). In mm. Defaults to None.
+                described in blocks.Block). In mm.
+            mr (float, optional): magnitude of remanent magnetization vector
+                Defines magnetization vector modulus for linear material used
+                at the blocks. In Tesla. Must be >= 0. Defaults to 1.37.  
             upper_cassette (bool, optional): Defines direction of the first
                 core block magnetization and, consequentely, the directions
                 sequency for the Halbach array period used:
@@ -96,10 +94,11 @@ class Cassette(
                 format as block_shape, in mm. If None pole shape will be the
                 same as block shape. Defaults to None. 
             pole_length (float, optional): Pole length in mm.
-                Defaults to None.                
+                If hybrid==True, must be not None. Defaults to None.                
             pole_material (materials.Material, optional): Material applyed to
                 poles blocks.Block objects, which are generated with [0,0,0]
-                initial magnetization. Defaults to None.
+                initial magnetization.
+                If hybrid==True, must be not None. Defaults to None.
             pole_subdivision (list, 3 or Nx3, optional): Pole subdivision in
                 the same format as block_subdivision. Must have same N length
                 of pole_shape (or block_shape, if pole_shape==None).
@@ -139,6 +138,10 @@ class Cassette(
                 do not have the same number of elements.
             ValueError: If end_blocks_length and end_blocks_distance
                 do not have the same number of elements.
+            ValueError: If pole_length is not provided in the hybrid case
+                (hybrid==True and pole_length==None).
+            ValueError: If pole_material is not provided in the hybrid case
+                (hybrid==True and pole_material==None).
         """
         _fieldsource.SinusoidalFieldSource.__init__(
             self, nr_periods=nr_periods, period_length=period_length)
@@ -180,6 +183,10 @@ class Cassette(
         if self._hybrid:
             if pole_shape is None:
                 pole_shape = block_shape
+            if pole_length is None:
+                raise ValueError('If hybrid, pole_length must be provided.')
+            if pole_material is None:
+                raise ValueError('If hybrid, pole_material must be provided.')
 
         self._pole_shape = pole_shape
         self._pole_length = pole_length

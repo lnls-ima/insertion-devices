@@ -19,19 +19,13 @@ class Cassette(
 
     Cassettes are defined by periods of 4 blocks, which may be:
         > Non-hybrid (default): Linear material blocks (permanent magnets)
-          in a Halbach array scheme, with magnetizations in directions following
-          the sequence:
-              (...)
-              y+ (0, 1, 0)
-              z- (0, 0,-1)
-              y- (0,-1, 0)
-              z+ (0, 0, 1)
-              (...)
-            * first core block magnetization may be chosen between y+ and y-.
-        > Hybrid: 2nd and 4th blocks are permanent magnet blocks with
-          magnetization in the z+/z- directions while 1st and 3rd blocks
-          (poles) are made of a non-linear material characterized by an
-          and with initial magnetization (0,0,0).
+          with magnetization directions following a specified magnetization
+          list (by default, a Halbach array).
+        > Hybrid: Linear material blocks intercalated with pole blocks of
+          specified material (typically non-linear). The same magnetizations
+          list specified for the non-hybrid case is passed on the hybrid case
+          and defines pole positions and block magnetizations.
+          (see documentation for the create_radia_object method)
 
     Terminology:
         > Block: Permanent magnet block, made of linear anisotropic material.
@@ -70,6 +64,9 @@ class Cassette(
                 sequency for the Halbach array period used:
                     If True:   y+, z-, y-, z+ 
                     If False:  y-, z+, y+, z-
+                    With:
+                        y+ : (0, 1, 0)   ;   z+ : (0, 0, 1)
+                        y- : (0,-1, 0)   ;   z- : (0, 0,-1) 
                 Defaults to False.
             longitudinal_distance (int, optional): Longitudinal gap between
                 adjacent core blocks or between core blocks and poles in the
@@ -216,6 +213,7 @@ class Cassette(
         # Attributes not directly given by __init__ arguments
         self._position_err = []
         self._blocks = []
+        self._is_pole_list = []
         self._radia_object = None
         if init_radia_object:
             self.create_radia_object()
@@ -273,6 +271,11 @@ class Cassette(
     def pole_subdivision(self):
         """Pole shape subdivision."""
         return _deepcopy(self._pole_subdivision)
+    
+    @property
+    def is_pole_list(self):
+        """List of boolean values, True if object is pole, False otherwise."""
+        return self._is_pole_list
 
     @property
     def upper_cassette(self):
@@ -499,17 +502,19 @@ class Cassette(
                 magnetization directions for the blocks in the cassette.
                 Directions on this list will be used only for permanent
                 magnet blocks.
-                If hybrid==True, poles will be the associated with a vector
-                in magnetization_list mostly in the transversal direction
-                (m=(mx,my,mz); |my|>|mz|). Poles are, nevertheless, created
-                with [0,0,0] initial magnetization.
+                If hybrid==True, poles and blocks are intercalated. The first
+                non-termination object will be a pole if it is associated with
+                an element in magnetization_list which is mostly transversal
+                (|magnetization_list[0][1]| > |magnetization_list[0][2]|).
+                Poles are created with their specified material (pole_meterial)
+                and [0,0,0] as their initial magnetization.
                 Examples:
-                    > For a cassette with 1 start block, 1 end block, 2 periods
-                        and hybrid==True, for a magnetization_list:
-                            [y+, z-, y-, z+, y+, z-, y-, z+, y+, z-]
+                    > For a cassette with 2 start blocks, 2 end blocks, 
+                        2 periods and hybrid==True, for a magnetization_list:
+                            [y+, z-, y-, z+, y+, z-, y-, z+, y+, z-, y-, z+]
                         The cassette objects will be initialized with:
-                            [00, z-, 00, z+, 00, z-, 00, z+, 00, z-]
-                                |  1st period  ||  2nd Period  |
+                            [y+, z-, 00, z+, 00, z-, 00, z+, 00, z-, y-, z+]
+                                    |  1st period  ||  2nd Period  |
                     > For a cassette with no start or end blocks, 3 periods and
                         hybrid==True, for a magnetization_list:
                             [z-, y-, z+, y+, z-, y-, z+, y+, z-, y-, z+, y+]
@@ -563,17 +568,29 @@ class Cassette(
             # Check if first block has (mx,my,mz) with |my|>|mz|
             # to determine wether it is a core block or pole.
             if _np.abs(mag0[1]) > _np.abs(mag0[2]):
+                # Length_list if HYBRID and first core object is POLE
                 length_list = _utils.flatten([
                     self._start_blocks_length,
                     [self._pole_length, block_length]*int(
                         self.nr_core_blocks/2),
                     self._end_blocks_length])
+                # is_pole_list if HYBRID and first core object is POLE
+                self._is_pole_list = _utils.flatten([
+                    [False]*int(self.nr_start_blocks),
+                    [True, False]*int(self.nr_core_blocks/2),
+                    [False]*self.nr_end_blocks])
             else:
+                # Length_list if HYBRID and first core object is BLOCK
                 length_list = _utils.flatten([
                     self._start_blocks_length,
                     [block_length, self._pole_length]*int(
                         self.nr_core_blocks/2),
                     self._end_blocks_length])
+                # is_pole_list if HYBRID and first core object is BLOCK
+                self._is_pole_list = _utils.flatten([
+                    [False]*int(self.nr_start_blocks),
+                    [False, True]*int(self.nr_core_blocks/2),
+                    [False]*self.nr_end_blocks])
         else:
             length_list = _utils.flatten([
                 self._start_blocks_length,
@@ -593,10 +610,9 @@ class Cassette(
         position_list -= (position_list[0] + position_list[-1])/2
 
         self._blocks = []
-        count = 0
-        for length, position, magnetization in zip(
-                length_list, position_list, magnetization_list):
-            if self.hybrid and not count % 2:
+        for length, position, magnetization, is_pole in zip(length_list,
+                position_list, magnetization_list, self.is_pole_list):
+            if is_pole:
                 #POLE:  pole_material completely defines material properties
                 #       (by an MxH curve if linear, which is the typical case).                #.
                 #       Magnetization direction is always [0,0,0].
@@ -621,7 +637,6 @@ class Cassette(
                     rectangular=self._rectangular,
                     ksipar=self._ksipar, ksiper=self._ksiper)
             self._blocks.append(block)
-            count += 1
 
         for idx, block in enumerate(self._blocks):
             block.shift(position_err[idx])

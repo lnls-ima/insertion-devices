@@ -229,7 +229,9 @@ class Cassette(
         # > cassette_length
         # > block_names
         # > magnetization_list
+        # > length_list
         # > longitudinal_position_list
+        # > longitudinal_distance_list
         # Which are deinfed below.
 
     @property
@@ -376,10 +378,39 @@ class Cassette(
         return mag_list
 
     @property
+    def length_list(self):
+        """List of lengths for Block objects [mm]."""
+        length_list = [block.length for block in self._blocks]
+        return length_list
+
+    @property
     def longitudinal_position_list(self):
         """List of initial longitudinal position of blocks [mm]."""
         pos_list = [block.longitudinal_position for block in self._blocks]
         return pos_list
+
+    @property
+    def longitudinal_distance_list(self):
+        """List of distances (gaps between objects) for Block objects [mm].
+        
+        Between core blocks (or between core blocks and poles) there are
+        nr_core_blocks-1 distances.
+        This way, start_blocks_distance represents distances AFTER start blocks
+        and end_blocks_distance represets distances BEFORE end blocks.
+        Example:
+        > 2 periods of 20 mm and longitudinal distance of 1 mm.
+        > Three start blocks of lengths [1,2,3] and distances [1,2,3]
+        > Three end blocks of lengths [3,2,1] and distance [3,2,1]
+          Will lead to:
+        |start       |1st period     |2nd period    |end        |
+        | 1   2   3  |4   4   4   4  |4   4   4   4 |  3   2   1|   (14 blocks)
+        |   1   2   3|  1   1   1   1|  1   1   1   |3   2   1  |   (13 gaps)
+        """
+        distance_list = _utils.flatten([
+            self._start_blocks_distance,
+            [self._longitudinal_distance]*(self.nr_core_blocks-1),
+            self._end_blocks_distance])
+        return distance_list
 
     @property
     def state(self):
@@ -549,38 +580,15 @@ class Cassette(
                 [block_length]*self.nr_core_blocks,
                 self._end_blocks_length])
 
-        # For the nr_core_blocks core blocks, a list of nr_core_blocks-1
-        # longitudinal distances is used, so that such list represents only
-        # gaps between core blocks or core blocks and poles.
-        # This way, start_blocks_distance represents distances AFTER start
-        # blocks and end_blocks_distance represets distances BEFORE end blocks.
-        # Example:
-        # > 1 period of 20 mm and longitudinal distance of 1 mm.
-        # > three start blocks of lengths [1,2,3] and distances [1,2,3]
-        # > three end blocks of lengths [3,2,1] and distance [3,2,1]
-        # will lead to:
-        # Lengths:  | 1 | 2 | 3 | 4 | 4 | 4 | 4 | 3 | 2 | 1 |   (10 blocks)
-        # Distances:    1,  2,  3,  1,  1,  1,  3,  2,  1       (9 distances)
-        # * notice that "1 period" in this example is given by 4 blocks of
-        #   4 mm and 4 gaps of 1 mm (= 20 mm), which does not fully appear in
-        #   in the case of 1 period above (it lacks a 1 mm gap).
-        #   For 20 periods, 19 full periods would be formed by the core blocks
-        #   and the last period would, again, lack 1 well-defined gap.
-        distance_list = _utils.flatten([
-            self._start_blocks_distance,
-            [self._longitudinal_distance]*(self.nr_core_blocks-1),
-            self._end_blocks_distance])
-
         # Positions initialy start at 0 and are defined by adding the
         # longitudinal distances (gaps) and half lengths of their two adjacent
         # blocks or poles. Blocks/poles centers are then shifted so that they
         # are centered around the lontitudinal z=0.
-        # For the example above, the positions are:
-        # [-21, -18.5, -14, -7.5, -2.5, 2.5, 7.5, 14, 18.5, 21] 
         position_list = [0]
         for i in range(1, self.nr_blocks):
             position_list.append((
-                length_list[i] + length_list[i-1])/2 + distance_list[i-1])
+                length_list[i] + length_list[i-1])/2 + 
+                                 self.longitudinal_distance_list[i-1])
         position_list = _np.cumsum(position_list)
         position_list -= (position_list[0] + position_list[-1])/2
 

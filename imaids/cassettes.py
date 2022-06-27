@@ -592,10 +592,15 @@ class Cassette(
                     [False, True]*int(self.nr_core_blocks/2),
                     [False]*self.nr_end_blocks])
         else:
+            # Length_list if NON-HYBRID
             length_list = _utils.flatten([
                 self._start_blocks_length,
                 [block_length]*self.nr_core_blocks,
                 self._end_blocks_length])
+            # is_pole_list if NON-HYBRID
+            self._is_pole_list = [False]*(self.nr_start_blocks + 
+                                            self.nr_core_blocks + 
+                                            self.nr_end_blocks)
 
         # Positions initialy start at 0 and are defined by adding the
         # longitudinal distances (gaps) and half lengths of their two adjacent

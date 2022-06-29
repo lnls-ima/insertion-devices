@@ -1,5 +1,6 @@
 
 import json as _json
+from concurrent import futures as _futures
 import numpy as _np
 from scipy import integrate as _integrate
 from scipy import interpolate as _interpolate
@@ -88,7 +89,8 @@ class FieldSource():
         """
         return _utils.delete_all()
 
-    def calc_field_integrals(self, z_list, x=0, y=0, field_list=None):
+    def calc_field_integrals(self, z_list, x=0, y=0, field_list=None, 
+                                nproc=None, chunksize=100):
         """Calculate field integrals.
 
         Args:
@@ -100,6 +102,17 @@ class FieldSource():
                 to calculate field integrals (in mm). Defaults to 0.
             field_list (list, optional): Field data (in T).
                 Defaults to None.
+            nproc (int, optional): number of threads for parallel computation.
+                of field. Ignored if field_list is given.
+                Must be >=1. If None, serial case is performed (concurrent
+                multiprocessing module will not be used). Defaults to None.
+            chunksize (int, optional): multiprocessing parameter specifying
+                size of list section sent to each process. Defaults to 100.
+            
+        Note:
+            Python multiprocessing does not work interactively, it must be
+            run in a __main__ module, inside the clause:
+                if __name__ == '__main__':
 
         Raises:
             ValueError: Field data and logitudinal position must have
@@ -114,7 +127,8 @@ class FieldSource():
                 raise ValueError(
                     'Inconsistent length between field and position lists.')
         else:
-            field_list = self.get_field(x=x, y=y, z=z_list)
+            field_list = self.get_field(x=x, y=y, z=z_list, nproc=nproc,
+                                        chunksize=chunksize)
 
         bx, by, bz = _np.transpose(field_list)
 
@@ -211,7 +225,7 @@ class FieldSource():
 
         return trajectory
 
-    def get_field(self, x=0, y=0, z=0):
+    def get_field(self, x=0, y=0, z=0, nproc=None, chunksize=100):
         """Get field data.
 
         Args:
@@ -221,9 +235,20 @@ class FieldSource():
                 to get field (in mm). Defaults to 0.
             z (list or float or int, optional): z positions
                 to get field (in mm). Defaults to 0.
+            nproc (int, optional): number of threads for parallel computation.
+                Must be >=1. If None, serial case is performed (concurrent
+                multiprocessing module will not be used). Defaults to None.
+            chunksize (int, optional): multiprocessing parameter specifying
+                size of list section sent to each process. Defaults to 100.
+        
+        Note:
+            Python multiprocessing does not work interactively, it must be
+            run in a __main__ module, inside the clause:
+                if __name__ == '__main__':
 
         Raises:
             ValueError: Position arguments must be valid.
+            ValueError: If provided, number of processes must be >=1.
 
         Returns:
             numpy.ndarray: Field data [bx, by, bz] (in T).
@@ -238,16 +263,24 @@ class FieldSource():
         if sum([len(i) > 1 for i in [x, y, z]]) > 1:
             raise ValueError('Invalid position arguments.')
 
-        if len(x) > 1:
-            field = [self.get_field_at_point([xi, y, z]) for xi in x]
-        elif len(y) > 1:
-            field = [self.get_field_at_point([x, yi, z]) for yi in y]
-        elif len(z) > 1:
-            field = [self.get_field_at_point([x, y, zi]) for zi in z]
-        else:
-            field = [self.get_field_at_point([x, y, z])]
+        pos_list = []
+        for pos_z in z:
+            for pos_x in x:
+                for pos_y in y:
+                    pos_list.append([pos_x, pos_y, pos_z])
 
-        return _np.array(field)
+        if nproc is not None:
+            nproc = int(nproc)
+            if nproc < 1:
+                raise ValueError('Number or processes must be >=1.')
+            with _futures.ProcessPoolExecutor(max_workers=nproc) as executor:
+                field_gen = executor.map(self.get_field_at_point, pos_list,
+                                         chunksize=chunksize)
+                return _np.array(list(field_gen))
+
+        else:
+            field = [self.get_field_at_point(pos) for pos in pos_list]
+            return _np.array(field)
 
     def get_field_at_point(self, point):
         raise NotImplementedError

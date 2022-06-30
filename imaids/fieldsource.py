@@ -253,11 +253,11 @@ class FieldSource():
         Returns:
             numpy.ndarray: Field data [bx, by, bz] (in T).
         """
-        if isinstance(x, (float, int)):
+        if int(_np.ndim(x)) == 0:
             x = [x]
-        if isinstance(y, (float, int)):
+        if int(_np.ndim(y)) == 0:
             y = [y]
-        if isinstance(z, (float, int)):
+        if int(_np.ndim(z)) == 0:
             z = [z]
 
         if sum([len(i) > 1 for i in [x, y, z]]) > 1:
@@ -305,13 +305,13 @@ class FieldSource():
         if header is None:
             header = []
 
-        if isinstance(x_list, (float, int)):
+        if int(_np.ndim(x_list)) == 0:
             x_list = [x_list]
 
-        if isinstance(y_list, (float, int)):
+        if int(_np.ndim(y_list)) == 0:
             y_list = [y_list]
 
-        if isinstance(z_list, (float, int)):
+        if int(_np.ndim(z_list)) == 0:
             z_list = [z_list]
 
         x_list = _np.round(x_list, decimals=8)
@@ -355,13 +355,13 @@ class FieldSource():
         Returns:
             bool: True.
         """
-        if isinstance(x_list, (float, int)):
+        if int(_np.ndim(x_list)) == 0:
             x_list = [x_list]
 
-        if isinstance(y_list, (float, int)):
+        if int(_np.ndim(y_list)) == 0:
             y_list = [y_list]
 
-        if isinstance(z_list, (float, int)):
+        if int(_np.ndim(z_list)) == 0:
             z_list = [z_list]
 
         x_list = _np.round(x_list, decimals=8)
@@ -426,10 +426,10 @@ class FieldSource():
         _, light_speed = _utils.get_constants()
         brho = energy*1e9/light_speed
 
-        if isinstance(x_list, (float, int)):
+        if int(_np.ndim(x_list)) == 0:
             x_list = [x_list]
 
-        if isinstance(y_list, (float, int)):
+        if int(_np.ndim(y_list)) == 0:
             y_list = [y_list]
 
         x_list = _np.round(x_list, decimals=8)
@@ -864,13 +864,13 @@ class SinusoidalFieldSource(FieldSource):
         """
         filename = '{0:s}'.format(date)
 
-        if isinstance(x_list, (float, int)):
+        if int(_np.ndim(x_list)) == 0:
             x_list = [x_list]
 
-        if isinstance(y_list, (float, int)):
+        if int(_np.ndim(y_list)) == 0:
             y_list = [y_list]
 
-        if isinstance(z_list, (float, int)):
+        if int(_np.ndim(z_list)) == 0:
             z_list = [z_list]
 
         x_list = _np.round(x_list, decimals=8)

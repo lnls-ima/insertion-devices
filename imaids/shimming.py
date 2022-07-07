@@ -18,37 +18,88 @@ class UndulatorShimming():
             zmin_pe=None, zmax_pe=None,
             include_pe=False, field_comp=None,
             solved_shim=True, solved_matrix=False):
-        """_summary_
+        """Class used for calculating insertion devices shimming.
 
-        Args:
-            zmin (_type_): _description_
-            zmax (_type_): _description_
-            znpts (_type_): _description_
-            cassettes (_type_): _description_
-            block_type (str, optional): _description_. Defaults to 'v'.
-            segments_type (str, optional): _description_. Defaults to 'half_period'.
-            energy (float, optional): _description_. Defaults to 3.0.
-            rkstep (float, optional): _description_. Defaults to 0.5.
-            xpos (float, optional): _description_. Defaults to 0.0.
-            ypos (float, optional): _description_. Defaults to 0.0.
-            zmin_pe (_type_, optional): _description_. Defaults to None.
-            zmax_pe (_type_, optional): _description_. Defaults to None.
-            include_pe (bool, optional): _description_. Defaults to False.
-            field_comp (_type_, optional): _description_. Defaults to None.
-            solved_shim (bool, optional): _description_. Defaults to True.
-            solved_matrix (bool, optional): _description_. Defaults to False.
+        Args:           
+            zmin (float): Initial/lower z longitudinal position (in mm) used
+                in the calculation of:
+                > trajectories.
+                > field integrals.
+                > field zeros at segment limits determination.
+            zmax (float): Final/upper z longitudinal position (in mm) used
+                in the calculation of:
+                > trajectories.
+                > field integrals.
+                > field zeros at segment limits determination.  
+            znpts (int): Number of sampling points for field integrals.
+            cassettes (list of str): Strings specifying which cassettes will 
+                be used in shimming. The strings must be keys at the cassettes
+                dictionary of the considered insertion device model.
+            block_type (str, optional): String specifying which types of blocks
+                will be used for shimming. Available options are:
+                'v' :   Vertical, blocks whose mangetization points mostly to
+                        the y direction ("vertical" up or down transversal).
+                'vpos'  Vertical positive, blocks whose mangetization points
+                        mostly to the positive y direction ("vertical" up
+                        transversal)
+                'vneg'  Vertical negative, blocks whose mangetization points
+                        mostly to the negative y direction ("vertical" down
+                        transversal)
+                Defaults to 'v'.
+            segments_type (str, optional): Defines how field zeros are used to
+                obtain segments limits. Such zeros are the zeros z positions of
+                a field component defined at the calc_segments method.
+                If segments_type=='period', every other zero is used as segment
+                    limit, starting from the first zero.
+                If segments_type=='half_period' (default), all zeros are used
+                    as segment limits.
+                Defaults to 'half_period'.
+            energy (float, optional): Electron energy at the beam, in KeV.
+                Used for trajectory calculations. Defaults to 3.0.
+            rkstep (float, optional): Step to solve the trajectories equations
+                of motion. In mm. Defaults to 0.5.
+            xpos (float, optional): Initial x transversal trajectory position.
+                In mm. Defaults to 0.0.
+            ypos (float, optional): Initial y transversal trajectory position.
+                In mm. Defaults to 0.0.
+            zmin_pe (float, optional): Lower z bound for list of poles in
+                phase error calculations. If None, it is set equal to zmin.
+                In mm. Defaults to None.
+            zmax_pe (float, optional): upper z bound for list of poles in
+                phase error calculations. If None, it is set equal to zmin.
+                In mm. Defaults to None.
+            include_pe (bool, optional): If True, the calculation for segment
+                slopes for average trajectory also writes the phase derrors
+                defined by SinusoidalFieldSource.calc_phase_error method to
+                output file. Defaults to False.
+            field_comp (_type_, optional): When calculating phase errors, this
+                optional argument may be used to force one of the components
+                (x or y) to be used to determine the poles.
+                    If field_comp==0, poles are defined by y'==0 (or, by Bx).
+                    If field_comp==1, poles are defined by x'==0 (or, by By).
+                    If None, field amplitudes are used instead.
+                Defaults to None.
+            solved_shim (bool, optional): If True, magnetostatic problem is
+                solved (Radia solve method is run) for the insertion device
+                before calculating shimming signature field. Otherwise, solve
+                method is not run. See help on calc_shim_signature method for
+                details. Defaults to True.
+            solved_matrix (bool, optional): If True, magnetostatic problem is
+                solved (Radia solve method is run) for the insertion device
+                before calculating each shim when determining the response
+                matrix. Otherwise, solve method is not run. Defaults to False.
 
         Raises:
-            ValueError: _description_
-            ValueError: _description_
+            ValueError: If block_type is not 'v', 'vpos' or 'vneg'.
+            ValueError: If segments_type is not "period" or "half_period".
         """
         if block_type not in ('v', 'vpos', 'vneg'):
             raise ValueError(
                 'Invalid block_type value. Valid options: "v", "vpos", "vneg"')
 
         if segments_type not in ('period', 'half_period'):
-            raise ValueError(
-                'Invalid segments_type value. Valid options: "period" or "half_period"')
+            raise ValueError('Invalid segments_type value. Valid options: ' + 
+                                                '"period" or "half_period"')
 
         if zmin_pe is None:
             zmin_pe = zmin
@@ -75,14 +126,14 @@ class UndulatorShimming():
 
     @staticmethod
     def get_rounded_shims(shims, possible_shims):
-        """_summary_
+        """Returns list of feasible shims which best approximate input shims.
 
         Args:
-            shims (_type_): _description_
-            possible_shims (_type_): _description_
+            shims (list): List of ideal/desired shims.
+            possible_shims (list): List of available shims.
 
         Returns:
-            _type_: _description_
+            list: List of available shims which are the closest to input shims.
         """
         shims_round = []
         for shim in shims:
@@ -92,29 +143,58 @@ class UndulatorShimming():
 
     @staticmethod
     def calc_svd(response_matrix):
-        """_summary_
+        """Singular value decomposition (SVD) of the input response_matrix:
+
+        response_matrix = u @ s @ vt
+            Where:
+            > @ denotes matrix multiplication.
+            > u and vt are unitary transformation matrices
+            > s is a rectangular diagonal matrix, in which s[i,i]
+              are the singular values and s[i,j] == 0 for i != j.
+        
+        Columns of u and vt are orthonormal basis vector for the spaces
+        of the inputs and outputs of the response matrix.
+        If M>N (M<N) the last column (line) of u (vt) is excluded in the
+        output. Such column (line) is always multiplied by 0 values in s.  
 
         Args:
-            response_matrix (_type_): _description_
+            response_matrix (list, M x N): Input matrix
+                for singular value decomposition.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray, M x min(M,N): Left matrix in decomposition, u.
+            numpy.ndarray, min(M,N): 1d s[i,i] singular values list.
+            numpy.ndarray, min(M,N) x N: Right matrix in decompositsion, v.
         """
         u, sv, vt = _np.linalg.svd(response_matrix, full_matrices=False)
         return u, sv, vt
 
     @staticmethod
     def calc_inv_matrix(u, sv, vt, nsv=None):
-        """_summary_
+        """Calculates the inverse of the matrix u @ s @ vt.
+
+        Since u and vt are orthogonal matrices and s is diagonal with
+        elements given by sv, the inverse is:
+            u.T @ (1/sv) @ vt.T
+        Where @ represents matrix multiplication, X.T is the transpose of
+        X and (1/sv) is a rectangular diagonal matrix with elements 1/sv[i].
+        (1/sv actually represents the transpose of the reciprocals matrix
+        obtained from the original s SVD matrix)
+
+        If an inverse does not exist (including the case of non-square SVD
+        decomposed matrices), this procedure provides the pseudoinverse.
 
         Args:
-            u (_type_): _description_
-            sv (_type_): _description_
-            vt (_type_): _description_
-            nsv (_type_, optional): _description_. Defaults to None.
+            u (numpy.ndarray, M x min(M,N)): Left orthogonal matrix from SVD.
+            sv (numpy.ndarray, min(M,N)): 1d singular values list from SVD.
+            vt (numpy.ndarray, min(M,N) x N): Right orthogonal matrix from SVD.
+            nsv (int, optional): Number of singular values to be considered,
+                if nsv < len(sv), last (len(sv) - nsv) values are set to 0.
+                if nsv >= len(sv), all singular values are considered.
+                Defaults to None, in which case, nsv = len(sv).
 
         Returns:
-            _type_: _description_
+           numpy.ndarray, N x M: Inverse (or pseudoinverse) matrix.
         """
         if nsv is None:
             nsv = len(sv)
@@ -122,17 +202,22 @@ class UndulatorShimming():
         svinv = 1/sv
         svinv[nsv:] = 0
         minv = vt.T*svinv @ u.T
-        return minv
+        return minv 
 
     @staticmethod
     def get_weights_matrix(weights):
-        """_summary_
+        """From a weights vector, get a diagonal matrix in which the diagonal
+        elements are the square roots of the normalized vector elements.
+
+        This matrix is used for giving different weights to the different
+        optimizable parameters (slopes and, possibly, phase errors).
+        See help on calc_shims method for more details.
 
         Args:
-            weights (_type_): _description_
+            weights (list, N): Input weights vector.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray, N x N: Diagonal weights matrix.
         """
         weights_norm = _np.array(weights)/_np.linalg.norm(weights)
         weights_matrix = _np.diag(_np.sqrt(weights_norm))
@@ -140,15 +225,29 @@ class UndulatorShimming():
 
     @staticmethod
     def fit_trajectory_segments(trajectory, segs, max_size):
-        """_summary_
+        """Performs linear fits on trajectory segments.
 
         Args:
-            trajectory (_type_): _description_
-            segs (_type_): _description_
-            max_size (_type_): _description_
+            trajectory (list, Nx6): Nested list of vectors [x,y,z,x',y',z'],
+                with positions x, y, z in mm and velocities x',y',z' in rad
+                or dimensionless (trajectory parametrized by its length).
+            segs (list, K): Longitudinal positions defining segment limits.
+                Each segment starts at the first trajectory point with z
+                coordinate greater than or equal to an alement in segs
+                (point immediatly after or at segs value).
+                Each segment ends in the trajectory point immeditaly before the
+                first point of the next segment (except the last segment).
+            max_size (float): Maximun longitudinal length of last segmennt.
+                Such segment ends at the last trajectory point OR at the first
+                trajectory point with z greater than (segs[-1] + max_size),
+                whichever is smaller.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray, Kx2: Nested array of pairs containing the linear
+                and angular coefficients (respectively) of straight lines
+                fitted to X coordineates of a trajectory segment.
+            numpy.ndarray, Kx2: Nested array analogous to array above, for
+                the Y coordinates. 
         """
         trajx = trajectory[:, 0]
         trajy = trajectory[:, 1]
@@ -161,17 +260,21 @@ class UndulatorShimming():
 
         nsegs = len(segs)
 
+        # For each segs value, find lower i index for which trajz[i] >= value.
         index_list = []
         for pos in segs:
             idx = _np.where(trajz >= pos)[0]
             index_list.append(idx[0])
         
-        last_index = _np.where(trajz >= segs[-1] + max_size)[0]
+        # Index for ending last segment must be additionally defined.
+        last_index = _np.where(trajz >= segs[-1] + max_size)[0]      
         if len(last_index) == 0:
             index_list.append(len(trajz)-1)
         else:
             index_list.append(last_index[0])
 
+        # Perform a linear fit at each trajectory segment defined between
+        # consecutive indices in index_list.
         for i in range(nsegs):
             initial = index_list[i]
             final = index_list[i+1]
@@ -201,61 +304,80 @@ class UndulatorShimming():
 
     @staticmethod
     def read_response_matrix(filename):
-        """_summary_
+        """Read response matrix from file.
 
         Args:
-            filename (_type_): _description_
-
+            filename (str): Name of file containing response matrix.
+                File format:
+                    Lines corresponding to optimizable parammeters (slopes and, 
+                        possibly, phase errors) containing values (columns)
+                        corresponding to shims values in shimmed blocks.
         Returns:
-            _type_: _description_
+            numpy.ndarray: Response matrix (same format as the output
+                from the calc_response_matrix method).
         """
         return _np.loadtxt(filename)
 
     @staticmethod
     def read_segs(filename):
-        """_summary_
+        """Read list of segments (i.e. segment limits) from file.
 
         Args:
-            filename (_type_): _description_
+            filename (str): Name of file with segs list.
+                File format:
+                    One segment value per line.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray: Array of seg values (same format as the output
+                from the calc_segments method).
         """
         return _np.loadtxt(filename)
 
     @staticmethod
     def read_shims(filename):
-        """_summary_
+        """Read shims from file.
 
         Args:
-            filename (_type_): _description_
+            filename (str): Name of file with shims list.
+                File format:
+                            One line for each shim.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray: Array of shims (same format as the output from
+                the calc_shims method).
         """
         return _np.loadtxt(filename)
 
     @staticmethod
     def read_error(filename):
-        """_summary_
+        """Read errors from file (differencence between optimizable parameters
+        for model and measurement).
 
         Args:
-            filename (_type_): _description_
+            filename (_type_): Name of errors file.
+                File format:
+                    One line for each error, associated to a parameter.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray: Errors array (same format as the output from
+                the calc_error method).
         """
         return _np.loadtxt(filename)
 
     @staticmethod
     def read_results(filename):
-        """_summary_
+        """Read results file.
 
         Args:
-            filename (_type_): _description_
+            filename (str): Results file.
+                File format:
+                    JSON format containing dictionary of objects dictionaries
+                    with keys given by labels. For a description of the data
+                    in each object dictionary, see help on calc_results method.
 
         Returns:
-            _type_: _description_
+            dict: Results dictionary (same format as the output from the
+                calc_results method)
         """
         with open(filename, 'r') as f:
             results = _json.load(f)
@@ -263,16 +385,26 @@ class UndulatorShimming():
 
     @staticmethod
     def read_fieldmap(filename, nr_periods, period, gap):
-        """_summary_
+        """Read field map from file and returns an InsertionDeviceData object.
 
         Args:
-            filename (_type_): _description_
-            nr_periods (_type_): _description_
-            period (_type_): _description_
-            gap (_type_): _description_
+            filename (str): Name of file containing field map.
+                File format:
+                    If present, header ends with a line containing the
+                    string '--------'. After header each line corresponds
+                    to a (x,y,z) point, and has the format "x y z bx by bz"
+                    containing positions in mm and field components in T.
+            nr_periods (int): Number of periods in the insertion divice,
+                stored as an attribute in the returned object.
+            period (float): Period length, in mm, of the insertion divice,
+                stored as an attribute in the returned object.
+            gap (float): Gap, in mm, of the insertion divice, stored as an
+                an attribute in the returned object.
 
         Returns:
-            _type_: _description_
+            InsertionDeviceData: Data object with input containing the read
+                field data as raw_data (list of x, y, z positions and mm and
+                bx, by, bz fields in T).
         """
         data = _insertiondevice.InsertionDeviceData(
             nr_periods=nr_periods, period_length=period,
@@ -281,26 +413,37 @@ class UndulatorShimming():
 
     @staticmethod
     def read_block_names(filename):
-        """_summary_
+        """Read block names from file.
 
         Args:
-            filename (_type_): _description_
+            filename (str): Name of file with names.
+                File format:
+                    One name per line.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray: Array of block names.
         """
         return _np.loadtxt(filename, dtype=str)
         
     def _calc_traj(self, obj, xl, yl):
-        """_summary_
+        """Calculate trajectory of electron with initial transversal velocity
+            (xl,yl) passing through a field source object.
+        
+        Source object may be an instance of FieldModel, FieldData, or of any
+        class which is derived from them.
 
         Args:
-            obj (_type_): _description_
-            xl (_type_): _description_
-            yl (_type_): _description_
+            obj (FieldModel or FieldData): Field source object for which the
+                the trajectory is calculated.
+            xl (float): Initial x transversal velocity, parametrized by
+                trajectory length. In rad or dimensionless.
+            yl (float): Initial y transversal velocity, parametrized by
+                trajectory length. In rad or dimensionless.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray: Electron trajectory as [x, y, z, x', y', z'] nested
+                list of x,y,z positions in mm and x',y',z' velocieites in rad 
+                (dimensionless).
         """
         zl = _np.sqrt(1 - xl**2 - yl**2)
         traj = obj.calc_trajectory(
@@ -310,14 +453,23 @@ class UndulatorShimming():
         return traj
 
     def _calc_phase_error(self, obj, traj):
-        """_summary_
+        """Calculate the phase error of a trajectory in relation to a
+            sinusoidal field.
+        
+        Sinusoidal field object may be an instance of InsertionDeviceData,
+        InsertionDeviceModel, Cassette, or any class which derived from them.
 
         Args:
-            obj (_type_): _description_
-            traj (_type_): _description_
-
+            obj (InsertionDeviceData, InsertionDeviceModel or Cassette): Object
+                for calculating sinuosidal field. Phase error of the provided
+                trajectory will be caluclated in relation to such field.
+            traj (list): Electron trajectory as [x, y, z, x', y', z'] nested
+                list of x,y,z positions in mm and x',y',z' velocieites in rad 
+                (dimensionless).
         Returns:
-            _type_: _description_
+            list: List of poles z positons (in mm).
+            numpy.ndarray: List of phase erros at poles (in rad).
+            numpy.float64: Phase error rms (in rad).
         """
         bx_amp, by_amp, _, _ = obj.calc_field_amplitude()
         zpe, pe, pe_rms = obj.calc_phase_error(
@@ -327,27 +479,56 @@ class UndulatorShimming():
         return zpe, pe, pe_rms
 
     def _calc_field_integrals(self, obj):
-        """_summary_
+        """Calculate magnetic field integrals from field source object.
+        
+        Source object may be an instance of FieldModel, FieldData, or of any
+        class which is derived from them.
 
         Args:
-            obj (_type_): _description_
+            obj (FieldModel or FieldData): Field source object for which the
+                the field integrals are calculated.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray: Nested list of first integrals [ibx, iby, ibz],
+                one for each longitudinal point (in G.cm).
+            numpy.ndarray: Nested list of second integrals [iibx, iiby, iibz],
+                one for each longitudinal point (in kG.cm2).
         """
         z = _np.linspace(self.zmin, self.zmax, self.znpts)
         ib, iib = obj.calc_field_integrals(z_list=z)
         return ib, iib
 
     def calc_segments(self, obj, filename=None):
-        """_summary_
+        """Generate longitudinal positions list for defining segment limits
+            (see fit_trajectory_segments help for how such list might be used).
+        
+        The positions are based on the zeros of a field component, which is
+        the one with greater amplitude produced by a given field source object
+        (or determined by the field_comp object attribute, if it is not None).
+        The segments_type object attribute is used as follows:
+            If segments_type=='period', every other zero is used as segment
+                limit, starting from the first zero.
+            If segments_type=='half_period' (default), all zeros are used as
+                segment limits.
+        Regardless of segments_type value, additional limits are appended at
+        the beggining and end of the limits list, separated by period_length
+        (of object) from the previous first and last limits.
+
+        Source objects may be an instance of FieldModel, FieldData, or of any
+        class which is derived from them.
 
         Args:
-            obj (_type_): _description_
-            filename (_type_, optional): _description_. Defaults to None.
+            obj (FieldModel or FieldData): Field source object whose zeros
+                are used for determining base seg positions.
+            filename (str, optional): If provided, this will be the name
+                of a file in which the outputs of this function will also be
+                written. Defaults to None.
+                    File format:
+                        One segment value per line.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray: Longitudinal positions list defining segment limits
+                (see fit_trajectory_segments for how it might be used).
         """
         zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
         field = obj.get_field(z=zpos)
@@ -380,17 +561,44 @@ class UndulatorShimming():
         return segs
 
     def calc_slope_and_phase_error(self, obj, segs, xl, yl, filename=None):
-        """_summary_
+        """Returns slopes of linear fits performed on segments of an averaged
+        trajectory (1 period moving average).
+        
+        The trajectory is calculated for an electron with initial transversal
+        velocity (xl,yl) passing through a sinusoidal field object. The object
+        also provides the period used for trajectory averaging and for defining
+        the maximun length of last segmennt.
+        Sinusoidal field object may be an instance of InsertionDeviceData,
+        InsertionDeviceModel, Cassette, or any class which derived from them.        
 
         Args:
-            obj (_type_): _description_
-            segs (_type_): _description_
-            xl (_type_): _description_
-            yl (_type_): _description_
-            filename (_type_, optional): _description_. Defaults to None.
+            obj (InsertionDeviceData, InsertionDeviceModel or Cassette): Object
+                in which the trajectory is calculated and from which the period
+                length is obtained.
+            segs (list, K): Longitudinal positions defining segment limits
+                (see help on fit_trajectory_segments for details on how this
+                list is used to separate the trajectory into segments).
+            xl (float): Initial x transversal velocity for trajectory,
+                parametrized by trajectory length. In rad or dimensionless.
+            yl (float): Initial y transversal velocity for trajectory,
+                parametrized by trajectory length. In rad or dimensionless.
+            filename (str, optional): If provided, this will be the name of
+                a file in which outputs will be written. Defaults to None.
+                If object attribute include_pe==False (default), only slopes
+                will be written. If include_pe==True, phase errors will also
+                be written.
+                File format:
+                        One x coordinate segment slope per line, folowed by
+                        one y coordinate segment slope per line, followd by
+                        (if include_pe==True) one phase error per line.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray, K: Slopes adjusted to the x position components
+                of linear segments from averaged trajectory.
+            numpy.ndarray, K: Slopes adjusted to the y position components
+                of linear segments from averaged trajectory.
+            numpy.ndarray: List of phase errors at poles defined by
+                SinusoidalFieldSource.calc_phase_error method (in rad).
         """
         traj = self._calc_traj(obj, xl, yl)
         avgtraj = obj.calc_trajectory_avg_over_period(traj)
@@ -413,14 +621,26 @@ class UndulatorShimming():
         return sx, sy, pe
 
     def get_block_names(self, model, filename=None):
-        """_summary_
+        """Get list of names for the blocks used in shimming.
+
+        Thesse blocks are selected from the cassettes in the cassettes object
+        attribute and filtered accordint to block_type attribute (see help on
+        get_shimming_blocks for details on the filtering).
+
+        Model must be an instance of InsertionDeviceModel or of a derivate
+        class AND must have non-empty cassettes dictionary (see help on
+        get_shimming_blocks for details on the available built-in models).
 
         Args:
-            model (_type_): _description_
-            filename (_type_, optional): _description_. Defaults to None.
+            model (InsertionDeviceModel derivate, see above): Device model
+                with the considered cassettes (cassettes attribute).
+            filename (str, optional):  If provided, this will be the name of
+                a file in which names will be written. Defaults to None.
+                File format:
+                    One name per line
 
         Returns:
-            _type_: _description_
+            list: list of names for blocks used in shimming.
         """
         names = []
         for cassette in self.cassettes:
@@ -431,17 +651,31 @@ class UndulatorShimming():
         return names
 
     def get_shimming_blocks(self, model, cassette):
-        """_summary_
+        """Get array of blocks from a particular casset of a model based
+            on a type defined by the type_block object attribute.
+
+        Model must be an instance of InsertionDeviceModel or of a derivate
+        class AND must have non-empty cassettes dictionary.
+        Currently available built-in model classes are:
+            Delta, AppleX, AppleII, APU, Planar, DeltaPrototype, DeltaSabia,
+            DeltaCarnauba, AppleXSabia, AppleXCarnauba, AppleIISabia,
+            AppleIICarnauba, Kyma22, Kyma58, HybridAPU, HybridPlanar,
+            MiniPlanarSabia.
 
         Args:
-            model (_type_): _description_
-            cassette (_type_): _description_
+            model (InsertionDeviceModel derivate, see list above): Device model
+                with the cassette from which the blocks will be listed.
+            cassette (str): Key specifying the cassette in the cassettes
+                dictionary of the model.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray: Array containing blocks.Block objects listed from
+                specified cassette and filtered acording to block_type object
+                attribute (only non-termination blocks are included).
         """
         cas = model.cassettes[cassette]
         mag = _np.array(cas.magnetization_list)
+        # Total magnetization outside y (tranversal 'vertical') direction:
         mres = _np.sqrt(mag[:, 0]**2 + mag[:, 2]**2)
         
         if self.block_type == 'v':
@@ -453,6 +687,7 @@ class UndulatorShimming():
         
         blocks = _np.array(cas.blocks)[filt]
 
+        # Use block length to check wether it is a termination block.
         tol = 0.1
         regular_blocks = []
         for block in blocks:
@@ -463,16 +698,54 @@ class UndulatorShimming():
 
     def calc_response_matrix(
             self, model, model_segs, filename=None, shim=0.1):
-        """_summary_
+        """Calculate response matrix associated to the effect of individual
+        blocks shimming to a set of optimizable parammeters, which include
+        segment slopes and, possibly (if include_pe==True), phase errors.
+
+            (optimized parameters) = (response matrix) @ (shims)
+
+        Matrix is computed for a specific insertion device model and segment
+        limits list. Blocks considered for shimming are from the cassettes
+        specified at the cassettes object attribute and filtered by the value
+        of the block_type attribute.
+
+        Model must be an instance of InsertionDeviceModel or of a derivate
+        class AND must have non-empty cassettes dictionary.
+        Currently available built-in model classes are:
+            Delta, AppleX, AppleII, APU, Planar, DeltaPrototype, DeltaSabia,
+            DeltaCarnauba, AppleXSabia, AppleXCarnauba, AppleIISabia,
+            AppleIICarnauba, Kyma22, Kyma58, HybridAPU, HybridPlanar,
+            MiniPlanarSabia.
 
         Args:
-            model (_type_): _description_
-            model_segs (_type_): _description_
-            filename (_type_, optional): _description_. Defaults to None.
-            shim (float, optional): _description_. Defaults to 0.1.
+            model (InsertionDeviceModel derivate, see list above): Device model
+                with the cassettes to be shimmed.
+            model_segs (list, K): Longitudinal positions of segment limits
+                (see help on fit_trajectory_segments for details on how this
+                list is used to separate the trajectory into segments).
+            filename (str, optional): File name of format name.extension for
+                creating output files. If this argument is given, the following
+                files are created:
+                    name_mx.extension: file in which each line contains the x
+                        slope derivatives for a given block shim.
+                    name_my.extension: file in which each line contains the y
+                        slope derivatives for a given block shim.
+                    name_mpe.extension: file in which each line contains the
+                        phase error derivatives for a given block shim (empty
+                        if include_pe==False).
+                    name.extension: response matrix, in which each line
+                        corresponds to an optimized parameter (slopes and, 
+                        possibly, phase errors) and has one numerocal value
+                        (column) for each shimmed block.
+                Defaults to None.
+            shim (float, optional): Displacement (shim) value applied to each
+                block (individually) for determining the response matrix.
+                In mm. Defaults to 0.1.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray: Response matrix, containing one line per optimized
+                parameter (slopes and, possibly, phase errors) and one column
+                per shimmed block.
         """
         response_matrix = None
 
@@ -544,17 +817,35 @@ class UndulatorShimming():
 
     def calc_error(
             self, model, meas, model_segs, meas_segs, filename=None):
-        """_summary_
+        """Calculate difference (errors) between optimizable parameters (slopes
+        and, possibly, phase errors) calculated from a model source object and
+        an experimental data source object.
+
+        Field object containing radia model may be an instance of the classes
+        InsertionDeviceModel, Cassette, or any class which derived from them.
+        FIeld object containing measurements must be an instance of the
+        InsertionDeviceData class.
+
+        Individual segments lists may be used for the model and measurements
+        objects. See help on fit_trajectory_segments for details on how such
+        lists are used to separate calculated trajectories into segments.
 
         Args:
-            model (_type_): _description_
-            meas (_type_): _description_
-            model_segs (_type_): _description_
-            meas_segs (_type_): _description_
-            filename (_type_, optional): _description_. Defaults to None.
-
+            model (InsertionDeviceModel or Cassette): Object associated to
+                Radia model used for calculating optimizable parameters.
+            meas (InsertionDeviceData): Object associated to experimental
+                measurements used for calculating optimizable parameters.
+            model_segs (list): Longitudinal positions defining segment limits.
+            meas_segs (list): Longitudinal positions defining segment limits.
+            filename (str, optional): If provided, this will be the name
+                of a file in which the outputs of this function will also be
+                written. Defaults to None.
+                    File format:
+                        One line for each error, associated to a parameter.
+                        
         Returns:
-            _type_: _description_
+            numpy.ndarray: Array (1d) containing the errors, one for each
+                optimizable parameter.
         """
         model_sx, model_sy, model_pe = self.calc_slope_and_phase_error(
             model, model_segs, 0, 0)
@@ -578,24 +869,38 @@ class UndulatorShimming():
 
     def calc_shims(
             self, response_matrix, error, nsv=None, ws=None, filename=None):
-        """_summary_
+        """From a response matrix, calculate shims that whould result in a
+        given errors array.
 
         Args:
-            response_matrix (_type_): _description_
-            error (_type_): _description_
-            nsv (_type_, optional): _description_. Defaults to None.
-            ws (_type_, optional): _description_. Defaults to None.
-            filename (_type_, optional): _description_. Defaults to None.
+            response_matrix (numpy.ndarray, MxN): Response matrix for M
+                optimizable parameters by N shims.            
+            error (numpy.ndarray, M): Error array associated to optimizable
+                parameters for shimming.
+            nsv (int, optional): Number of singular values to be considered.
+             See help in calc_inv_matrix method for details. Defaults to None.
+            ws (list, M, optional): Weights for optmizable parameters.
+                If not None, each weight multiplies its corresponding error
+                and corresponding line in the response matrix.
+                Defaults to None.
+            filename (str, optional): If provided, this will be the name
+                of a file in which the outputs of this function will also be
+                written. Defaults to None.
+                    File format:
+                        One line for each shim.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray, N: Resulting shims associated to input errors.
         """
         if ws is None:
             ws = [1.0]*response_matrix.shape[0]
         w = self.get_weights_matrix(ws)
 
+        # SVD result used for calculating inverse matrix.
         u, sv, vt = self.calc_svd(w @ response_matrix)
+        # Original matrix: MxN -> response matrix: NxM
         minv = self.calc_inv_matrix(u, sv, vt, nsv=nsv)
+        # N shims = (NxM) @ M errors (parameters)
         shims = minv @ (w @ error)
 
         if filename is not None:
@@ -604,15 +909,33 @@ class UndulatorShimming():
         return shims
 
     def calc_shim_signature(self, model, shims, filename=None):
-        """_summary_
+        """Calculate the field difference between the non-shimmed and
+        the shimmed insertion device (shiming signature).
+
+        Model may be an instance of InsertionDeviceModel or any derivate class.
 
         Args:
-            model (_type_): _description_
-            shims (_type_): _description_
-            filename (_type_, optional): _description_. Defaults to None.
+            model (InsertionDeviceModel): Model used for calculating fields
+                before and after shimming.
+            shims (numpy.ndarray): List of shims for which signature is to
+                be calculated. List should contain one value for each block
+                used for shimming (from self.cassettes and of type given by
+                block_type) and must not contain more elements than available
+                blocks.
+            filename (str, optional): If provided, resulting field map will
+                be saved in a file with name filename.
+                    File format:
+                        If present, header ends with a line containing the
+                        string '--------'. After header each line corresponds
+                        to a (x,y,z) point, and has the format "x y z bx by bz"
+                        containing positions in mm and field components in T.
 
         Returns:
-            _type_: _description_
+            InsertionDeviceData: Data object with the same number of periods,
+                period length and gap as the input model object.
+                Contains the resulting signature field (difference between
+                shimemd and unshimmed fields) in the format of raw_data.
+                (List of x, y, z positions and mm and bx, by, bz fields in T)
         """
         zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
         field0 = model.get_field(z=zpos)
@@ -659,15 +982,34 @@ class UndulatorShimming():
         return shim_signature
 
     def calc_shimmed_meas(self, meas, shim_signature, filename=None):
-        """_summary_
+        """From a given shimming signature object (InsertionDeviceData) and an
+        experimental field data object (also InsertionDeviceData), generate
+        a third field data object in which the field is equal to the signature
+        field added to the experimental field.
+
+        Returned object represents the shimmed version of the experimental
+        measurement. The field that would be observed if the shimming had
+        been applied to the insertion device.
 
         Args:
-            meas (_type_): _description_
-            shim_signature (_type_): _description_
-            filename (_type_, optional): _description_. Defaults to None.
+            meas (InsertionDeviceData): Object containing experimental field
+                data (as its raw_data attribute).
+            shim_signature (InsertionDeviceData): Object containing field
+                signature from shimming (such as an object returned by the
+                calc_shim_signature method)
+            filename (str, optional): If provided, resulting field map will
+                be saved in a file with name filename.
+                    File format:
+                        If present, header ends with a line containing the
+                        string '--------'. After header each line corresponds
+                        to a (x,y,z) point, and has the format "x y z bx by bz"
+                        containing positions in mm and field components in T.
 
         Returns:
-            _type_: _description_
+            InsertionDeviceData: Data object with the same number of periods,
+                period length and gap as the input MEASUREMENT object.
+                Contains the resulting shimmed field as raw_data.
+                (List of x, y, z positions and mm and bx, by, bz fields in T)
         """
         zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
         field = meas.get_field(z=zpos)
@@ -690,17 +1032,52 @@ class UndulatorShimming():
         return shimmed_meas
     
     def calc_results(self, objs, labels, xls=None, yls=None, filename=None):
-        """_summary_
+        """Compile results (given arguments) in a nested dictionary. Each
+        dictionary in the results dictionary corresponds to an object.
+
+        Objects may be of the types InsertionDeviceData, InsertionDeviceModel,
+            Cassette, or any class which derived from them.
 
         Args:
-            objs (_type_): _description_
-            labels (_type_): _description_
-            xls (_type_, optional): _description_. Defaults to None.
-            yls (_type_, optional): _description_. Defaults to None.
-            filename (_type_, optional): _description_. Defaults to None.
+            objs (list): List of objects (se description above) for which
+                data will be stored in the returned dicionary.
+            labels (str): Object labels used as keys for the nested results
+                dictionary (each label is a key for the dictionary containing
+                data of an object).
+            xls (list of floats, optional): Transversal x positions for
+                calculating trajectories for each object. If None, will be
+                set to =0 for every object. Defaults to None.
+            yls (list of floats, optional): Transversal y positions for
+                calculating trajectories for each object. If None, will be
+                set to =0 for every object. Defaults to None.
+            filename (str, optional): If provided, resulta dictionary will
+                be saved in a file with name filename in json format.
+                File format:
+                    JSON format containing dictionary of objects dictionaries
+                    with keys given by labels. Data in each dictionary in
+                    Returns section bellow.
 
         Returns:
-            _type_: _description_
+            dict: Nested dictionary containing one dictionary per object,
+                each object dictionary contains the following data:
+                For trajectory:                
+                    'trajx' - x position (list, in micron)
+                    'trajy' - y position (list, in micron)
+                    'trajz' - z position (list, in mm)
+                    'trajxl' - x velocity (list, in rad or dimensionless)
+                    'trajyl' - y velocity (list, in rad or dimensionless)
+                    'trajzl' - z velocity (list, in rad or dimensionless)
+                Phase errors:
+                    'zpe' - Pole z positions (list, in mm)
+                    'pe' - Phase errors (list, in degrees)
+                    'perms' - RMS of phase errors (float, in degrees)
+                Field integrals of (bx,by,bz) field:
+                    'ibx' - First bx integral (float, in G.cm)
+                    'iby' - First by integral (float, in G.cm)
+                    'ibz' - First bz integral (float, in G.cm)
+                    'iibx' - Second bx integral (float, in  kG.cm²)
+                    'iiby' - Second bx integral (float, in  kG.cm²)
+                    'iibz' - Second bx integral (float, in  kG.cm²)
         """
         results = {}
 
@@ -741,17 +1118,23 @@ class UndulatorShimming():
             self, results, table_fontsize=12,
             table_decimals=1, filename=None, suptitle=None,
             trajx_lim=None, trajy_lim=None, pe_lim=None):
-        """_summary_
+        """Generate figure from results dictionary.
 
         Args:
-            results (_type_): _description_
-            table_fontsize (int, optional): _description_. Defaults to 12.
-            table_decimals (int, optional): _description_. Defaults to 1.
-            filename (_type_, optional): _description_. Defaults to None.
-            suptitle (_type_, optional): _description_. Defaults to None.
-            trajx_lim (_type_, optional): _description_. Defaults to None.
-            trajy_lim (_type_, optional): _description_. Defaults to None.
-            pe_lim (_type_, optional): _description_. Defaults to None.
+            results (dict): Results dictionary, in the format of the output
+                from calc_results method.
+            table_fontsize (int, optional): Table font size. Defaults to 12.
+            table_decimals (int, optional): Number of decimals for rounding
+                values diaplaied in table. Defaults to 1.
+            filename (str, optional): If not None, represents file in which
+                figure is saved. Defaults to None.
+            suptitle (str, optional): Title for figure. Defaults to None.
+            trajx_lim (list, 2, optional): Vertical axis lower and upper limits
+                when plotting x component of trajectory. Defaults to None.
+            trajy_lim (list, 2, optional): Vertical axis lower and upper limits
+                when plotting y component of trajectory. Defaults to None.
+            pe_lim (list, 2, optional): Vertical axis lower and upper limits
+                when plotting phase errors. Defaults to None.
         """
         labels = list(results.keys())
 

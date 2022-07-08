@@ -285,7 +285,8 @@ class FieldSource():
     def get_field_at_point(self, point):
         raise NotImplementedError
 
-    def save_fieldmap(self, filename, x_list, y_list, z_list, header=None):
+    def save_fieldmap(self, filename, x_list, y_list, z_list, header=None,
+                        nproc=None):
         """Save fieldmap file.
 
         Args:
@@ -331,16 +332,36 @@ class FieldSource():
 
             line_fmt = '{0:g}\t{1:g}\t{2:g}\t{3:g}\t{4:g}\t{5:g}\n'
 
+            pos_list = []
             for z in z_list:
                 for y in y_list:
                     for x in x_list:
-                        bx, by, bz = self.get_field_at_point([x, y, z])
+                        pos_list.append([x,y,z])
+                        
+            if nproc is not None:
+            
+                nproc = int(nproc)
+                if nproc < 1:
+                    raise ValueError('Number or processes must be >=1.')
+
+                with _futures.ProcessPoolExecutor(max_workers=nproc) as executor:
+                    futures = [executor.submit(self.get_field_at_point, pos) \
+                                                for pos in pos_list]
+                    for future in futures:
+                        bx, by, bz = future.result()
+                        line = line_fmt.format(x, y, z, bx, by, bz)
+                        fieldmap.write(line)
+
+            else:
+                    for pos in pos_list:
+                        bx, by, bz = self.get_field_at_point(pos)
                         line = line_fmt.format(x, y, z, bx, by, bz)
                         fieldmap.write(line)
 
         return True
 
-    def save_fieldmap_spectra(self, filename, x_list, y_list, z_list):
+    def save_fieldmap_spectra(self, filename, x_list, y_list, z_list, 
+                                nproc=None):
         """Save fieldmap file to use in spectra.
 
         Args:
@@ -395,10 +416,29 @@ class FieldSource():
 
             line_fmt = '{0:g}\t{1:g}\t{2:g}\n'
 
-            for x in x_list:
+            pos_list = []
+            for z in z_list:
                 for y in y_list:
-                    for z in z_list:
-                        bx, by, bz = self.get_field_at_point([x, y, z])
+                    for x in x_list:
+                        pos_list.append([x,y,z])
+                        
+            if nproc is not None:
+            
+                nproc = int(nproc)
+                if nproc < 1:
+                    raise ValueError('Number or processes must be >=1.')
+
+                with _futures.ProcessPoolExecutor(max_workers=nproc) as executor:
+                    futures = [executor.submit(self.get_field_at_point, pos) \
+                                                for pos in pos_list]
+                    for future in futures:
+                        bx, by, bz = future.result()
+                        line = line_fmt.format(bx, by, bz)
+                        fieldmap.write(line)
+
+            else:
+                    for future in futures:
+                        bx, by, bz = future.result()
                         line = line_fmt.format(bx, by, bz)
                         fieldmap.write(line)
 

@@ -1,6 +1,6 @@
 
 import json as _json
-from concurrent import futures as _futures
+from concurrent.futures import ProcessPoolExecutor as _ProcessPoolExecutor
 import numpy as _np
 from scipy import integrate as _integrate
 from scipy import interpolate as _interpolate
@@ -115,7 +115,7 @@ class FieldSource():
                 if __name__ == '__main__':
 
         Raises:
-            ValueError: Field data and logitudinal position must have
+            ValueError: Field data and longitudinal position must have
                 the same length.
 
         Returns:
@@ -151,7 +151,7 @@ class FieldSource():
 
         Args:
             energy (float): Electron energy at the beam (in KeV).
-            r0 (list): Initial positon to calculate trajectory
+            r0 (list): Initial position to calculate trajectory
                 [x,y,z,x',y',z'] x,y,z in mm and x',y',z' in rad or
                 dimensionless.
             zmax (float): Final position to calculate trajectory (in mm).
@@ -273,7 +273,7 @@ class FieldSource():
             nproc = int(nproc)
             if nproc < 1:
                 raise ValueError('Number or processes must be >=1.')
-            with _futures.ProcessPoolExecutor(max_workers=nproc) as executor:
+            with _ProcessPoolExecutor(max_workers=nproc) as executor:
                 field_gen = executor.map(self.get_field_at_point, pos_list,
                                          chunksize=chunksize)
                 return _np.array(list(field_gen))
@@ -286,7 +286,7 @@ class FieldSource():
         raise NotImplementedError
 
     def save_fieldmap(self, filename, x_list, y_list, z_list, header=None,
-                        nproc=None):
+                        nproc=None, chunksize=100):
         """Save fieldmap file.
 
         Args:
@@ -299,6 +299,19 @@ class FieldSource():
                 to save in file (in mm).
             header (str, optional): File's header description.
                 Defaults to None.
+            nproc (int, optional): number of threads for parallel computation.
+                Must be >=1. If None, serial case is performed (concurrent
+                multiprocessing module will not be used). Defaults to None.
+            chunksize (int, optional): multiprocessing parameter specifying
+                size of list section sent to each process. Defaults to 100.
+
+        Note:
+            Python multiprocessing does not work interactively, it must be
+            run in a __main__ module, inside the clause:
+                if __name__ == '__main__':
+
+        Raises:
+            ValueError: If provided, number of processes must be >=1.
 
         Returns:
             bool: True.
@@ -344,11 +357,12 @@ class FieldSource():
                 if nproc < 1:
                     raise ValueError('Number or processes must be >=1.')
 
-                with _futures.ProcessPoolExecutor(max_workers=nproc) as executor:
-                    futures = [executor.submit(self.get_field_at_point, pos) \
-                                                for pos in pos_list]
-                    for future in futures:
-                        bx, by, bz = future.result()
+                with _ProcessPoolExecutor(max_workers=nproc) as executor:
+                    field_gen = executor.map(self.get_field_at_point, pos_list,
+                                            chunksize=chunksize)
+                    for field, pos in zip(field_gen, pos_list):
+                        x, y, z = pos
+                        bx, by, bz = field
                         line = line_fmt.format(x, y, z, bx, by, bz)
                         fieldmap.write(line)
 
@@ -361,7 +375,7 @@ class FieldSource():
         return True
 
     def save_fieldmap_spectra(self, filename, x_list, y_list, z_list, 
-                                nproc=None):
+                                nproc=None, chunksize=100):
         """Save fieldmap file to use in spectra.
 
         Args:
@@ -372,6 +386,19 @@ class FieldSource():
                 to save in file (in mm).
             z_list (list or float or int): z positions
                 to save in file (in mm).
+            nproc (int, optional): number of threads for parallel computation.
+                Must be >=1. If None, serial case is performed (concurrent
+                multiprocessing module will not be used). Defaults to None.
+            chunksize (int, optional): multiprocessing parameter specifying
+                size of list section sent to each process. Defaults to 100.
+
+        Note:
+            Python multiprocessing does not work interactively, it must be
+            run in a __main__ module, inside the clause:
+                if __name__ == '__main__':
+
+        Raises:
+            ValueError: If provided, number of processes must be >=1.
 
         Returns:
             bool: True.
@@ -417,9 +444,9 @@ class FieldSource():
             line_fmt = '{0:g}\t{1:g}\t{2:g}\n'
 
             pos_list = []
-            for z in z_list:
+            for x in x_list:
                 for y in y_list:
-                    for x in x_list:
+                    for z in z_list:
                         pos_list.append([x,y,z])
                         
             if nproc is not None:
@@ -428,19 +455,20 @@ class FieldSource():
                 if nproc < 1:
                     raise ValueError('Number or processes must be >=1.')
 
-                with _futures.ProcessPoolExecutor(max_workers=nproc) as executor:
-                    futures = [executor.submit(self.get_field_at_point, pos) \
-                                                for pos in pos_list]
-                    for future in futures:
-                        bx, by, bz = future.result()
+                with _ProcessPoolExecutor(max_workers=nproc) as executor:
+                    field_gen = executor.map(self.get_field_at_point, pos_list,
+                                            chunksize=chunksize)
+                    for field, pos in zip(field_gen, pos_list):
+                        x, y, z = pos
+                        bx, by, bz = field
                         line = line_fmt.format(bx, by, bz)
                         fieldmap.write(line)
 
             else:
-                    for future in futures:
-                        bx, by, bz = future.result()
-                        line = line_fmt.format(bx, by, bz)
-                        fieldmap.write(line)
+                for pos in pos_list:
+                    bx, by, bz = self.get_field_at_point(pos)
+                    line = line_fmt.format(bx, by, bz)
+                    fieldmap.write(line)
 
         return True
 

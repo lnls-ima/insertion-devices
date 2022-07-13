@@ -255,13 +255,15 @@ class Block(_fieldsource.FieldModel):
         """
         return cls.PREDEFINED_SUBDIVISION.get(device_name)
 
-    def create_radia_object(self):
+    def create_radia_object(self, magnetization=None):
         """Creates the radia object."""
         if self._radia_object is not None:
             _rad.UtiDel(self._radia_object)
 
         if self._length == 0:
             return
+
+        self._magnetization = magnetization or self._magnetization
 
         # In both ObjRecMag and ObjThckPgn, 'Frame->Lab' is used so that
         # div determines the number of divisions in each cartesian direction.

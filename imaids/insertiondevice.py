@@ -155,6 +155,11 @@ class InsertionDeviceModel(
         return _deepcopy(self._cassettes)
 
     @property
+    def cassettes_symbol(self):
+        """Cassettes dictionary."""
+        return self._cassettes
+
+    @property
     def cassette_properties(self):
         """Common cassettes properties."""
         return self._cassette_properties

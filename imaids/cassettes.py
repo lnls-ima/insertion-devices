@@ -160,6 +160,7 @@ class Cassette(
 
         if mr is not None and mr < 0:
             raise ValueError('mr must be >= 0.')
+
         self._mr = float(mr)
 
         if longitudinal_distance is not None and longitudinal_distance < 0:

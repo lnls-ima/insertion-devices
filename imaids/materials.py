@@ -1,6 +1,9 @@
 
 from copy import deepcopy as _deepcopy
-import importlib.resources as _resources
+try:
+    import importlib.resources as _resources
+except ModuleNotFoundError:
+    import importlib_resources as _resources
 import pathlib as _pathlib
 import json as _json
 import numpy as _np

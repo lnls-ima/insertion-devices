@@ -151,12 +151,12 @@ class InsertionDeviceModel(
 
     @property
     def cassettes(self):
-        """Cassettes dictionary."""
+        """Copy of cassettes dictionary."""
         return _deepcopy(self._cassettes)
 
     @property
-    def cassettes_symbol(self):
-        """Cassettes dictionary."""
+    def cassettes_ref(self):
+        """Reference to cassettes dictionary."""
         return self._cassettes
 
     @property

@@ -13,6 +13,7 @@ class MagicFingers(_fieldsource.FieldModel):
     def __init__(
             self, nr_blocks_group, block_shape, block_length, block_distance,
             nr_groups, group_distance, magnetization_init_list,
+            block_shift_list=None, group_shift_list=None,
             group_rotation=90, device_rotation=0,
             block_subdivision=None, rectangular=False, ksipar=0.06,
             ksiper=0.17, init_radia_object=True, name='', block_names=None):
@@ -32,10 +33,23 @@ class MagicFingers(_fieldsource.FieldModel):
             raise ValueError(
                 'Invalid length for magnetization initialization list.')
 
+        if block_shift_list is None:
+            block_shift_list = [None]*nr_blocks_group*nr_groups
+        elif len(block_shift_list) != nr_blocks_group*nr_groups:
+            raise ValueError('Invalid length for list of block shifts.') 
+        
+        if group_shift_list is None:
+            group_shift_list = [None]*nr_groups
+        elif len(group_shift_list) != nr_groups:
+            raise ValueError('Invalid length for list of group shifts.')
+
+        if device_rotation >= 2*_np.pi/self.nr_groups:
+            raise ValueError('device_rotation must be < 2pi/nr_groups.')
+
         if block_names is None:
             block_names = ['']*nr_blocks_group*nr_groups
         elif len(block_names) != nr_blocks_group*nr_groups:
-            raise ValueError('Invalid length for block name list.')     
+            raise ValueError('Invalid length for block name list.') 
 
         self._nr_blocks_group = int(nr_blocks_group)
         self._block_shape = block_shape
@@ -44,6 +58,8 @@ class MagicFingers(_fieldsource.FieldModel):
         self._nr_groups = int(nr_groups)        
         self._group_distance = float(group_distance)
         self._magnetization_init_list = magnetization_init_list
+        self._block_shift_list = block_shift_list
+        self._group_shift_list = group_shift_list
         self._group_rotation = float(group_rotation)
         self._device_rotation = float(device_rotation)   
         self._block_subdivision = block_subdivision
@@ -103,6 +119,16 @@ class MagicFingers(_fieldsource.FieldModel):
     def magnetization_init_list(self):
         """Magnetization initialization list"""
         return self._magnetization_init_list
+    
+    @property
+    def block_shift_list(self):
+        """Vector shifts (x,y,z) applied to blocks"""
+        return self._block_shift_list
+    
+    @property
+    def group_shift_list(self):
+        """Longitudinal scalar shifts (z) applied to groups"""
+        return self._group_shift_list
 
     @property
     def group_rotation(self):
@@ -177,6 +203,8 @@ class MagicFingers(_fieldsource.FieldModel):
             'block_distance': self.block_distance,
             'nr_groups': self.nr_groups,
             'group_distance': self.group_distance,
+            'block_shift_list':self.block_shift_list,
+            'group_shift_list':self.group_shift_list,
             'group_rotation': self.group_rotation,
             'device_rotation': self.device_rotation,
             'block_subdivision': self.block_subdivision,
@@ -234,38 +262,66 @@ class MagicFingers(_fieldsource.FieldModel):
 
         for idx_group in range(self.nr_groups):
             for idx_block in range(self.nr_blocks_group):
-                position = idx_block*(self.block_length + self.block_distance)                
+                # Generate position, WITHOUT SHIFTS..
+                position = idx_block*(self.block_length + self.block_distance)
                 position_list.append(position)
+                # Generate group rotation AROUND Z axis (for positioning
+                # the magic fingers as the desired circualr array).
                 group_rotation_z_list.append(2*_np.pi*idx_group/self.nr_groups)
+
+        # Apply shift for centering positions list around z=0
         position_list = _np.array(position_list)
         position_list -= (position_list[0] + position_list[-1])/2
-        group_rotation_z_list = _np.array(group_rotation_z_list)
-        group_rotation_z_list += self.device_rotation
 
         self._blocks = []
-        print(position_list)
-        print(magnetization_list)
-        print(group_rotation_z_list)
-        for position, magnetization, group_rotation_z in zip(
-                position_list, magnetization_list, group_rotation_z_list):
+        for idx_block, (position, magnetization,
+                        group_rotation_z, block_shift) \
+            in enumerate(zip(position_list, magnetization_list,
+                             group_rotation_z_list, self.block_shift_list)):
 
-            print(position, magnetization, group_rotation_z)
-        
+            print(idx_block, position, magnetization, group_rotation_z, block_shift)
+
+            # Get group index (used later for shifting groups)
+            idx_group = int(idx_block/self.nr_blocks_group)
+
+            # Generate block with given magnetization and position
+            # (position is already centered around z=0).
             block = _blocks.Block(
                 self.block_shape, self.block_length, position, magnetization,
                 subdivision=self.block_subdivision,
                 rectangular=self.rectangular,
                 ksipar=self.ksipar, ksiper=self.ksiper)
-        
-            self._blocks.append(block)
-            
+
+            # ------- START of block poisition manipulations ------- #
+
+            # Ensure blocks upper y position is y=0 (for ensuring that
+            # group distance correctly represents distance between device
+            # center and block surface).
             block.shift([0, (-1)*block.bounding_box()[1,1], 0])
 
+            # Apply block shifts (if given).
+            if block_shift is not None:
+                block.shift(block_shift)
+
+            # Rotate block around y axis.
             block.rotate([0,0,0], [0,1,0], self.group_rotation)
 
+            # Shift blocks by group distance (from device center to group).
             block.shift([0, (-1)*self.group_distance, 0])
 
+            # Position group at its desired rotational position.
             block.rotate([0,0,0], [0,0,1], group_rotation_z)
+
+            # Apply global device rotation around z axis.
+            block.rotate([0,0,0], [0,0,1], self.device_rotation)
+
+            # Apply group shifts (in z direction)
+            if self.group_shift_list[idx_group] is not None:
+                block.shift([0,0,self.group_shift_list[idx_group]])
+
+            # -------- END of block poisition manipulations -------- #
+
+            self._blocks.append(block)
 
         # Applying names to the created blocks.
         for block_name, block in zip(self._block_names, self._blocks):

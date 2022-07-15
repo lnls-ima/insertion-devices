@@ -1092,7 +1092,7 @@ class FieldModel(FieldSource):
                 Cartesian coordinates of a point on the rotation axis.
             vector (list): List of three real numbers specifying
                 components of the rotation axis vector.
-            angle (float): Rotation angle.
+            angle (float): Rotation angle, in radians.
 
         Returns:
             bool: If radia object is not None, return True.

@@ -186,44 +186,47 @@ class Cassette(
         self._rectangular = rectangular
 
         if start_blocks_length and start_blocks_distance:
+            msg = 'Inconsistent start blocks lists.'+ \
+                    f'\n lengths: {len(start_blocks_length)}'+ \
+                    f'\n distances: {len(start_blocks_distance)}'                    
             if start_blocks_magnetization:
                 start_check = (len(start_blocks_length)
                                 == len(start_blocks_distance)
                                 == len(start_blocks_magnetization))
+                msg += f'\n magnetizatins: {len(start_blocks_magnetization)}'
             else:
                 start_check = (len(start_blocks_length)
                                 == len(start_blocks_distance))
             if not start_check:
-                raise ValueError('Inconsistent start blocks lists.\n'+
-                        f'lengths: {len(start_blocks_length)}\n'+
-                        f'distances: {len(start_blocks_distance)}\n'+
-                        f'magnetizatins: {len(start_blocks_magnetization)}')
+                raise ValueError(msg)
             self._start_blocks_length = start_blocks_length
-            self._start_blocks_distance = start_blocks_distance
-            self._start_blocks_magnetization = start_blocks_magnetization
+            self._start_blocks_distance = start_blocks_distance            
         else:
             self._start_blocks_length = []
             self._start_blocks_distance = []
 
         if end_blocks_length and end_blocks_distance:
+            msg = 'Inconsistent end blocks lists.'+ \
+                    f'\nlengths: {len(end_blocks_length)}'+ \
+                    f'\ndistances: {len(end_blocks_distance)}'           
             if end_blocks_magnetization:
                 end_check = (len(end_blocks_length)
                                 == len(end_blocks_distance)
                                 == len(end_blocks_magnetization))
+                msg += f'\nmagnetizatins: {len(end_blocks_magnetization)}'
             else:
                 end_check = (len(end_blocks_length)
                                 == len(end_blocks_distance))
             if not end_check:
-                raise ValueError('Inconsistent end blocks lists.\n'+
-                        f'lengths: {len(end_blocks_length)}\n'+
-                        f'distances: {len(end_blocks_distance)}\n'+
-                        f'magnetizatins: {len(end_blocks_magnetization)}')
+                raise ValueError(msg)
             self._end_blocks_length = end_blocks_length
-            self._end_blocks_distance = end_blocks_distance
-            self._end_blocks_magnetization = end_blocks_magnetization
+            self._end_blocks_distance = end_blocks_distance            
         else:
             self._end_blocks_length = []
             self._end_blocks_distance = []
+
+        self._start_blocks_magnetization = start_blocks_magnetization
+        self._end_blocks_magnetization = end_blocks_magnetization
 
         self._hybrid = hybrid
         if self._hybrid:
@@ -612,10 +615,10 @@ class Cassette(
         if magnetization_list is None:
             magnetization_list = self.get_ideal_magnetization_list()
         magnetization_list = _np.array(magnetization_list, dtype=float)
-        if self.start_blocks_magnetization:
+        if self.start_blocks_magnetization and self.nr_start_blocks > 0:
             magnetization_list[:self.nr_start_blocks] = \
                                                 self.start_blocks_magnetization
-        if self.end_blocks_magnetization:
+        if self.end_blocks_magnetization and self.nr_end_blocks > 0:
             magnetization_list[-1*self.nr_end_blocks:] = \
                                                 self.end_blocks_magnetization
         magnetization_list = magnetization_list.tolist()

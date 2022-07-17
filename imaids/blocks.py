@@ -54,10 +54,7 @@ class Block(_fieldsource.FieldModel):
                 [0.1, 0], [50, 0], [50, -50], [0.1, -50]]],
         'apple_carnauba': [
             [
-                [0.1, 0], [25, 0], [25, -25], [0.1, -25]]],
-        'apple_uvx': [
-            [
-                [0.1, 0], [40, 0], [40, -40], [0.1, -40]]],
+                [0.1, 0], [25, 0], [25, -25], [0.1, -25]]],   
         'kyma_22': [
             [
                 [15, 0], [18, -3], [18, -17], [15, -20],
@@ -258,15 +255,13 @@ class Block(_fieldsource.FieldModel):
         """
         return cls.PREDEFINED_SUBDIVISION.get(device_name)
 
-    def create_radia_object(self, magnetization=None):
+    def create_radia_object(self):
         """Creates the radia object."""
         if self._radia_object is not None:
             _rad.UtiDel(self._radia_object)
 
         if self._length == 0:
             return
-
-        self._magnetization = magnetization or self._magnetization
 
         # In both ObjRecMag and ObjThckPgn, 'Frame->Lab' is used so that
         # div determines the number of divisions in each cartesian direction.

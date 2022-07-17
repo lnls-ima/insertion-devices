@@ -155,9 +155,7 @@ class Block(_fieldsource.FieldModel):
             raise ValueError('The block length must be a positive number.')
         self._length = length
 
-        if len(magnetization) != 3:
-            raise ValueError('Invalid magnetization argument.')
-        self._magnetization = magnetization
+        self._magnetization = self._check_magnetization(magnetization)
 
         if subdivision is None or len(subdivision) == 0:
             sub = [[1, 1, 1]]*len(self._shape)
@@ -207,6 +205,14 @@ class Block(_fieldsource.FieldModel):
     def magnetization(self):
         """Block magnetization vector [T]."""
         return _deepcopy(self._magnetization)
+
+    @magnetization.setter
+    def magnetization(self, new_magnetization):
+        """Set new block magnetization vector [T]."""
+        # update magnetization attribute
+        self._magnetization = self._check_magnetization(new_magnetization)
+        # replace radia_object with a replica with new mag.
+        self.create_radia_object()
 
     @property
     def subdivision(self):
@@ -352,3 +358,8 @@ class Block(_fieldsource.FieldModel):
         center = _np.mean(self.bounding_box(), axis=1)
         
         return list(center)
+
+    def _check_magnetization(self, magnetization):
+        if len(magnetization) != 3:
+            raise ValueError('Invalid magnetization argument.')
+        return magnetization

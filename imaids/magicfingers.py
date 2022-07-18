@@ -34,16 +34,16 @@ class MagicFingers(_fieldsource.FieldModel):
                 'Invalid length for magnetization initialization list.')
 
         if block_shift_list is None:
-            block_shift_list = [None]*nr_blocks_group*nr_groups
+            block_shift_list = [0]*nr_blocks_group*nr_groups
         elif len(block_shift_list) != nr_blocks_group*nr_groups:
             raise ValueError('Invalid length for list of block shifts.') 
         
         if group_shift_list is None:
-            group_shift_list = [None]*nr_groups
+            group_shift_list = [0]*nr_groups
         elif len(group_shift_list) != nr_groups:
             raise ValueError('Invalid length for list of group shifts.')
 
-        if device_rotation >= 2*_np.pi/self.nr_groups:
+        if device_rotation >= 2*_np.pi/nr_groups:
             raise ValueError('device_rotation must be < 2pi/nr_groups.')
 
         if block_names is None:
@@ -129,6 +129,28 @@ class MagicFingers(_fieldsource.FieldModel):
     def group_shift_list(self):
         """Longitudinal scalar shifts (z) applied to groups"""
         return self._group_shift_list
+    
+    @group_shift_list.setter
+    def group_shift_list(self, new_group_shift_list):
+        """Set longitudinal shifts (z) of groups and updates Radia objects"""
+
+        # Test input.
+        if len(new_group_shift_list) != self.nr_groups:
+            raise ValueError('Invalid length for list of group shifts.')
+        
+        # Define necessary movement for updating group positions.
+        delta_group_shift_list = _np.array(new_group_shift_list) - \
+                            _np.array(self.group_shift_list)      
+
+        # Update group positions.
+        for idx_block, block in enumerate(self._blocks):
+            # Get group index.
+            idx_group = int(idx_block/self.nr_blocks_group)
+            # Move blocks to appropriate new group positions.
+            block.shift([0, 0, delta_group_shift_list[idx_group]])
+        
+        # Update group shift attribute
+        self._group_shift_list = new_group_shift_list
 
     @property
     def group_rotation(self):
@@ -192,6 +214,17 @@ class MagicFingers(_fieldsource.FieldModel):
         """
         mag_list = [block.magnetization for block in self._blocks]
         return mag_list
+    
+    @property
+    def center_point_list(self):
+        """List of block positions READ FROM RADIA OBJECTS [T].
+            
+        This getter returns the current position of the blocks, which is the
+        final combination of translations and rotations used for getting
+        the magic fingers device.
+        """
+        center_list = [block.center_point() for block in self._blocks]
+        return center_list
 
     @property
     def state(self):
@@ -244,7 +277,7 @@ class MagicFingers(_fieldsource.FieldModel):
             magnetization_list=magnetization_list)
 
         return magicfingers
-
+   
     def create_radia_object(self, magnetization_list=None):
 
         if self._radia_object is not None:
@@ -278,8 +311,6 @@ class MagicFingers(_fieldsource.FieldModel):
                         group_rotation_z, block_shift) \
             in enumerate(zip(position_list, magnetization_list,
                              group_rotation_z_list, self.block_shift_list)):
-
-            print(idx_block, position, magnetization, group_rotation_z, block_shift)
 
             # Get group index (used later for shifting groups)
             idx_group = int(idx_block/self.nr_blocks_group)
@@ -316,8 +347,7 @@ class MagicFingers(_fieldsource.FieldModel):
             block.rotate([0,0,0], [0,0,1], self.device_rotation)
 
             # Apply group shifts (in z direction)
-            if self.group_shift_list[idx_group] is not None:
-                block.shift([0,0,self.group_shift_list[idx_group]])
+            block.shift([0,0,self.group_shift_list[idx_group]])
 
             # -------- END of block poisition manipulations -------- #
 

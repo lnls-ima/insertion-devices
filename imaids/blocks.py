@@ -176,9 +176,12 @@ class Block(_fieldsource.FieldModel):
         self._longitudinal_position = longitudinal_position
 
         if material is None:
+            self._use_default_material = True
+            self._default_material_kwargs = kwargs
             self._material = _materials.Material(
                 mr=_np.linalg.norm(self._magnetization), **kwargs)
         else:
+            self._use_default_material = False
             self._material = material
 
         self.name = name
@@ -211,6 +214,11 @@ class Block(_fieldsource.FieldModel):
         """Set new block magnetization vector [T]."""
         # update magnetization attribute
         self._magnetization = self._check_magnetization(new_magnetization)
+        # replace material object.
+        if self._use_default_material:
+            kwargs = self._default_material_kwargs
+            self._material = _materials.Material(
+                mr=_np.linalg.norm(self._magnetization), **kwargs)
         # replace radia_object with a replica with new mag.
         self.create_radia_object()
 

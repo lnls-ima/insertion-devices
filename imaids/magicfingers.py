@@ -21,7 +21,8 @@ class MagicFingers(_fieldsource.FieldModel):
             group_distance, nr_groups, magnetization_init_list,
             ksipar=0.06, ksiper=0.17, group_rotation=_np.pi/2,
             block_shift_list=None, group_shift_list=None,
-            device_rotation=0, block_subdivision=None, rectangular=False, 
+            device_rotation=0, device_position = 0,
+            block_subdivision=None, rectangular=False, 
             init_radia_object=True, name='', block_names=None):        
         """Pass and store attributes which define geometry and distribution
         of the blocks in the device and call radia object creation method.
@@ -78,11 +79,19 @@ class MagicFingers(_fieldsource.FieldModel):
                 group. It is the only device geometrical property that may be
                 set (altered) after the device is created, allowing for group
                 movements analogous to cassettes motion in an undulator.
+                When a new group_shift_list is set, groups are moved for
+                matching the new shifts, but the overall longitudinal device
+                position set by device_position (see bellow) is kept.
                 In mm, defaults to None (meaning 0.0 shifts).        
             device_rotation (float, optional): Overall device rotation around
                 the global z ([0,0,1]) axis, applied to all the blocks after
                 their position and rotation is set by all the arguments above.
                 Must be less than 2*pi/nr_groups. In radians, defaults to 0.
+            device_position (float, optional): Overall device shift in the
+                global z direction, applied to all the blocks after their
+                position and rotation is set by all the arguments above.
+                May be used for longitudinally positioning the whole device.
+                In mn, defaults to 0.
             block_subdivision (list, 3 or Nx3, optional): Defines the block
                 subdivision for the Radia calculation. Single list of (x,y,z)
                 subdivisions or nested list of N 3-vector (x,y,z) subdivisions,
@@ -165,7 +174,8 @@ class MagicFingers(_fieldsource.FieldModel):
         self._group_rotation = float(group_rotation)
         self._block_shift_list = block_shift_list
         self._group_shift_list = group_shift_list
-        self._device_rotation = float(device_rotation)   
+        self._device_rotation = float(device_rotation)
+        self._device_position = float(device_position)
         self._block_subdivision = block_subdivision
         self._rectangular = rectangular        
         self.name = name # "public"/mutable, no need for @property method
@@ -251,13 +261,20 @@ class MagicFingers(_fieldsource.FieldModel):
     def device_rotation(self):
         """Global rotation around Z axis (global coordinates) [degrees]."""
         return self._device_rotation
+
+    @property
+    def device_position(self):
+        """Global shift in the Z direction (global coordinates) [mm]."""
+        return self._device_position
     
     @group_shift_list.setter
     def group_shift_list(self, new_group_shift_list):
         """Set longitudinal shifts (z) of groups and updates Radia objects.
 
-        Setting/modifying the group positions without creating a new object is
-        is useful for matching the motion of cassettes in an undulator.
+        Setting/modifying the group shifts without creating a new object is
+        is useful for matching the motion of cassettes in an undulator. Since
+        the shift update is applied as new a shift, the device longitudinal
+        position set by self.device_position is kept.
         """
 
         # Test input.
@@ -492,6 +509,9 @@ class MagicFingers(_fieldsource.FieldModel):
 
             # Apply group shifts (in z direction)
             block.shift([0,0,self.group_shift_list[idx_group]])
+
+            # Apply global device shift (in z direction)
+            block.shift([0,0,self.device_position])
 
             # ---------- END of block positioning ---------- #
 

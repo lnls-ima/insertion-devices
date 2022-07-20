@@ -370,18 +370,17 @@ class MagicFingers(_fieldsource.FieldModel):
         Note: State .json file stores lists of magnetizations that might be
         resulting magnetizations obtained after relaxation (magnetostatic
         problem solve()), which are returned by the magnetization_list getter
-        and stored in the state dictionary.
+        and stored in the state dictionary. The magnetizations list read from
+        file is passed as initialization magnetizations list to the new object.
+        
         """
         with open(filename) as f:
             kwargs = _json.load(f)
 
         magnetization_list = kwargs.pop('magnetization_list', None)
+        kwargs['magnetization_init_list'] = magnetization_list
 
-        magicfingers = cls(init_radia_object=False, **kwargs)
-        magicfingers.create_radia_object(
-            magnetization_list=magnetization_list)
-
-        return magicfingers
+        return cls(**kwargs)
    
     def create_radia_object(self, magnetization_list=None):
         """Creates radia object with given magnetization and blocks

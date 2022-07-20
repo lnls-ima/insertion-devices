@@ -381,6 +381,33 @@ class MagicFingers(_fieldsource.FieldModel):
         kwargs['magnetization_init_list'] = magnetization_list
 
         return cls(**kwargs)
+
+    def get_block_table(self):
+        """Table string summarizing block information.
+        
+        Returns:
+            str: String formated as table. First line labels the columns
+                > block index - idx
+                > group index - grp
+                > center positions (block.center_point()) - x,y,z
+                > magnetization components (block.magnetization) - mx,my,mz              
+        """
+        fmthd = 2*'{:>5}' + 3*' {:>12}' + 3*' {:>11}'
+        fmtrw = 2*'{:>5d}' + 3*' {:>12.5f}' + 3*' {:>11.5f}'
+
+        table = fmthd.format('idx', 'grp', 'xc (mm)', 'yc (mm)', 'zc (mm)',
+                                'mx (T)', 'my (T)', 'mz (T)')
+        for idx_block, block in enumerate(self._blocks):
+
+            idx_group = int(idx_block/self.nr_blocks_group)
+            xc, yc, zc = block.center_point()
+            mx, my, mz = block.magnetization
+
+            table += '\n'
+            table += fmtrw.format(idx_block, idx_group,
+                                        xc, yc, zc, mx, my, mz)
+
+        return table
    
     def create_radia_object(self, magnetization_list=None):
         """Creates radia object with given magnetization and blocks

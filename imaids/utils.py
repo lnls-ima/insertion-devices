@@ -29,6 +29,23 @@ def set_len_tol(absolute=1e-12, relative=1e-12):
     return _rad.FldLenTol(absolute, relative)
 
 
+def delete_recursive(ref):
+    """Recursively deletes a Radia object and all Radia objects
+        contained within it.
+            
+    Args:
+        ref (int): Integer reference for Radia object to be deleted.
+
+    Returns:
+        int: 0
+    """
+    if _rad.ObjCntSize(ref) > 0:
+        for in_ref in _rad.ObjCntStuf(ref):
+            delete_recursive(in_ref)
+    _rad.UtiDel(ref)
+    return 0
+
+    
 def delete_all():
     """Deletes all Radia objects.
 

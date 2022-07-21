@@ -258,7 +258,7 @@ class Block(_fieldsource.FieldModel):
     def create_radia_object(self):
         """Creates the radia object."""
         if self._radia_object is not None:
-            _rad.UtiDel(self._radia_object)
+            _utils.delete_recursive(self._radia_object)
 
         if self._length == 0:
             return

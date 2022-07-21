@@ -43,6 +43,62 @@ def delete_all():
     return _rad.UtiDelAll()
 
 
+def get_info(ref):
+    """Returns string (to be printed) containing information
+        on Radia with the input reference integer.
+            
+    Args:
+        ref (int): Radia object reference whose information will be returned.
+
+    Returns:
+        str: String containing Radia object information.
+    """
+    return _rad.UtiDmp(ref)
+
+
+def get_info_all(max_ref=100000):
+    """Returns a dictionary whose keys are the integer references to all Radia
+        objects and the values are strings containing the objects information.
+          
+    Args:
+        max_ref (int, optional): Information is returned for all objects with
+            integer references up to this value. Defaults to 100000.
+
+    Returns:
+        dict: Dictionary {..., ref:str(ref), ...}, where str(ref) is a string
+            with information on the Radia object referenced by ref (integer).
+    
+    Tip:
+        Getting a list of all reference integers:
+            >>> ref_list = list(get_info_all().keys())
+    """
+    info_dict = {}
+    for ref in range(max_ref+1):
+        try:
+            info_dict[int(ref)] = _rad.UtiDmp(ref)
+        except RuntimeError:
+            pass    
+    return info_dict
+
+
+def get_info_all_str(max_ref=100000):
+    """Returns a string with information of all Radia objects, concatenating
+        the values of the dictionary returned by get_info_all(max_ref=max_ref).
+          
+    Args:
+        max_ref (int, optional): Maximum reference integer for objects
+            represented in the returned string.
+
+    Returns:
+        str: String with information on objects with ref integer up to max_ref.
+    """
+    info = get_info_all(max_ref=max_ref)
+    info_str = ''
+    for key in info:
+        info_str += (info[key] + '\n\n')
+    return info_str
+
+
 def cosine_function(z, bamp, freq, phase):
     """Cosine function with specified amplitude, frequency and phase.
 

@@ -528,3 +528,79 @@ class MagicFingers(_fieldsource.FieldModel):
             if block.radia_object is not None:
                 rad_obj_list.append(block.radia_object)
         self._radia_object = _rad.ObjCnt(rad_obj_list)
+
+class MagicFingersSabia(MagicFingers):
+
+    """Magic fingers for Delta Sabia Model"""
+        
+    def __init__(
+            self, magnetization_init_list,
+            nr_blocks_group=4, block_shape='default', block_length=1.25,
+            block_distance=7, group_distance=30.65, nr_groups=4,            
+            ksipar=0.06, ksiper=0.17, group_rotation=_np.pi/2,
+            block_shift_list=None, group_shift_list=None,
+            device_rotation=_np.pi/4, device_position=0,
+            block_subdivision='default', rectangular=False, 
+            init_radia_object=True, name='magic_fingers_sabia',
+            block_names='default'):
+        
+        '''Initialization function with default arguments adjusted for
+        Delta Sabia magic fingers.
+        
+        Group distance is based on a distance between center of block and
+        device center of 43.15 mm, with the block half length as 12.5 mm.    
+        
+        See help for MagicFingers class for details on arguments meaning.
+
+        Args:
+            magnetization_init_list (list, nr_blocks_group*nr_groups x 3) In T.
+            nr_blocks_group (int, optional): Defaults to 4.
+            block_shape (list, Mx2 or NxMx2, optional): Defaults to 'default',
+                in which case, Block.get_predefined_shape('delta_prototype')
+                will be used.
+            block_length (float, optional): In mm. Defaults to 1.25.
+            block_distance (float, optional): In mm. Defaults to 7.0.
+            group_distance (float, optional): In mm. Defaults to 30.65.
+            nr_groups (int, optional): Defaults to 4.
+            ksipar (float, optional): Defaults to 0.06.
+            ksiper (float, optional): Defaults to 0.17.
+            group_rotation (float, optional): In radians. Defaults to pi/2.
+            block_shift_list (list, nr_blocks_group*nr_groups x 3, optional):
+                In mm, defaults to None (meaning [0, 0, 0] shifts.
+            group_shift_list (list, nr_blocks_group*nr_groups, optional):
+                In mm, defaults to None (meaning 0.0 shifts).        
+            device_rotation (float, optional): In radians, defaults to pi/4.
+            device_position (float, optional): In mn, defaults to 0.
+            block_subdivision (list, 3 or Nx3, optional): Defaults
+                 to 'default', in which case
+                 Block.get_predefined_subdivision('delta_prototype') will be
+                 used.
+            rectangular (bool, optional): Defaults to False.
+            init_radia_object (bool, optional): defaults to True.
+            name (str, optional): Device label. Defaults to 
+                'magic_fingers_sabia'.
+            block_names (list, nr_blocks_group*nr_groups): Defaults to
+                'default', in which case a list af names:
+                [Block_00, Block_01, ..., Block_15] will be used.
+        '''        
+        if block_shape == 'default':
+            block_shape = \
+                _blocks.Block.get_predefined_shape('delta_prototype')
+        if block_subdivision == 'default':
+            block_subdivision = \
+                _blocks.Block.get_predefined_subdivision('delta_prototype')
+        if block_names == 'default':
+            block_names = ['Block_{:02d}'.format(i) for i in range(16)]
+        
+        super().__init__(
+            nr_blocks_group=nr_blocks_group, block_shape=block_shape, 
+            block_length=block_length, block_distance=block_distance,
+            group_distance=group_distance, nr_groups=nr_groups, 
+            magnetization_init_list=magnetization_init_list,
+            ksipar=ksipar, ksiper=ksiper, group_rotation=group_rotation,
+            block_shift_list=block_shift_list,
+            group_shift_list=group_shift_list,
+            device_rotation=device_rotation, device_position=device_position,
+            block_subdivision=block_subdivision, rectangular=rectangular, 
+            init_radia_object=init_radia_object, name=name,
+            block_names=block_names)

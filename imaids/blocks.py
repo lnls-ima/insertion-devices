@@ -57,7 +57,7 @@ class Block(_fieldsource.FieldModel):
                 [0.1, 0], [25, 0], [25, -25], [0.1, -25]]],
         'apple_uvx': [
             [
-                [0.1, 0], [40, 0], [40, -40], [0.1, -40]]],
+                [0.1, 0], [40.1, 0], [40.1, -40], [0.1, -40]]],
         'kyma_22': [
             [
                 [15, 0], [18, -3], [18, -17], [15, -20],
@@ -217,6 +217,7 @@ class Block(_fieldsource.FieldModel):
         # replace material object.
         if self._use_default_material:
             kwargs = self._default_material_kwargs
+            _rad.UtiDel(self._material.radia_object)
             self._material = _materials.Material(
                 mr=_np.linalg.norm(self._magnetization), **kwargs)
         # replace radia_object with a replica with new mag.

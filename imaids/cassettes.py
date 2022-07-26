@@ -537,7 +537,7 @@ class Cassette(
                 from the total number of blocks.
         """
         if self._radia_object is not None:
-            _rad.UtiDel(self._radia_object)
+            _utils.delete_recursive(self._radia_object)
 
         if block_names is None:
             block_names = ['']*self.nr_blocks

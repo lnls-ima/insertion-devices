@@ -465,7 +465,7 @@ class MagicFingers(_fieldsource.FieldModel):
         """
 
         if self._radia_object is not None:
-            _rad.UtiDel(self._radia_object)
+            _utils.delete_recursive(self._radia_object)
 
         # Test magnetization list, giving default __init__ value if None.
         if magnetization_list is None:
@@ -511,7 +511,7 @@ class MagicFingers(_fieldsource.FieldModel):
             # Ensure blocks upper y position is y=0 (for ensuring that
             # group distance correctly represents distance between device
             # center and block surface).
-            block.shift([0, (-1)*block.bounding_box()[1,1], 0])
+            block.shift([0, (-1)*block.get_geometry_bounding_box()[1,1], 0])
 
             # Apply block shifts (if given).
             if block_shift is not None:

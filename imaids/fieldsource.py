@@ -986,6 +986,17 @@ class FieldModel(FieldSource):
     def radia_object(self):
         """Number of the radia object."""
         return self._radia_object
+    
+    @property
+    def center_point(self):
+        """Vector coordinates ([x,y,z]) of radia object geometrical center."""
+
+        if self.radia_object is None:
+            raise None
+                
+        centers = _np.array(_rad.ObjM(self.radia_object))[:,0]
+        center = centers.mean(axis=0)
+        return list(center)
 
     @property
     def state(self):
@@ -1124,27 +1135,6 @@ class FieldModel(FieldSource):
             return True
         else:
             return False
-    
-    def center_point(self):
-        """Coordinates of radia object geometrical center.
-           
-        Note that such point is different from a bounding box center.
-        
-        Raises:
-            ValueError: If there is no radia object referenced by
-                this object's radia_object attribute.
-
-        Returns:
-            list, 3: x,y,z coorinates of geometrical object center.
-        """
-
-        if self.radia_object is None:
-            raise ValueError('There is no linked Radia object.')
-        
-        centers = _np.array(_rad.ObjM(self.radia_object))[:,0]
-        center = centers.mean(axis=0)
-
-        return list(center)
 
 class FieldData(FieldSource):
 

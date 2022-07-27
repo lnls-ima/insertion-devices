@@ -276,7 +276,7 @@ class Block(_fieldsource.FieldModel):
     def create_radia_object(self):
         """Creates the radia object."""
         if self._radia_object is not None:
-            _rad.UtiDel(self._radia_object)
+            _utils.delete_recursive(self._radia_object)
 
         if self._length == 0:
             return
@@ -322,20 +322,16 @@ class Block(_fieldsource.FieldModel):
                 subblock_list.append(subblock)
             self._radia_object = _rad.ObjCnt(subblock_list)
 
-    def bounding_box(self):
-        """Bounding box of block geometrical limits.
+    def get_geometry_bounding_box(self):
+        """Geometrical limits (bounding box) of Block's input geometry
+            (shape and length).
         
-        Raises:
-            ValueError: If there is no radia object referenced by the Block.
-
         Returns:
             numpy.ndarray, 3x2: Array of the form:
                 [[xmin, xmax], [ymin,ymax], [zmin,zmax]]
                 where the min and max values are the coordinates' upper and
                 lower bounds for the points forming the block geometry.
         """
-        if self.radia_object is None:
-            raise ValueError('There is no linked Radia object.')
         
         points = _np.concatenate(self.shape, axis=0)
         x = points[:,0]
@@ -345,28 +341,6 @@ class Block(_fieldsource.FieldModel):
 
         bounding_box = [[x.min(), x.max()], [y.min(), y.max()], [zmin, zmax]]
         return _np.array(bounding_box)
-
-    def bounding_box_center(self):
-        """Coordinates of the center of the block's bounding box.
-        
-        Each coordinate is the mean of the upper and lower bounds for the
-            point cooreinates forming the block geometry.
-
-        Note that this is different from the geometrical center returned
-            by the center_point method.
-        
-        Raises:
-            ValueError: If there is no radia object referenced by the Block.
-
-        Returns:
-            list, 3: x,y,z coorinates of bounding box center.
-        """
-        if self.radia_object is None:
-            raise ValueError('There is no linked Radia object.')
-
-        center = _np.mean(self.bounding_box(), axis=1)
-        
-        return list(center)
 
     def _check_magnetization(self, magnetization):
         if len(magnetization) != 3:

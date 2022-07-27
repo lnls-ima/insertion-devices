@@ -13,7 +13,29 @@ class MagicFingers(_fieldsource.FieldModel):
         in a circular array around the z=0 axis. 
 
     Such arrangement represents devices (magic fingers/magic pads) usually
-    coupled with insertion devices for magnetic tuning.        
+    coupled with insertion devices for magnetic tuning.
+
+    Block shape and positions positions are defined by:
+        block_shape
+        block_length
+        block_distance
+        nr_blocks_group
+        block_shift_list
+        group_rotation
+        group_distance           
+        nr_groups
+        device_rotation
+        group_shift_list
+        device_position
+    
+    nr_groups will be arranged in a counterclockwise arangement and
+    (if group_rotation is in [0, +pi)) in each group the blocks
+    order follows the counterclockwise ordering.
+
+    | The /docs/magic_fingers_parameters.pdf file in the documentation     |
+    | directory of the package illustrates the meaning of such parameters, |
+    | which are alsodescribed at the initialization method bellow.               |
+
     """
     
     def __init__(
@@ -456,7 +478,7 @@ class MagicFingers(_fieldsource.FieldModel):
 
         for idx_group in range(self.nr_groups):
             for idx_block in range(self.nr_blocks_group):
-                # Generate position, WITHOUT SHIFTS..
+                # Generate position, WITHOUT SHIFTS.
                 position = idx_block*(self.block_length + self.block_distance)
                 position_list.append(position)
                 # Generate group rotation AROUND Z axis (for positioning

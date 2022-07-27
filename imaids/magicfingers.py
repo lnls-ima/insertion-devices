@@ -34,7 +34,7 @@ class MagicFingers(_fieldsource.FieldModel):
 
     | The /docs/magic_fingers_parameters.pdf file in the documentation     |
     | directory of the package illustrates the meaning of such parameters, |
-    | which are alsodescribed at the initialization method bellow.               |
+    | which are alsodescribed at the initialization method bellow.         |
 
     """
     

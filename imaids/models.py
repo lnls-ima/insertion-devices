@@ -92,8 +92,9 @@ class Delta(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        cse.shift([0, -self._gap/2, 0])
-        cse.rotate([0, 0, 0], [0, 0, 1], _np.pi)
+        for block in cse.blocks:
+            block.shift([0, -self._gap/2, 0])
+            block.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = cse
 
         name = 'csd'
@@ -105,8 +106,9 @@ class Delta(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        csd.shift([0, -self._gap/2, 0])
-        csd.rotate([0, 0, 0], [0, 0, 1], -_np.pi/2)
+        for block in csd.blocks:
+            block.shift([0, -self._gap/2, 0])
+            block.rotate([0, 0, 0], [0, 0, 1], -_np.pi/2)
         self._cassettes[name] = csd
 
         name = 'cie'
@@ -118,8 +120,9 @@ class Delta(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        cie.shift([0, -self._gap/2, 0])
-        cie.rotate([0, 0, 0], [0, 0, 1], _np.pi/2)
+        for block in cie.blocks:
+            block.shift([0, -self._gap/2, 0])
+            block.rotate([0, 0, 0], [0, 0, 1], _np.pi/2)
         self._cassettes[name] = cie
 
         name = 'cid'
@@ -131,7 +134,8 @@ class Delta(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        cid.shift([0, -self._gap/2, 0])
+        for block in cid.blocks:
+            block.shift([0, -self._gap/2, 0])
         self._cassettes[name] = cid
 
         self._radia_object = _rad.ObjCnt(
@@ -323,8 +327,9 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        cse.shift([0, -self._gap/2, 0])
-        cse.rotate([0, 0, 0], [0, 0, 1], _np.pi)
+        for block in cse.blocks:
+            block.shift([0, -self._gap/2, 0])
+            block.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = cse
 
         name = 'csd'
@@ -336,8 +341,9 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        csd.shift([0, -self._gap/2, 0])
-        csd.rotate([0, 0, 0], [0, 0, 1], -_np.pi/2)
+        for block in csd.blocks:
+            block.shift([0, -self._gap/2, 0])
+            block.rotate([0, 0, 0], [0, 0, 1], -_np.pi/2)
         self._cassettes[name] = csd
 
         name = 'cie'
@@ -349,8 +355,9 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        cie.shift([0, -self._gap/2, 0])
-        cie.rotate([0, 0, 0], [0, 0, 1], _np.pi/2)
+        for block in cie.blocks:
+            block.shift([0, -self._gap/2, 0])
+            block.rotate([0, 0, 0], [0, 0, 1], _np.pi/2)
         self._cassettes[name] = cie
 
         name = 'cid'
@@ -362,7 +369,8 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        cid.shift([0, -self._gap/2, 0])
+        for block in cid.blocks:
+            block.shift([0, -self._gap/2, 0])
         self._cassettes[name] = cid
 
         self._radia_object = _rad.ObjCnt(
@@ -543,9 +551,10 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        cse.shift([0, -self._gap/2, 0])
-        cse.mirror([0, 0, 0], [1, 0, 0])
-        cse.rotate([0, 0, 0], [0, 0, 1], _np.pi)
+        for block in cse.blocks:
+            block.shift([0, -self._gap/2, 0])
+            block.mirror([0, 0, 0], [1, 0, 0])
+            block.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = cse
 
         name = 'csd'
@@ -557,8 +566,9 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        csd.shift([0, -self._gap/2, 0])
-        csd.rotate([0, 0, 0], [0, 0, 1], _np.pi)
+        for block in csd.blocks:
+            block.shift([0, -self._gap/2, 0])
+            block.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = csd
 
         name = 'cie'
@@ -570,7 +580,8 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        cie.shift([0, -self._gap/2, 0])
+        for block in cie.blocks:
+            block.shift([0, -self._gap/2, 0])
         self._cassettes[name] = cie
 
         name = 'cid'
@@ -582,8 +593,9 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        cid.shift([0, -self._gap/2, 0])
-        cid.mirror([0, 0, 0], [1, 0, 0])
+        for block in cid.blocks:
+            block.shift([0, -self._gap/2, 0])
+            block.mirror([0, 0, 0], [1, 0, 0])
         self._cassettes[name] = cid
 
         self._radia_object = _rad.ObjCnt(
@@ -688,8 +700,9 @@ class APU(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        cs.shift([0, -self._gap/2, 0])
-        cs.rotate([0, 0, 0], [0, 0, 1], _np.pi)
+        for block in cs.blocks:
+            block.shift([0, -self._gap/2, 0])
+            block.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = cs
 
         name = 'ci'
@@ -701,7 +714,8 @@ class APU(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        ci.shift([0, -self._gap/2, 0])
+        for block in ci.blocks:
+            block.shift([0, -self._gap/2, 0])
         self._cassettes[name] = ci
 
         self._radia_object = _rad.ObjCnt(
@@ -781,8 +795,9 @@ class Planar(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        cs.shift([0, -self._gap/2, 0])
-        cs.rotate([0, 0, 0], [0, 0, 1], _np.pi)
+        for block in cs.blocks:
+            block.shift([0, -self._gap/2, 0])
+            block.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = cs
 
         name = 'ci'
@@ -794,7 +809,8 @@ class Planar(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        ci.shift([0, -self._gap/2, 0])
+        for block in ci.blocks:
+            block.shift([0, -self._gap/2, 0])
         self._cassettes[name] = ci
 
         self._radia_object = _rad.ObjCnt(

@@ -55,6 +55,9 @@ class Block(_fieldsource.FieldModel):
         'apple_carnauba': [
             [
                 [0.1, 0], [25, 0], [25, -25], [0.1, -25]]],
+        'apple_uvx': [
+            [
+                [0.1, 0], [40.1, 0], [40.1, -40], [0.1, -40]]],
         'kyma_22': [
             [
                 [15, 0], [18, -3], [18, -17], [15, -20],
@@ -278,9 +281,8 @@ class Block(_fieldsource.FieldModel):
             raise ValueError('The block length must be a positive number.')
         self._length = length
 
-        if len(magnetization) != 3:
-            raise ValueError('Invalid magnetization argument.')
-        self._magnetization = magnetization
+        self._magnetization = None
+        self.magnetization =  magnetization
 
         if subdivision is None or len(subdivision) == 0:
             sub = [[1, 1, 1]]*len(self._shape)
@@ -301,9 +303,12 @@ class Block(_fieldsource.FieldModel):
         self._longitudinal_position = longitudinal_position
 
         if material is None:
+            self._use_default_material = True
+            self._default_material_kwargs = kwargs
             self._material = _materials.Material(
                 mr=_np.linalg.norm(self._magnetization), **kwargs)
         else:
+            self._use_default_material = False
             self._material = material
 
         self.name = name
@@ -330,6 +335,23 @@ class Block(_fieldsource.FieldModel):
     def magnetization(self):
         """Block magnetization vector [T]."""
         return _deepcopy(self._magnetization)
+
+    @magnetization.setter
+    def magnetization(self, new_magnetization):
+        """Set new block magnetization vector [T]."""
+        # check magnetization input
+        if len(new_magnetization) != 3:
+            raise ValueError('Invalid magnetization argument.')
+        # update magnetization attribute
+        self._magnetization = new_magnetization
+        # replace material object.
+        if self._use_default_material:
+            kwargs = self._default_material_kwargs
+            _rad.UtiDel(self._material.radia_object)
+            self._material = _materials.Material(
+                mr=_np.linalg.norm(self._magnetization), **kwargs)
+        # replace radia_object with a replica with new mag.
+        self.create_radia_object()
 
     @property
     def subdivision(self):

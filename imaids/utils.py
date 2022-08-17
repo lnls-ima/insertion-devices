@@ -5,7 +5,12 @@ from scipy import optimize as _optimize
 import radia as _rad
 
 
-mu0 = 4*_np.pi*1e-7
+# NOTE: package lnls-sirius/mathphys could be used to defined these consts
+
+ELEMENTARY_CHARGE = 1.60217662e-19  # [C]
+ELECTRON_MASS = 9.10938356e-31  # [Kg]
+LIGHT_SPEED = 299792458  # [m/s]
+VACUUM_PERMEABILITY = 1.25663706212e-6  # [V.s/A/m]
 
 
 def set_len_tol(absolute=1e-12, relative=1e-12):
@@ -131,6 +136,62 @@ def cosine_function(z, bamp, freq, phase):
     return bamp*_np.cos(freq*z + phase)
 
 
+def get_beff_from_model(model, period, polarization, hmax, x):
+    """Calculate effective field amplitude from model.
+
+    Args:
+        model (radia object): ID model.
+        period (float): ID period.
+        polarization (string): polarization of radiation. (['hp', 'vp', 'cp'])
+        hmax (int): max field harmonic to be considered.
+        x (float): horizontal position to calc field [mm]
+
+    Returns:
+        float : effective field amplitude [T]
+        float: first harmonic field amplitude [T]
+        numpy.ndarray: field along longitudinal positions [T]
+    """
+    zmin = -2*period
+    zmax = 2*period
+    npts = 201
+    z = _np.linspace(zmin, zmax, npts)
+    bvec = model.get_field(x=x,z=z)
+    if polarization == 'vp':
+        b = bvec[:, 0]
+    elif polarization in ('hp', 'cp'):
+        b = bvec[:, 1]
+
+    freq0 = 2*_np.pi/period
+    hs = _np.array(range(1, hmax+1, 2))
+    freqs = hs*freq0
+    amps,*_ = fit_fourier_components(b, freqs, z)
+    beff = _np.sqrt(_np.sum(_np.power(amps/hs, 2)))
+    return beff, amps[0], b
+
+
+def get_beff_fit(gap_over_period, beff, br):
+    """Return fitted B(Gap/period) exponential curve parameters."""
+    a0, b0, c0 = 2, -3, 0
+
+    def fit_function(x, a, b, c):
+        return br*a*_np.exp(b*x + c*(x**2))
+
+    opt = _optimize.curve_fit(
+        fit_function, gap_over_period, beff, p0=(a0, b0, c0))[0]
+
+    return opt
+
+
+def undulator_b_to_k(b, period):
+    """Field amplitude to K conversion."""
+    return ELEMENTARY_CHARGE * period * b / (2 * _np.pi * ELECTRON_MASS * LIGHT_SPEED)
+
+
+def undulator_k_to_b(k, period):
+    """K to field amplitude conversion."""
+    return (2 * _np.pi * ELECTRON_MASS * LIGHT_SPEED * k) / (ELEMENTARY_CHARGE * period)
+
+
 def hybrid_undulator_pole_length(gap, period_length):
     """Hybrid undulator optmized pole thickness.
 
@@ -149,10 +210,7 @@ def hybrid_undulator_pole_length(gap, period_length):
         float: Optmized pole thickness resulting from the applyed model
             (lenght units, same as used for inputs, ex: mm).
     """
-    a = 5.939
-    b = -11.883
-    c = 16.354
-    d = -8.55
+    a, b, c, d = 5.939, -11.883, 16.354, -8.55
     gp = gap/period_length
     pole_length = gap*a*_np.exp(b*gp + c*(gp**2) + d*(gp**3))
     return pole_length
@@ -375,20 +433,20 @@ def mh_tesla_curve(hlist, mlist=None, blist=None, msksi=None):
 
     Returns:
         numpy.ndarray: H field values for MxH curve, in T (M*mu0).
-        numpy.ndarray: Magnetization values for MxH curve, in T (M*mu0).    
+        numpy.ndarray: Magnetization values for MxH curve, in T (M*mu0).
     """
     
     not_none = int(sum(x is not None for x in [mlist, blist, msksi]))
 
     if not_none == 1:
 
-        mu0_hlist = _np.array(hlist)*mu0
+        mu0_hlist = _np.array(hlist)*VACUUM_PERMEABILITY
 
         if mlist is not None:
-            mu0_mlist = _np.array(mlist)*mu0
+            mu0_mlist = _np.array(mlist)*VACUUM_PERMEABILITY
 
         elif blist is not None:
-            mu0_mlist = _np.array(blist) - _np.array(hlist)*mu0
+            mu0_mlist = _np.array(blist) - _np.array(hlist)*VACUUM_PERMEABILITY
         
         elif msksi is not None:
             if depth(msksi) == 2:
@@ -508,6 +566,7 @@ def rotation_matrix(axis, theta):
         ])
     return matrix
 
+
 def random_direction():
     """Returns a unit vector pointing to a random direction.
 
@@ -520,6 +579,7 @@ def random_direction():
     y = _np.sqrt(1-u*u)*_np.sin(2*_np.pi*v)
     z = u
     return([x,y,z])
+
 
 def find_peaks(data, prominence=0.05):
     """Find the indices of peaks in data list.

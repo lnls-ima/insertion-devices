@@ -368,6 +368,7 @@ class FieldSource():
 
             else:
                     for pos in pos_list:
+                        x, y, z = pos
                         bx, by, bz = self.get_field_at_point(pos)
                         line = line_fmt.format(x, y, z, bx, by, bz)
                         fieldmap.write(line)

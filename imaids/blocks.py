@@ -281,8 +281,8 @@ class Block(_fieldsource.FieldModel):
             raise ValueError('The block length must be a positive number.')
         self._length = length
 
-        self._magnetization = None
-        self.magnetization =  magnetization
+        self._check_magnetization(magnetization)
+        self._magnetization = magnetization
 
         if subdivision is None or len(subdivision) == 0:
             sub = [[1, 1, 1]]*len(self._shape)
@@ -340,9 +340,7 @@ class Block(_fieldsource.FieldModel):
     def magnetization(self, new_magnetization):
         """Set new block magnetization vector [T]."""
         # check magnetization input
-        if len(new_magnetization) != 3:
-            raise ValueError('Invalid magnetization argument.')
-        # update magnetization attribute
+        self._check_magnetization(new_magnetization)
         self._magnetization = new_magnetization
         # replace material object.
         if self._use_default_material:
@@ -471,3 +469,8 @@ class Block(_fieldsource.FieldModel):
 
         bounding_box = [[x.min(), x.max()], [y.min(), y.max()], [zmin, zmax]]
         return _np.array(bounding_box)
+
+    def _check_magnetization(self, magnetization):
+        """Check if magnetization is acceptable."""
+        if len(magnetization) != 3:
+            raise ValueError('Invalid magnetization argument.')

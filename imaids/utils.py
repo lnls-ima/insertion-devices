@@ -7,9 +7,6 @@ import radia as _rad
 
 # NOTE: package lnls-sirius/mathphys could be used to defined these consts
 
-ELEMENTARY_CHARGE = 1.60217662e-19  # [C]
-ELECTRON_MASS = 9.10938356e-31  # [Kg]
-LIGHT_SPEED = 299792458  # [m/s]
 VACUUM_PERMEABILITY = 1.25663706212e-6  # [V.s/A/m]
 
 
@@ -136,39 +133,6 @@ def cosine_function(z, bamp, freq, phase):
     return bamp*_np.cos(freq*z + phase)
 
 
-def get_beff_from_model(model, period, polarization, hmax, x):
-    """Calculate effective field amplitude from model.
-
-    Args:
-        model (radia object): ID model.
-        period (float): ID period.
-        polarization (string): polarization of radiation. (['hp', 'vp', 'cp'])
-        hmax (int): max field harmonic to be considered.
-        x (float): horizontal position to calc field [mm]
-
-    Returns:
-        float : effective field amplitude [T]
-        float: first harmonic field amplitude [T]
-        numpy.ndarray: field along longitudinal positions [T]
-    """
-    zmin = -2*period
-    zmax = 2*period
-    npts = 201
-    z = _np.linspace(zmin, zmax, npts)
-    bvec = model.get_field(x=x,z=z)
-    if polarization == 'vp':
-        b = bvec[:, 0]
-    elif polarization in ('hp', 'cp'):
-        b = bvec[:, 1]
-
-    freq0 = 2*_np.pi/period
-    hs = _np.array(range(1, hmax+1, 2))
-    freqs = hs*freq0
-    amps,*_ = fit_fourier_components(b, freqs, z)
-    beff = _np.sqrt(_np.sum(_np.power(amps/hs, 2)))
-    return beff, amps[0], b
-
-
 def get_beff_fit(gap_over_period, beff, br):
     """Return fitted B(Gap/period) exponential curve parameters."""
     a0, b0, c0 = 2, -3, 0
@@ -184,12 +148,10 @@ def get_beff_fit(gap_over_period, beff, br):
 
 def undulator_b_to_k(b, period):
     """Field amplitude to K conversion."""
+    ELEMENTARY_CHARGE = 1.60217662e-19  # [C]
+    ELECTRON_MASS = 9.10938356e-31  # [Kg]
+    LIGHT_SPEED = 299792458  # [m/s]
     return ELEMENTARY_CHARGE * period * b / (2 * _np.pi * ELECTRON_MASS * LIGHT_SPEED)
-
-
-def undulator_k_to_b(k, period):
-    """K to field amplitude conversion."""
-    return (2 * _np.pi * ELECTRON_MASS * LIGHT_SPEED * k) / (ELEMENTARY_CHARGE * period)
 
 
 def hybrid_undulator_pole_length(gap, period_length):

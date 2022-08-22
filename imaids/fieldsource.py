@@ -692,6 +692,34 @@ class SinusoidalFieldSource(FieldSource):
         nr_periods = int(len(dz)/2)
         return avg_period_length, nr_periods
 
+    def get_beff(self, polarization, hmax, x):
+        """Calculate effective field amplitude from model.
+        Args:
+            polarization (string): polarization of radiation. (['hp', 'vp', 'cp'])
+            hmax (int): max field harmonic to be considered.
+            x (float): horizontal position to calc field [mm]
+        Returns:
+            float : effective field amplitude [T]
+            float: first harmonic field amplitude [T]
+            numpy.ndarray: field along longitudinal positions [T]
+        """
+        zmin = -2*self.period_length
+        zmax = 2*self.period_length
+        npts = 201
+        z = _np.linspace(zmin, zmax, npts)
+        bvec = self.get_field(x=x,z=z)
+        if polarization == 'vp':
+            b = bvec[:, 0]
+        elif polarization in ('hp', 'cp'):
+            b = bvec[:, 1]
+
+        freq0 = 2*_np.pi/self.period_length
+        hs = _np.array(range(1, hmax+1, 2))
+        freqs = hs*freq0
+        amps,*_ = _utils.fit_fourier_components(b, freqs, z)
+        beff = _np.sqrt(_np.sum(_np.power(amps/hs, 2)))
+        return beff, amps[0], b
+
     def calc_field_amplitude(
             self, z_list=None, field_list=None,
             x=0, y=0, npts_per_period=101, maxfev=10000):

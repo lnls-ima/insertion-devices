@@ -1675,7 +1675,7 @@ class HybridAPU(APU):
                 gap, period_length)
 
         block_len = (
-            period_length/2 - pole_length - longitudinal_distance)
+            period_length/2 - pole_length - 2*longitudinal_distance)
 
         lenghts = [0, block_len/2, pole_length/2, block_len]
         distances = [0, pole_length, pole_length, longitudinal_distance]

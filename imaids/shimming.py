@@ -224,7 +224,7 @@ class UndulatorShimming():
         return weights_matrix
 
     @staticmethod
-    def fit_trajectory_segments(trajectory, segs, max_size):
+    def fit_trajectory_segments(trajectory, segs, max_size, full_output=False):
         """Performs linear fits on trajectory segments.
 
         Args:
@@ -300,7 +300,10 @@ class UndulatorShimming():
         poly_x = _np.array(poly_x)
         poly_y = _np.array(poly_y)
 
-        return poly_x, poly_y
+        if full_output:
+            return poly_x, poly_y, seg_start, seg_end, index_list
+        else:
+            return poly_x, poly_y
 
     @staticmethod
     def read_response_matrix(filename):

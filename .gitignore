@@ -76,6 +76,13 @@ coverage.xml
 # PyBuilder
 target/
 
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
 # OS generated files #
 ehthumbs.db
 Thumbs.db
@@ -95,6 +102,9 @@ local.properties
 .classpath
 .settings/
 .loadpath
+
+# vscode specific git ignore
+.vscode/
 
 # External tool builders
 .externalToolBuilders/

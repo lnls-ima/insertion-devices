@@ -133,8 +133,19 @@ def cosine_function(z, bamp, freq, phase):
     return bamp*_np.cos(freq*z + phase)
 
 
-def get_beff_fit(gap_over_period, beff, br):
-    """Return fitted B(Gap/period) exponential curve parameters."""
+def calc_beff_vs_gap_fit(gap_over_period, beff, br):
+    """Return fitted B(Gap/period) exponential curve parameters.
+
+    Args:
+        gap_over_period (numpy 1darray): Values of gap/period in which we have data
+             for the effective field.
+        beff (numpy 1darray): Effective field data (For each value of gap/period there
+            is a correspondent value of effective field)
+        br (float): Remnant magnetization
+    
+    Returns:
+        opt (list, 3): List with the values of the curve parameters
+    """
     a0, b0, c0 = 2, -3, 0
 
     def fit_function(x, a, b, c):

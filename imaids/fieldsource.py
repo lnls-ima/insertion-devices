@@ -692,10 +692,14 @@ class SinusoidalFieldSource(FieldSource):
         nr_periods = int(len(dz)/2)
         return avg_period_length, nr_periods
 
-    def get_beff(self, polarization, hmax, x):
+    def get_effective_field(self, polarization, hmax, x):
         """Calculate effective field amplitude from model.
         Args:
-            polarization (string): polarization of radiation. (['hp', 'vp', 'cp'])
+            polarization (string): String specifying the polarization of radiation.
+                Available options are:
+                'hp': Horizontal polarization
+                'vp': Vertical polarization
+                'cp': Circular polarization
             hmax (int): max field harmonic to be considered.
             x (float): horizontal position to calc field [mm]
         Returns:

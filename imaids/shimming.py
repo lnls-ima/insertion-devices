@@ -69,10 +69,10 @@ class UndulatorShimming():
                 phase error calculations. If None, it is set equal to zmin.
                 In mm. Defaults to None.
             include_pe (bool, optional): If True, the calculation for segment
-                slopes for average trajectory also writes the phase derrors
+                slopes for average trajectory also writes the phase errors
                 defined by SinusoidalFieldSource.calc_phase_error method to
                 output file. Defaults to False.
-            field_comp (_type_, optional): When calculating phase errors, this
+            field_comp (int, optional): When calculating phase errors, this
                 optional argument may be used to force one of the components
                 (x or y) to be used to determine the poles.
                     If field_comp==0, poles are defined by y'==0 (or, by Bx).
@@ -182,7 +182,9 @@ class UndulatorShimming():
         obtained from the original s SVD matrix)
 
         If an inverse does not exist (including the case of non-square SVD
-        decomposed matrices), this procedure provides the pseudoinverse.
+        decomposed matrices), this procedure provides a pseudoinverse that
+        approximates the inverse:
+            (u.T @ (1/sv) @ vt.T)  @  (u @ sv @ vt)  ~  1 (identity matrix)
 
         Args:
             u (numpy.ndarray, M x min(M,N)): Left orthogonal matrix from SVD.
@@ -206,8 +208,10 @@ class UndulatorShimming():
 
     @staticmethod
     def get_weights_matrix(weights):
-        """From a weights vector, get a diagonal matrix in which the diagonal
-        elements are the square roots of the normalized vector elements.
+        """From a weights vector, get a diagonal matrix.
+        
+        After input vector is normalized, the square roots of its components
+        are the diagonal elements of the returned matrix. 
 
         This matrix is used for giving different weights to the different
         optimizable parameters (slopes and, possibly, phase errors).
@@ -240,14 +244,24 @@ class UndulatorShimming():
             max_size (float): Maximun longitudinal length of last segmennt.
                 Such segment ends at the last trajectory point OR at the first
                 trajectory point with z greater than (segs[-1] + max_size),
-                whichever is smaller.
+                whichever has smaller z.
+            full_output (bool, optional): Determines wether segment limits are
+                output (useful for debugging). Defaults to False.
 
         Returns:
             numpy.ndarray, Kx2: Nested array of pairs containing the linear
                 and angular coefficients (respectively) of straight lines
-                fitted to X coordineates of a trajectory segment.
+                fitted to X trajectory coordineates of a trajectory segment.
             numpy.ndarray, Kx2: Nested array analogous to array above, for
-                the Y coordinates. 
+                the Y trajectory coordinates.
+            If full_output == True, aditional outputs are given:
+                numpy.ndarray, Kx3: Array containing [x,y,z] coordinates of
+                    the trajectory points at the start of K segments.
+                numpy.ndarray, Kx3: Array containing [x,y,z] coordinates of
+                    the trajectory points at the end of K segments.
+                list, (K+1): List of indices for trajectory points at the 
+                    start of K segments and at the end of the last segment.
+            
         """
         trajx = trajectory[:, 0]
         trajy = trajectory[:, 1]
@@ -313,8 +327,8 @@ class UndulatorShimming():
             filename (str): Name of file containing response matrix.
                 File format:
                     Lines corresponding to optimizable parammeters (slopes and, 
-                        possibly, phase errors) containing values (columns)
-                        corresponding to shims values in shimmed blocks.
+                        possibly, phase errors) and columns corresponding to
+                        specific blocks used for shimming.
         Returns:
             numpy.ndarray: Response matrix (same format as the output
                 from the calc_response_matrix method).
@@ -359,7 +373,7 @@ class UndulatorShimming():
         Args:
             filename (_type_): Name of errors file.
                 File format:
-                    One line for each error, associated to a parameter.
+                    One line for each error, associated with a parameter.
 
         Returns:
             numpy.ndarray: Errors array (same format as the output from
@@ -435,6 +449,10 @@ class UndulatorShimming():
         Source object may be an instance of FieldModel, FieldData, or of any
         class which is derived from them.
 
+        The remaining necessary parameters for trajectory calculation are
+        attributes of the self UndulatorShimming object (beam energy, initial
+        positions, final z position and Runge-Kutta step).
+
         Args:
             obj (FieldModel or FieldData): Field source object for which the
                 the trajectory is calculated.
@@ -457,10 +475,14 @@ class UndulatorShimming():
 
     def _calc_phase_error(self, obj, traj):
         """Calculate the phase error of a trajectory in relation to a
-            sinusoidal field.
+            sinusoidal field object.
         
         Sinusoidal field object may be an instance of InsertionDeviceData,
         InsertionDeviceModel, Cassette, or any class which derived from them.
+
+        The remaining necessary parameters for phase error calculation are
+        attributes of the self UndulatorShimming object (beam energy, minimum
+        and maximun z coordinates and field component switch).
 
         Args:
             obj (InsertionDeviceData, InsertionDeviceModel or Cassette): Object
@@ -486,6 +508,10 @@ class UndulatorShimming():
         
         Source object may be an instance of FieldModel, FieldData, or of any
         class which is derived from them.
+
+        The remaining necessary parameters for field integrals calculation are
+        attributes of the self UndulatorShimming object (minimum and maximun z
+        coordinates and number of z points for sampling).
 
         Args:
             obj (FieldModel or FieldData): Field source object for which the
@@ -519,6 +545,9 @@ class UndulatorShimming():
 
         Source objects may be an instance of FieldModel, FieldData, or of any
         class which is derived from them.
+
+        This method uses the following UndulatorSHimming object attributes:
+            > zmin, zmax, znpts, field_comp, segments_type.
 
         Args:
             obj (FieldModel or FieldData): Field source object whose zeros
@@ -605,6 +634,7 @@ class UndulatorShimming():
         """
         traj = self._calc_traj(obj, xl, yl)
         avgtraj = obj.calc_trajectory_avg_over_period(traj)
+
         px, py = self.fit_trajectory_segments(
             avgtraj, segs, obj.period_length)
 
@@ -654,7 +684,7 @@ class UndulatorShimming():
         return names
 
     def get_shimming_blocks(self, model, cassette):
-        """Get array of blocks from a particular casset of a model based
+        """Get array of blocks from a particular cassete of a model based
             on a type defined by the type_block object attribute.
 
         Model must be an instance of InsertionDeviceModel or of a derivate
@@ -682,10 +712,13 @@ class UndulatorShimming():
         mres = _np.sqrt(mag[:, 0]**2 + mag[:, 2]**2)
         
         if self.block_type == 'v':
+            # absolute value of y component is predominant over mres.
             filt = _np.abs(mag[:, 1]) > mres
         elif self.block_type == 'vpos':
+            # y component (including sign) is predominant over mres.
             filt = mag[:, 1] > mres
         elif self.block_type == 'vneg':
+            # negative y component (including sing) is predominant over mres.
             filt = mag[:, 1]*(-1) > mres
         
         blocks = _np.array(cas.blocks)[filt]
@@ -705,12 +738,13 @@ class UndulatorShimming():
         blocks shimming to a set of optimizable parammeters, which include
         segment slopes and, possibly (if include_pe==True), phase errors.
 
-            (optimized parameters) = (response matrix) @ (shims)
+            (optimizable parameters) = (response matrix) @ (shims)
 
-        Matrix is computed for a specific insertion device model and segment
-        limits list. Blocks considered for shimming are from the cassettes
-        specified at the cassettes object attribute and filtered by the value
-        of the block_type attribute.
+        The matrix is computed for a specific radia insertion device model.
+        > Slopes are determined with respect to given segment limits list.
+        > Blocks considered for shimming are taken from specific cassettes
+          and filtered by a specific block_type, both are inputs at the
+          UndulatorShimming object initizlization.
 
         Model must be an instance of InsertionDeviceModel or of a derivate
         class AND must have non-empty cassettes dictionary.
@@ -729,20 +763,20 @@ class UndulatorShimming():
             filename (str, optional): File name of format name.extension for
                 creating output files. If this argument is given, the following
                 files are created:
-                    name_mx.extension: file in which each line contains the x
-                        slope derivatives for a given block shim.
-                    name_my.extension: file in which each line contains the y
-                        slope derivatives for a given block shim.
-                    name_mpe.extension: file in which each line contains the
-                        phase error derivatives for a given block shim (empty
-                        if include_pe==False).
+                    name_mx.extension: in which each line contains the x slopes
+                        derivatives with respect to shim for a given block.
+                    name_my.extension: in which each line contains the y slopes
+                        derivatives with respect to shim for a given block.
+                    name_mpe.extension: in which each line contains the phase
+                        errors with respect to shim for a given block
+                        (empty if include_pe==False).
                     name.extension: response matrix, in which each line
                         corresponds to an optimized parameter (slopes and, 
-                        possibly, phase errors) and has one numerocal value
-                        (column) for each shimmed block.
+                        possibly, phase errors) and each column corresponds
+                        to a shimmed block.
                 Defaults to None.
-            shim (float, optional): Displacement (shim) value applied to each
-                block (individually) for determining the response matrix.
+            shim (float, optional): Small displacement (shim) value applied to
+                each block (individually) for determining the response matrix.
                 In mm. Defaults to 0.1.
 
         Returns:
@@ -890,7 +924,7 @@ class UndulatorShimming():
                 of a file in which the outputs of this function will also be
                 written. Defaults to None.
                     File format:
-                        One line for each shim.
+                        One line for each shim. 
 
         Returns:
             numpy.ndarray, N: Resulting shims associated to input errors.
@@ -959,7 +993,6 @@ class UndulatorShimming():
         count = 0
         for cassette in self.cassettes:
             blocks = self.get_shimming_blocks(model, cassette)
-
             for idx in range(len(blocks)):
                 blocks[idx].shift([0, (-1)*shims[count], 0])
                 count += 1

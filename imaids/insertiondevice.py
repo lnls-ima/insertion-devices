@@ -113,7 +113,7 @@ class InsertionDeviceModel(
 
     def __init__(
             self, nr_periods=None, period_length=None, gap=None, name=None,
-            init_radia_object=True, **kwargs):
+            init_radia_object=True, trf_on_blocks=False, **kwargs):
         """Insertion device model class.
 
         Args:
@@ -126,6 +126,10 @@ class InsertionDeviceModel(
             name (str, optional): Insertion device name. Defaults to None.
             init_radia_object (bool, optional): If True, create a radia
                 object. Defaults to True.
+            trf_on_blocks (bool, optional): If True, transformations will be
+                applied to blocks when cassettes are positioned. Otherwise,
+                transformations are applied to the cassettes themselves.
+                Defaults to False.
 
         Raises:
             ValueError: Magnetic gap must be bigger than zero.
@@ -140,6 +144,7 @@ class InsertionDeviceModel(
 
         self._cassette_properties = kwargs
         self._cassettes = {}
+        self.trf_on_blocks = trf_on_blocks
         self._radia_object = None
         if init_radia_object:
             self.create_radia_object()

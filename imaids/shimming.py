@@ -37,12 +37,12 @@ class UndulatorShimming():
                 dictionary of the considered insertion device model.
             block_type (str, optional): String specifying which types of blocks
                 will be used for shimming. Available options are:
-                'v' :   Vertical, blocks whose mangetization points mostly to
+                'v' :   Vertical, blocks whose magnetization points mostly to
                         the y direction ("vertical" up or down transversal).
-                'vpos'  Vertical positive, blocks whose mangetization points
+                'vpos'  Vertical positive, blocks whose magnetization points
                         mostly to the positive y direction ("vertical" up
                         transversal)
-                'vneg'  Vertical negative, blocks whose mangetization points
+                'vneg'  Vertical negative, blocks whose magnetization points
                         mostly to the negative y direction ("vertical" down
                         transversal)
                 Defaults to 'v'.
@@ -164,7 +164,7 @@ class UndulatorShimming():
         Returns:
             numpy.ndarray, M x min(M,N): Left matrix in decomposition, u.
             numpy.ndarray, min(M,N): 1d s[i,i] singular values list.
-            numpy.ndarray, min(M,N) x N: Right matrix in decompositsion, v.
+            numpy.ndarray, min(M,N) x N: Right matrix in decomposition, v.
         """
         u, sv, vt = _np.linalg.svd(response_matrix, full_matrices=False)
         return u, sv, vt
@@ -237,11 +237,11 @@ class UndulatorShimming():
                 or dimensionless (trajectory parametrized by its length).
             segs (list, K): Longitudinal positions defining segment limits.
                 Each segment starts at the first trajectory point with z
-                coordinate greater than or equal to an alement in segs
-                (point immediatly after or at segs value).
-                Each segment ends in the trajectory point immeditaly before the
+                coordinate greater than or equal to an element in segs
+                (point immediately after or at segs value).
+                Each segment ends in the trajectory point immediately before the
                 first point of the next segment (except the last segment).
-            max_size (float): Maximun longitudinal length of last segmennt.
+            max_size (float): Maximum longitudinal length of last segment.
                 Such segment ends at the last trajectory point OR at the first
                 trajectory point with z greater than (segs[-1] + max_size),
                 whichever has smaller z.
@@ -251,10 +251,10 @@ class UndulatorShimming():
         Returns:
             numpy.ndarray, Kx2: Nested array of pairs containing the linear
                 and angular coefficients (respectively) of straight lines
-                fitted to X trajectory coordineates of a trajectory segment.
+                fitted to X trajectory coordinates of a trajectory segment.
             numpy.ndarray, Kx2: Nested array analogous to array above, for
                 the Y trajectory coordinates.
-            If full_output == True, aditional outputs are given:
+            If full_output == True, additional outputs are given:
                 numpy.ndarray, Kx3: Array containing [x,y,z] coordinates of
                     the trajectory points at the start of K segments.
                 numpy.ndarray, Kx3: Array containing [x,y,z] coordinates of
@@ -326,7 +326,7 @@ class UndulatorShimming():
         Args:
             filename (str): Name of file containing response matrix.
                 File format:
-                    Lines corresponding to optimizable parammeters (slopes and, 
+                    Lines corresponding to optimizable parameters (slopes and, 
                         possibly, phase errors) and columns corresponding to
                         specific blocks used for shimming.
         Returns:
@@ -367,7 +367,7 @@ class UndulatorShimming():
 
     @staticmethod
     def read_error(filename):
-        """Read errors from file (differencence between optimizable parameters
+        """Read errors from file (difference between optimizable parameters
         for model and measurement).
 
         Args:
@@ -411,11 +411,11 @@ class UndulatorShimming():
                     string '--------'. After header each line corresponds
                     to a (x,y,z) point, and has the format "x y z bx by bz"
                     containing positions in mm and field components in T.
-            nr_periods (int): Number of periods in the insertion divice,
+            nr_periods (int): Number of periods in the insertion device,
                 stored as an attribute in the returned object.
-            period (float): Period length, in mm, of the insertion divice,
+            period (float): Period length, in mm, of the insertion device,
                 stored as an attribute in the returned object.
-            gap (float): Gap, in mm, of the insertion divice, stored as an
+            gap (float): Gap, in mm, of the insertion device, stored as an
                 an attribute in the returned object.
 
         Returns:
@@ -463,7 +463,7 @@ class UndulatorShimming():
 
         Returns:
             numpy.ndarray: Electron trajectory as [x, y, z, x', y', z'] nested
-                list of x,y,z positions in mm and x',y',z' velocieites in rad 
+                list of x,y,z positions in mm and x',y',z' velocities in rad 
                 (dimensionless).
         """
         zl = _np.sqrt(1 - xl**2 - yl**2)

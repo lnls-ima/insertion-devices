@@ -796,8 +796,9 @@ class SinusoidalFieldSource(FieldSource):
         """
         if bx_amp is None or by_amp is None:
             bx_amp, by_amp, _, _ = self.calc_field_amplitude()
-        kh = 0.934*by_amp*(self.period_length/10)
-        kv = 0.934*bx_amp*(self.period_length/10)
+        period = self.period_length*1e-3
+        kh = _utils.calc_deflection_parameter(b_amp=by_amp, period_length=period)
+        kv = _utils.calc_deflection_parameter(b_amp=bx_amp, period_length=period)
         return kh, kv
 
     def calc_trajectory_avg_over_period(self, trajectory):

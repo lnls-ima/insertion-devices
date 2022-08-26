@@ -157,12 +157,20 @@ def calc_beff_vs_gap_fit(gap_over_period, beff, br):
     return opt
 
 
-def undulator_b_to_k(b, period):
-    """Field amplitude to K conversion."""
+def calc_deflection_parameter(b_amp, period_length):
+    """Field amplitude or Effective field to K conversion.
+
+    Args:
+        b_amp (float): Field amplitude or Effective field(Beff)
+        period_length (float): Period length [m]
+
+    Returns:
+        float: deflection parameter
+    """
     ELEMENTARY_CHARGE = 1.60217662e-19  # [C]
     ELECTRON_MASS = 9.10938356e-31  # [Kg]
     LIGHT_SPEED = 299792458  # [m/s]
-    return ELEMENTARY_CHARGE * period * b / (2 * _np.pi * ELECTRON_MASS * LIGHT_SPEED)
+    return ELEMENTARY_CHARGE * period_length * b_amp / (2 * _np.pi * ELECTRON_MASS * LIGHT_SPEED)
 
 
 def hybrid_undulator_pole_length(gap, period_length):

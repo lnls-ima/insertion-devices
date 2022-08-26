@@ -33,10 +33,16 @@ import imaids
 
 
 # Specifying undulator model.
+# With the trf_on_blocks=True argument, transformations are applied to the
+# blocks when setting up the undulator cassette positions. This is important
+# since this script uses the blocks individually, outside the cassettes.
+# trf_on_blocks defaults to False, in which case the transformations would be
+# applied to the cassettes and the bocks would loose them if used individually.
 und = imaids.models.HybridPlanar(nr_periods=10,
                                      period_length=20,
                                      gap=5,
-                                     mr=1.37)
+                                     mr=1.37,
+                                     trf_on_blocks=True)
 
 # For later field calculations.
 z = np.linspace(-1200, 1200, 4801)

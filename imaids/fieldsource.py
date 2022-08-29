@@ -694,6 +694,7 @@ class SinusoidalFieldSource(FieldSource):
 
     def get_effective_field(self, polarization, hmax, x):
         """Calculate effective field amplitude from model.
+
         Args:
             polarization (string): String specifying the polarization of radiation.
                 Available options are:
@@ -702,6 +703,7 @@ class SinusoidalFieldSource(FieldSource):
                 'cp': Circular polarization
             hmax (int): max field harmonic to be considered.
             x (float): horizontal position to calc field [mm]
+
         Returns:
             float : effective field amplitude [T]
             float: first harmonic field amplitude [T]
@@ -716,12 +718,15 @@ class SinusoidalFieldSource(FieldSource):
             b = bvec[:, 0]
         elif polarization in ('hp', 'cp'):
             b = bvec[:, 1]
+        else:
+            raise ValueError("invalid polarization argument")
 
         freq0 = 2*_np.pi/self.period_length
-        hs = _np.array(range(1, hmax+1, 2))
+        hs = _np.arange(1, hmax+1, 2)
         freqs = hs*freq0
-        amps,*_ = _utils.fit_fourier_components(b, freqs, z)
-        beff = _np.sqrt(_np.sum(_np.power(amps/hs, 2)))
+        amps, *_ = _utils.fit_fourier_components(b, freqs, z)
+        amps /= hs
+        beff = _np.sqrt(_np.sum(_np.dot(amps, amps)))
         return beff, amps[0], b
 
     def calc_field_amplitude(
@@ -1168,6 +1173,7 @@ class FieldModel(FieldSource):
             return True
         else:
             return False
+
 
 class FieldData(FieldSource):
 

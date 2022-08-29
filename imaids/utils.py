@@ -149,12 +149,10 @@ def calc_beff_vs_gap_fit(gap_over_period, beff, br):
     a0, b0, c0 = 2, -3, 0
 
     def fit_function(x, a, b, c):
-        return br*a*_np.exp(b*x + c*(x**2))
+        return br*a*_np.exp(b*x + c*(x*x))
 
-    opt = _optimize.curve_fit(
+    return _optimize.curve_fit(
         fit_function, gap_over_period, beff, p0=(a0, b0, c0))[0]
-
-    return opt
 
 
 def calc_deflection_parameter(b_amp, period_length):
@@ -167,10 +165,10 @@ def calc_deflection_parameter(b_amp, period_length):
     Returns:
         float: deflection parameter
     """
-    ELEMENTARY_CHARGE = 1.60217662e-19  # [C]
-    ELECTRON_MASS = 9.10938356e-31  # [Kg]
-    LIGHT_SPEED = 299792458  # [m/s]
-    return ELEMENTARY_CHARGE * period_length * b_amp / (2 * _np.pi * ELECTRON_MASS * LIGHT_SPEED)
+    e = 1.60217662e-19  #Electron charge [C]
+    m = 9.10938356e-31  #Electron mass [Kg]
+    c = 299792458  #Light speed [m/s]
+    return e * period_length * b_amp / (2 * _np.pi * m * c)
 
 
 def hybrid_undulator_pole_length(gap, period_length):
@@ -420,21 +418,16 @@ def mh_tesla_curve(hlist, mlist=None, blist=None, msksi=None):
     not_none = int(sum(x is not None for x in [mlist, blist, msksi]))
 
     if not_none == 1:
-
         mu0_hlist = _np.array(hlist)*VACUUM_PERMEABILITY
-
         if mlist is not None:
             mu0_mlist = _np.array(mlist)*VACUUM_PERMEABILITY
-
         elif blist is not None:
             mu0_mlist = _np.array(blist) - _np.array(hlist)*VACUUM_PERMEABILITY
-        
         elif msksi is not None:
             if depth(msksi) == 2:
                 mu0_mlist = sum(paramag_model(mu0_hlist, *l) for l in msksi)
             else:
                 raise ValueError('msksi has wrong depth (must be 2)')
-
     else:
         raise ValueError('{:d} inputs were given '.format(not_none) + \
             'for calculating magnetization (must use 1)')

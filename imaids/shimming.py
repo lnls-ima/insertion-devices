@@ -13,14 +13,14 @@ class UndulatorShimming():
 
     def __init__(
             self, zmin, zmax, znpts, cassettes,
-            block_type='v', segments_type='half_period', 
+            block_type='v', segments_type='half_period',
             energy=3.0, rkstep=0.5, xpos=0.0, ypos=0.0,
             zmin_pe=None, zmax_pe=None,
             include_pe=False, field_comp=None,
             solved_shim=True, solved_matrix=False):
         """Class used for calculating insertion devices shimming.
 
-        Args:           
+        Args:
             zmin (float): Initial/lower z longitudinal position (in mm) used
                 in the calculation of:
                 > trajectories.
@@ -30,9 +30,9 @@ class UndulatorShimming():
                 in the calculation of:
                 > trajectories.
                 > field integrals.
-                > field zeros at segment limits determination.  
+                > field zeros at segment limits determination.
             znpts (int): Number of sampling points for field integrals.
-            cassettes (list of str): Strings specifying which cassettes will 
+            cassettes (list of str): Strings specifying which cassettes will
                 be used in shimming. The strings must be keys at the cassettes
                 dictionary of the considered insertion device model.
             block_type (str, optional): String specifying which types of blocks
@@ -98,7 +98,7 @@ class UndulatorShimming():
                 'Invalid block_type value. Valid options: "v", "vpos", "vneg"')
 
         if segments_type not in ('period', 'half_period'):
-            raise ValueError('Invalid segments_type value. Valid options: ' + 
+            raise ValueError('Invalid segments_type value. Valid options: ' +
                                                 '"period" or "half_period"')
 
         if zmin_pe is None:
@@ -151,11 +151,11 @@ class UndulatorShimming():
             > u and vt are unitary transformation matrices
             > s is a rectangular diagonal matrix, in which s[i,i]
               are the singular values and s[i,j] == 0 for i != j.
-        
+
         Columns of u and vt are orthonormal basis vector for the spaces
         of the inputs and outputs of the response matrix.
         If M>N (M<N) the last column (line) of u (vt) is excluded in the
-        output. Such column (line) is always multiplied by 0 values in s.  
+        output. Such column (line) is always multiplied by 0 values in s.
 
         Args:
             response_matrix (list, M x N): Input matrix
@@ -200,18 +200,18 @@ class UndulatorShimming():
         """
         if nsv is None:
             nsv = len(sv)
-        
+
         svinv = 1/sv
         svinv[nsv:] = 0
         minv = vt.T*svinv @ u.T
-        return minv 
+        return minv
 
     @staticmethod
     def get_weights_matrix(weights):
         """From a weights vector, get a diagonal matrix.
-        
+
         After input vector is normalized, the square roots of its components
-        are the diagonal elements of the returned matrix. 
+        are the diagonal elements of the returned matrix.
 
         This matrix is used for giving different weights to the different
         optimizable parameters (slopes and, possibly, phase errors).
@@ -259,9 +259,9 @@ class UndulatorShimming():
                     the trajectory points at the start of K segments.
                 numpy.ndarray, Kx3: Array containing [x,y,z] coordinates of
                     the trajectory points at the end of K segments.
-                list, (K+1): List of indices for trajectory points at the 
+                list, (K+1): List of indices for trajectory points at the
                     start of K segments and at the end of the last segment.
-            
+
         """
         trajx = trajectory[:, 0]
         trajy = trajectory[:, 1]
@@ -279,9 +279,9 @@ class UndulatorShimming():
         for pos in segs:
             idx = _np.where(trajz >= pos)[0]
             index_list.append(idx[0])
-        
+
         # Index for ending last segment must be additionally defined.
-        last_index = _np.where(trajz >= segs[-1] + max_size)[0]      
+        last_index = _np.where(trajz >= segs[-1] + max_size)[0]
         if len(last_index) == 0:
             index_list.append(len(trajz)-1)
         else:
@@ -326,7 +326,7 @@ class UndulatorShimming():
         Args:
             filename (str): Name of file containing response matrix.
                 File format:
-                    Lines corresponding to optimizable parameters (slopes and, 
+                    Lines corresponding to optimizable parameters (slopes and,
                         possibly, phase errors) and columns corresponding to
                         specific blocks used for shimming.
         Returns:
@@ -371,7 +371,7 @@ class UndulatorShimming():
         for model and measurement).
 
         Args:
-            filename (_type_): Name of errors file.
+            filename (str): Name of errors file.
                 File format:
                     One line for each error, associated with a parameter.
 
@@ -441,11 +441,11 @@ class UndulatorShimming():
             numpy.ndarray: Array of block names.
         """
         return _np.loadtxt(filename, dtype=str)
-        
+
     def _calc_traj(self, obj, xl, yl):
         """Calculate trajectory of electron with initial transversal velocity
             (xl,yl) passing through a field source object.
-        
+
         Source object may be an instance of FieldModel, FieldData, or of any
         class which is derived from them.
 
@@ -463,7 +463,7 @@ class UndulatorShimming():
 
         Returns:
             numpy.ndarray: Electron trajectory as [x, y, z, x', y', z'] nested
-                list of x,y,z positions in mm and x',y',z' velocities in rad 
+                list of x,y,z positions in mm and x',y',z' velocities in rad
                 (dimensionless).
         """
         zl = _np.sqrt(1 - xl**2 - yl**2)
@@ -476,7 +476,7 @@ class UndulatorShimming():
     def _calc_phase_error(self, obj, traj):
         """Calculate the phase error of a trajectory in relation to a
             sinusoidal field object.
-        
+
         Sinusoidal field object may be an instance of InsertionDeviceData,
         InsertionDeviceModel, Cassette, or any class which derived from them.
 
@@ -489,7 +489,7 @@ class UndulatorShimming():
                 for calculating sinuosidal field. Phase error of the provided
                 trajectory will be caluclated in relation to such field.
             traj (list): Electron trajectory as [x, y, z, x', y', z'] nested
-                list of x,y,z positions in mm and x',y',z' velocieites in rad 
+                list of x,y,z positions in mm and x',y',z' velocieites in rad
                 (dimensionless).
         Returns:
             list: List of poles z positons (in mm).
@@ -505,7 +505,7 @@ class UndulatorShimming():
 
     def _calc_field_integrals(self, obj):
         """Calculate magnetic field integrals from field source object.
-        
+
         Source object may be an instance of FieldModel, FieldData, or of any
         class which is derived from them.
 
@@ -530,7 +530,7 @@ class UndulatorShimming():
     def calc_segments(self, obj, filename=None):
         """Generate longitudinal positions list for defining segment limits
             (see fit_trajectory_segments help for how such list might be used).
-        
+
         The positions are based on the zeros of a field component, which is
         the one with greater amplitude produced by a given field source object
         (or determined by the field_comp object attribute, if it is not None).
@@ -576,7 +576,7 @@ class UndulatorShimming():
 
         if self.segments_type == 'period':
             segs = spos[::2]
-        
+
         elif self.segments_type == 'half_period':
             segs = spos
 
@@ -584,7 +584,7 @@ class UndulatorShimming():
             segs, 0, segs[0] - obj.period_length)
         segs = _np.insert(
             segs, -1, segs[-1] + obj.period_length)
-        
+
         segs = sorted(segs)
 
         if filename is not None:
@@ -595,13 +595,13 @@ class UndulatorShimming():
     def calc_slope_and_phase_error(self, obj, segs, xl, yl, filename=None):
         """Returns slopes of linear fits performed on segments of an averaged
         trajectory (1 period moving average).
-        
+
         The trajectory is calculated for an electron with initial transversal
         velocity (xl,yl) passing through a sinusoidal field object. The object
         also provides the period used for trajectory averaging and for defining
         the maximun length of last segmennt.
         Sinusoidal field object may be an instance of InsertionDeviceData,
-        InsertionDeviceModel, Cassette, or any class which derived from them.        
+        InsertionDeviceModel, Cassette, or any class which derived from them.
 
         Args:
             obj (InsertionDeviceData, InsertionDeviceModel or Cassette): Object
@@ -641,7 +641,7 @@ class UndulatorShimming():
         sx = px[:, 1]
         sy = py[:, 1]
 
-        if self.include_pe:    
+        if self.include_pe:
             _, pe, _ = self._calc_phase_error(obj, traj)
             data = _np.concatenate([sx, sy, pe])
         else:
@@ -710,7 +710,7 @@ class UndulatorShimming():
         mag = _np.array(cas.magnetization_list)
         # Total magnetization outside y (tranversal 'vertical') direction:
         mres = _np.sqrt(mag[:, 0]**2 + mag[:, 2]**2)
-        
+
         if self.block_type == 'v':
             # absolute value of y component is predominant over mres.
             filt = _np.abs(mag[:, 1]) > mres
@@ -720,7 +720,7 @@ class UndulatorShimming():
         elif self.block_type == 'vneg':
             # negative y component (including sing) is predominant over mres.
             filt = mag[:, 1]*(-1) > mres
-        
+
         blocks = _np.array(cas.blocks)[filt]
 
         # Use block length to check wether it is a termination block.
@@ -729,7 +729,7 @@ class UndulatorShimming():
         for block in blocks:
             if block.length > (1 - tol)*model.period_length/4:
                 regular_blocks.append(block)
-        
+
         return regular_blocks
 
     def calc_response_matrix(
@@ -771,7 +771,7 @@ class UndulatorShimming():
                         errors with respect to shim for a given block
                         (empty if include_pe==False).
                     name.extension: response matrix, in which each line
-                        corresponds to an optimized parameter (slopes and, 
+                        corresponds to an optimized parameter (slopes and,
                         possibly, phase errors) and each column corresponds
                         to a shimmed block.
                 Defaults to None.
@@ -806,7 +806,7 @@ class UndulatorShimming():
 
             for idx in range(len(blocks)):
                 blocks[idx].shift([0, shim, 0])
-                
+
                 if self.solved_matrix:
                     model.solve()
                 sx, sy, pe = self.calc_slope_and_phase_error(
@@ -841,12 +841,12 @@ class UndulatorShimming():
         mx = _np.array(mx)
         my = _np.array(my)
         mpe = _np.array(mpe)
-        
+
         if self.include_pe:
             response_matrix = _np.transpose(_np.concatenate([mx, my, mpe], axis=1))
         else:
             response_matrix = _np.transpose(_np.concatenate([mx, my], axis=1))
-        
+
         if filename is not None:
             _np.savetxt(filename, response_matrix)
 
@@ -879,7 +879,7 @@ class UndulatorShimming():
                 written. Defaults to None.
                     File format:
                         One line for each error, associated to a parameter.
-                        
+
         Returns:
             numpy.ndarray: Array (1d) containing the errors, one for each
                 optimizable parameter.
@@ -911,7 +911,7 @@ class UndulatorShimming():
 
         Args:
             response_matrix (numpy.ndarray, MxN): Response matrix for M
-                optimizable parameters by N shims.            
+                optimizable parameters by N shims.
             error (numpy.ndarray, M): Error array associated to optimizable
                 parameters for shimming.
             nsv (int, optional): Number of singular values to be considered.
@@ -924,7 +924,7 @@ class UndulatorShimming():
                 of a file in which the outputs of this function will also be
                 written. Defaults to None.
                     File format:
-                        One line for each shim. 
+                        One line for each shim.
 
         Returns:
             numpy.ndarray, N: Resulting shims associated to input errors.
@@ -976,7 +976,7 @@ class UndulatorShimming():
         """
         zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
         field0 = model.get_field(z=zpos)
-        
+
         count = 0
         for cassette in self.cassettes:
             blocks = self.get_shimming_blocks(model, cassette)
@@ -1066,37 +1066,38 @@ class UndulatorShimming():
                 filename, self.xpos, self.ypos, zpos)
 
         return shimmed_meas
-    
+
     def calc_results(self, objs, labels, xls=None, yls=None, filename=None):
-        """Compile results (given arguments) in a nested dictionary. Each
-        dictionary in the results dictionary corresponds to an object.
+        """Recieves a list of objects, calculates various for them (see Returns
+            section), and compiles the results in a nested dictionary.
+            Dictionary entries are keyed by the labels argument. Entries are
+            dictionaries themselves, compiling the results for the objects.
 
         Objects may be of the types InsertionDeviceData, InsertionDeviceModel,
-            Cassette, or any class which derived from them.
+            Cassette, or any class which is derived from them.
 
         Args:
-            objs (list): List of objects (se description above) for which
+            objs (list): List of objects (see description above) for which
                 data will be stored in the returned dicionary.
-            labels (str): Object labels used as keys for the nested results
-                dictionary (each label is a key for the dictionary containing
-                data of an object).
+            labels (str): List of keys for the nested result dictionaries (one
+                label for each object)
             xls (list of floats, optional): Transversal x positions for
                 calculating trajectories for each object. If None, will be
-                set to =0 for every object. Defaults to None.
+                set to [0]*len(objs). Defaults to None.
             yls (list of floats, optional): Transversal y positions for
                 calculating trajectories for each object. If None, will be
-                set to =0 for every object. Defaults to None.
-            filename (str, optional): If provided, resulta dictionary will
-                be saved in a file with name filename in json format.
+                set to [0]*len(objs). Defaults to None.
+            filename (str, optional): If provided, results dictionary will
+                be saved in a file with this name in json format.
                 File format:
-                    JSON format containing dictionary of objects dictionaries
-                    with keys given by labels. Data in each dictionary in
-                    Returns section bellow.
+                    JSON format containing dictionary of object dictionaries
+                    with keys given by labels. Data in each dictionary is
+                    described in Returns section bellow.
 
         Returns:
             dict: Nested dictionary containing one dictionary per object,
                 each object dictionary contains the following data:
-                For trajectory:                
+                Trajectory:
                     'trajx' - x position (list, in micron)
                     'trajy' - y position (list, in micron)
                     'trajz' - z position (list, in mm)
@@ -1144,7 +1145,7 @@ class UndulatorShimming():
             r['iiby'] = list(iib[:, 1])
             r['iibz'] = list(iib[:, 2])
             results[label] = r
-    
+
         if filename is not None:
             with open(filename, '+w') as f:
                 _json.dump(results, f)
@@ -1178,7 +1179,7 @@ class UndulatorShimming():
             ncols=2, nrows=2,
             wspace=0.25, hspace=0.25,
             left=0.1, right=0.95, top=0.95, bottom=0.15)
-        fig = _plt.figure()
+        fig = _plt.figure(figsize=(12,6))
         ax0 = fig.add_subplot(spec[0, 0])
         ax1 = fig.add_subplot(spec[0, 1])
         ax2 = fig.add_subplot(spec[1, 0])
@@ -1258,4 +1259,3 @@ class UndulatorShimming():
             _plt.savefig(filename, dpi=400)
 
 
-    

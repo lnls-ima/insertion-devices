@@ -5,7 +5,9 @@ from scipy import optimize as _optimize
 import radia as _rad
 
 
-mu0 = 4*_np.pi*1e-7
+# NOTE: package lnls-sirius/mathphys could be used to defined these consts
+
+VACUUM_PERMEABILITY = 1.25663706212e-6  # [V.s/A/m]
 
 
 def set_len_tol(absolute=1e-12, relative=1e-12):
@@ -131,6 +133,44 @@ def cosine_function(z, bamp, freq, phase):
     return bamp*_np.cos(freq*z + phase)
 
 
+def calc_beff_vs_gap_fit(gap_over_period, beff, br):
+    """Return fitted B(Gap/period) exponential curve parameters.
+
+    Args:
+        gap_over_period (numpy 1darray): Values of gap/period in which we have data
+             for the effective field.
+        beff (numpy 1darray): Effective field data (For each value of gap/period there
+            is a correspondent value of effective field)
+        br (float): Remnant magnetization
+    
+    Returns:
+        opt (list, 3): List with the values of the curve parameters
+    """
+    a0, b0, c0 = 2, -3, 0
+
+    def fit_function(x, a, b, c):
+        return br*a*_np.exp(b*x + c*(x*x))
+
+    return _optimize.curve_fit(
+        fit_function, gap_over_period, beff, p0=(a0, b0, c0))[0]
+
+
+def calc_deflection_parameter(b_amp, period_length):
+    """Field amplitude or Effective field to K conversion.
+
+    Args:
+        b_amp (float): Field amplitude or Effective field(Beff)
+        period_length (float): Period length [m]
+
+    Returns:
+        float: deflection parameter
+    """
+    e = 1.60217662e-19  #Electron charge [C]
+    m = 9.10938356e-31  #Electron mass [Kg]
+    c = 299792458  #Light speed [m/s]
+    return e * period_length * b_amp / (2 * _np.pi * m * c)
+
+
 def hybrid_undulator_pole_length(gap, period_length):
     """Hybrid undulator optmized pole thickness.
 
@@ -149,10 +189,7 @@ def hybrid_undulator_pole_length(gap, period_length):
         float: Optmized pole thickness resulting from the applyed model
             (lenght units, same as used for inputs, ex: mm).
     """
-    a = 5.939
-    b = -11.883
-    c = 16.354
-    d = -8.55
+    a, b, c, d = 5.939, -11.883, 16.354, -8.55
     gp = gap/period_length
     pole_length = gap*a*_np.exp(b*gp + c*(gp**2) + d*(gp**3))
     return pole_length
@@ -375,27 +412,22 @@ def mh_tesla_curve(hlist, mlist=None, blist=None, msksi=None):
 
     Returns:
         numpy.ndarray: H field values for MxH curve, in T (M*mu0).
-        numpy.ndarray: Magnetization values for MxH curve, in T (M*mu0).    
+        numpy.ndarray: Magnetization values for MxH curve, in T (M*mu0).
     """
     
     not_none = int(sum(x is not None for x in [mlist, blist, msksi]))
 
     if not_none == 1:
-
-        mu0_hlist = _np.array(hlist)*mu0
-
+        mu0_hlist = _np.array(hlist)*VACUUM_PERMEABILITY
         if mlist is not None:
-            mu0_mlist = _np.array(mlist)*mu0
-
+            mu0_mlist = _np.array(mlist)*VACUUM_PERMEABILITY
         elif blist is not None:
-            mu0_mlist = _np.array(blist) - _np.array(hlist)*mu0
-        
+            mu0_mlist = _np.array(blist) - _np.array(hlist)*VACUUM_PERMEABILITY
         elif msksi is not None:
             if depth(msksi) == 2:
                 mu0_mlist = sum(paramag_model(mu0_hlist, *l) for l in msksi)
             else:
                 raise ValueError('msksi has wrong depth (must be 2)')
-
     else:
         raise ValueError('{:d} inputs were given '.format(not_none) + \
             'for calculating magnetization (must use 1)')
@@ -508,6 +540,7 @@ def rotation_matrix(axis, theta):
         ])
     return matrix
 
+
 def random_direction():
     """Returns a unit vector pointing to a random direction.
 
@@ -520,6 +553,7 @@ def random_direction():
     y = _np.sqrt(1-u*u)*_np.sin(2*_np.pi*v)
     z = u
     return([x,y,z])
+
 
 def find_peaks(data, prominence=0.05):
     """Find the indices of peaks in data list.

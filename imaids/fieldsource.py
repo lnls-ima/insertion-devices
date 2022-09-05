@@ -693,6 +693,43 @@ class SinusoidalFieldSource(FieldSource):
         nr_periods = int(len(dz)/2)
         return avg_period_length, nr_periods
 
+    def get_effective_field(self, polarization, hmax, x):
+        """Calculate effective field amplitude from model.
+
+        Args:
+            polarization (string): String specifying the polarization of radiation.
+                Available options are:
+                'hp': Horizontal polarization
+                'vp': Vertical polarization
+                'cp': Circular polarization
+            hmax (int): max field harmonic to be considered.
+            x (float): horizontal position to calc field [mm]
+
+        Returns:
+            float : effective field amplitude [T]
+            float: first harmonic field amplitude [T]
+            numpy.ndarray: field along longitudinal positions [T]
+        """
+        zmin = -2*self.period_length
+        zmax = 2*self.period_length
+        npts = 201
+        z = _np.linspace(zmin, zmax, npts)
+        bvec = self.get_field(x=x,z=z)
+        if polarization == 'vp':
+            b = bvec[:, 0]
+        elif polarization in ('hp', 'cp'):
+            b = bvec[:, 1]
+        else:
+            raise ValueError("invalid polarization argument")
+
+        freq0 = 2*_np.pi/self.period_length
+        hs = _np.arange(1, hmax+1, 2)
+        freqs = hs*freq0
+        amps, *_ = _utils.fit_fourier_components(b, freqs, z)
+        amps /= hs
+        beff = _np.sqrt(_np.sum(_np.dot(amps, amps)))
+        return beff, amps[0], b
+
     def calc_field_amplitude(
             self, z_list=None, field_list=None,
             x=0, y=0, npts_per_period=101, maxfev=10000):
@@ -765,8 +802,9 @@ class SinusoidalFieldSource(FieldSource):
         """
         if bx_amp is None or by_amp is None:
             bx_amp, by_amp, _, _ = self.calc_field_amplitude()
-        kh = 0.934*by_amp*(self.period_length/10)
-        kv = 0.934*bx_amp*(self.period_length/10)
+        period = self.period_length*1e-3
+        kh = _utils.calc_deflection_parameter(b_amp=by_amp, period_length=period)
+        kv = _utils.calc_deflection_parameter(b_amp=bx_amp, period_length=period)
         return kh, kv
 
     def calc_trajectory_avg_over_period(self, trajectory):
@@ -1136,6 +1174,7 @@ class FieldModel(FieldSource):
             return True
         else:
             return False
+
 
 class FieldData(FieldSource):
 

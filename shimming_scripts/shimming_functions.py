@@ -189,6 +189,8 @@ def get_trajectory_params(nr_periods):
         params['znpts'] = 901
         params['x'] = 0
         params['y'] = 0
+    else:
+        raise ValueError('Number of periods must be either 3, 9 or 21')
     return params
 
 
@@ -203,6 +205,8 @@ def get_phase_error_params(nr_periods):
     elif nr_periods == 21:
         params['zmin'] = -530
         params['zmax'] = 550
+    else:
+        raise ValueError('Number of periods must be either 3, 9 or 21')
     return params
 
 

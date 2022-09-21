@@ -1154,7 +1154,7 @@ class UndulatorShimming():
     def plot_results(
             self, results, table_fontsize=12,
             table_decimals=1, filename=None, suptitle=None,
-            trajx_lim=None, trajy_lim=None, pe_lim=None):
+            trajx_lim=None, trajy_lim=None, pe_lim=None, figsize=(12,6)):
         """Generate figure from results dictionary.
 
         Args:
@@ -1179,7 +1179,7 @@ class UndulatorShimming():
             ncols=2, nrows=2,
             wspace=0.25, hspace=0.25,
             left=0.1, right=0.95, top=0.95, bottom=0.15)
-        fig = _plt.figure(figsize=(12,6))
+        fig = _plt.figure(figsize=figsize)
         ax0 = fig.add_subplot(spec[0, 0])
         ax1 = fig.add_subplot(spec[0, 1])
         ax2 = fig.add_subplot(spec[1, 0])

@@ -423,8 +423,8 @@ class Cassette(
 
     @property
     def magnetization_list(self):
-        """List of magnetization vectors READ FROM RADIA OBJECTS [T].
-            
+        """List of magnetization vectors attributes from blocks.
+
         This getter method will return the current magnetizations of the
         blocks, regardless of how they were set (including start and
         end blocks).

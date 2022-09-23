@@ -624,7 +624,8 @@ class Cassette(
         magnetization_list = magnetization_list.tolist()
 
         if self.hybrid:
-            mag0 = magnetization_list[0]
+            # Magnetization of first core object.
+            mag0 = magnetization_list[self.nr_start_blocks]
             # Check if first block has (mx,my,mz) with |my|>|mz|
             # to determine wether it is a core block or pole.
             if _np.abs(mag0[1]) > _np.abs(mag0[2]):

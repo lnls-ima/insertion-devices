@@ -1536,10 +1536,10 @@ class Kyma22(APU):
 
         block_len = period_length/4 - longitudinal_distance
         lenghts = [
-            block_len/2, 0, block_len, block_len/2,
+            block_len/2, block_len, block_len/2,
             block_len, block_len]
         distances = [
-            block_len/4, 0, block_len/4, block_len/4,
+            block_len/4, block_len/4, block_len/4,
             longitudinal_distance, longitudinal_distance]
 
         if start_blocks_length == 'default':
@@ -1622,10 +1622,10 @@ class Kyma58(APU):
 
         block_len = period_length/4 - longitudinal_distance
         lenghts = [
-            block_len/2, 0, block_len, block_len/2,
+            block_len/2, block_len, block_len/2,
             block_len, block_len]
         distances = [
-            block_len/4, 0, block_len/4, block_len/4,
+            block_len/4, block_len/4, block_len/4,
             longitudinal_distance, longitudinal_distance]
 
         if start_blocks_length == 'default':
@@ -1737,8 +1737,8 @@ class HybridAPU(APU):
         block_len = (
             period_length/2 - pole_length - 2*longitudinal_distance)
 
-        lenghts = [0, block_len/2, pole_length/2, block_len]
-        distances = [0, pole_length, pole_length, longitudinal_distance]
+        lenghts = [block_len/2, pole_length/2, block_len]
+        distances = [pole_length, pole_length, longitudinal_distance]
 
         if start_blocks_length == 'default':
             start_blocks_length = lenghts
@@ -1854,8 +1854,8 @@ class HybridPlanar(Planar):
         block_len = (
             period_length/2 - pole_length - 2*longitudinal_distance)
 
-        lenghts = [0, block_len/2, pole_length/2, block_len]
-        distances = [0, pole_length, pole_length, longitudinal_distance]
+        lenghts = [block_len/2, pole_length/2, block_len]
+        distances = [pole_length, pole_length, longitudinal_distance]
 
         if start_blocks_length == 'default':
             start_blocks_length = lenghts

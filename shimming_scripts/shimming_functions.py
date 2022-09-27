@@ -26,11 +26,16 @@ def group_block_names(names, subcassettes):
     """Returns list of group names based on lists of names and subcassettes.
 
     Args:
-        names (_type_): _description_
-        subcassettes (_type_): _description_
+        names (list of str): Block names/labels, in which first two characters
+            represent a block type.
+        subcassettes (list of str): Subcassette labels list.
 
     Returns:
-        _type_: _description_
+        list of str: List of block names, to which cassette names were
+            prepended (<cassette>_<block>).
+            If there are two consecutive blocks in the input names list which
+            are of the same type, both labels are grouped in a single label
+            (<cassette>_<block>_<block of the same type>).
     """
     group_names = []
     prev_btype = None
@@ -52,10 +57,13 @@ def get_block_names_and_shims(filename):
     """Create blocks shimming info dictionaries from .xls file.
 
     Args:
-        filename (_type_): _description_
+        filename (str): .xls file path.
 
     Returns:
-        _type_: _description_
+        dict: dictionary containing block names grouped by subcassette,
+            as 4 lists of names keyed by 'CID', 'CIE', 'CSD' and 'CSE'.
+        dict: dictionary containing block shims grouped by subcassette,
+            as 4 lists of shims keyed by 'CID', 'CIE', 'CSD' and 'CSE'.
     """
     cid_df = pd.read_excel(filename, sheet_name='CID', header=0)
     cie_df = pd.read_excel(filename, sheet_name='CIE', header=0)
@@ -305,15 +313,31 @@ def get_phase_error_params(nr_periods):
 def load_measurement(nr_periods, polarization, kstr, zshift=0, add_label=None):
     """Create insertion device data object from data files.
 
+    Measurement file name is not given as a function input, but is determined
+    from polarization, kstr and add_label by a ShimmingFiles object (thus,
+    following such object's naming scheme).
+
     Args:
-        nr_periods (_type_): _description_
-        polarization (_type_): _description_
-        kstr (_type_): _description_
-        zshift (int, optional): _description_. Defaults to 0.
-        add_label (_type_, optional): _description_. Defaults to None.
+        nr_periods (str): undulator number of periods.
+        polarization (str): polarization identifier string.
+            Available options are:
+            'hp': Horizontal polarization
+            'vp': Vertical polarization
+            'cp': Circular polarization
+        kstr (str): deflection parameter identifier string.
+            Available options are:
+            'k0': zero deflection parameter.
+            'kmed': intermediate deflection parameter.
+            'kmax': maximum deflection parameter.
+        add_label (str, optional): optional additional label passed to filename
+            determination (appended to name like _<add_label>).
+            Defaults to None.
+        zshift (float, optional): z shift optionally applied to
+            InsertionDeviceData object. Defaults to 0.
 
     Returns:
-        _type_: _description_
+        imaids.InsertionDeviceData: insertion device data object created
+            from file whose name is determined by input parameters.
     """
     period = 52.5
     gap = 13.6
@@ -332,16 +356,34 @@ def load_model(
         remove_subdivision=False):
     """Create insertion device model object from data files.
 
+    Model file name is not given as a function input, but is determined from
+    from polarization, kstr, solve, with_errors and remove_subdivision by a
+    ShimmingFiles object method (thus, following such object's naming scheme).
+
     Args:
-        nr_periods (_type_): _description_
-        polarization (_type_): _description_
-        kstr (_type_): _description_
-        solve (bool, optional): _description_. Defaults to True.
-        with_errors (bool, optional): _description_. Defaults to False.
-        remove_subdivision (bool, optional): _description_. Defaults to False.
+        nr_periods (str): undulator number of periods.
+        polarization (str): polarization identifier string.
+            Available options are:
+            'hp': Horizontal polarization
+            'vp': Vertical polarization
+            'cp': Circular polarization
+        kstr (str): deflection parameter identifier string.
+            Available options are:
+            'k0': zero deflection parameter.
+            'kmed': intermediate deflection parameter.
+            'kmax': maximum deflection parameter.
+        solve (bool, optional): Boolean value determining a solve behavior,
+            passed to filename determination method. Defaults to True.
+        with_errors (bool, optional): Boolean value determining wether errors
+            are introduced to model, passed to filename determination
+            method. Defaults to False.
+        remove_subdivision (bool, optional): Boolean value determining wether
+            subdivisions are removed from the model, passed to filename
+            determination method. Defaults to False.
 
     Returns:
-        _type_: _description_
+        imaids.DeltaSabia: Delta Sabia insertion device model object created
+            from file whose name is determined by input parameters.
     """
     filename_model = FILES.get_filename_model(
         with_errors=with_errors,
@@ -531,7 +573,7 @@ def calc_kicks(nr_periods, obj, dz=0):
     Args:
         nr_periods (int): number of periods for determining trajectory
             calculation parameters (using get_trajectory_params function).
-        obj (FieldSource): field source object for calculating trajectory, 
+        obj (FieldSource): field source object for calculating trajectory,
             typically an undulator.
         dz (float, optional): optional shift maximum z. This value is
             subtracted from get_trajectory_params(nr_periods)['zmax'].
@@ -714,7 +756,7 @@ def run_plot_field_integrals_profile():
         Calculations are made for horizontal, vertical and circular
             polarizations ('hp', 'vp', 'cp') and k=0, k=kmax and k=kmed
             deflection parameters ('kmax', 'kmed' and 'k0').
-        Performed compinations are:
+        Performed combinations are:
          'hp_kmax', 'hp_kmed', 'hp_k0',
          'vp_kmax', 'vp_kmed',
          'cp_kmax', 'cp_kmed',
@@ -785,7 +827,7 @@ def run_plot_field_integrals_profile():
 
 
 def run_save_model_fieldmap():
-    """Calculate field map for DeltaSabia model in a speficic polarization and
+    """Calculate field map for DeltaSabia model in a specific polarization and
         deflection parameter configuration and save result to file.
     """
     nr_periods = 21
@@ -1006,7 +1048,7 @@ def run_apply_shimming():
         include_pe= include_pe,
         polarization=polarization,
         kstr=kstr)
-    response_matrix = sh.read_response_matrix(filename_matrix)    
+    response_matrix = sh.read_response_matrix(filename_matrix)
     print('response matrix loaded')
 
     filename_segs = FILES.get_filename_segs(
@@ -1111,7 +1153,6 @@ def run_plot_shims():
         'cp_kmax',
         'cp_kmed',
     ]
-
     shims_all = []
     fmt = '-'
 
@@ -1471,8 +1512,8 @@ def run_plot_shims_results():
 
 
 def run_calc_ff_matrix():
-    """Calculate response matrix relating x' and y' kicks to variations on
-        the final x, y, x', y' trajectory coordinates and saves it to file.
+    """Calculate response matrix relating initial x' and y' kicks to variations
+        on the final x, y, x', y' trajectory coordinates and saves it to file.
 
     Raises:
         Exception: If there already is a matrix with the name corresponding
@@ -1761,7 +1802,14 @@ def run_add_column_to_excel():
 
 
 def run_group_shims():
-    """_summary_
+    """Read shims from file and approximate the set of shims to a new,
+        simpler, set of shims. This is done by the steps:
+            > If one shim in a pair of consecutive shims is very small,
+              such small shim is set to zero and the other shim of the pair
+              is set to the difference between its original value and the
+              almost-zero shims.
+            > If both shims are very close to each other, both shims
+              are then set to zero.
     """
     dirname = 'delta_sabia_shimming_a'
     avg = False
@@ -1921,7 +1969,7 @@ def run_plot_meas_results():
 
 
 def run_compare_model_meas():
-    """Generate plot for comparing model and measured field."""
+    """Generate a plot for comparing model and measured field."""
     nr_periods = 21
     polarization = 'vp'
     kstr = 'kmed'
@@ -2035,4 +2083,3 @@ run_plot_meas_results()
 
 print('end')
 print(time.time() - t0)
-

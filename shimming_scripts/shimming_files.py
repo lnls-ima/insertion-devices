@@ -2,7 +2,13 @@ import os as _os
 
 
 class ShimmingFiles():
-    """_summary_
+    """This class contains methods for creating and managing a specific file
+        structure for shimming data. The files are stored in folders for
+        experimental data, models, shimming files and results.
+        A naming scheme composed of model parameters (error addition and
+        subdivision removal), measurement parameters (polarization,
+        and deflection parameter) and shimming parameters (average and/or
+        rounded results).
     """
 
     def __init__(self, label, root=None):
@@ -158,7 +164,7 @@ class ShimmingFiles():
         """Creates base folder structure for shimming data. The parent folder
             is given by the path stored in self.dir.
 
-        dir/    # given by self.dir
+        dir/    (given by self.dir)
         |
         |-- undulator_data/
         |-- measurements/
@@ -217,7 +223,7 @@ class ShimmingFiles():
             and 'add_label' (additional suffix label separated by '_').
 
         Returns:
-            str: path to fieldmap file inside models folder.
+            str: path to field map file inside models folder.
         """
         with_errors = kwargs.get('with_errors')
         remove_subdivision = kwargs.get('remove_subdivision')
@@ -495,4 +501,3 @@ class ShimmingFiles():
         name += ext
 
         return _os.path.join(self.dir_measurements, name)
-

@@ -14,6 +14,7 @@ FILES = ShimmingFiles(label='21periods_shimmingB')
 
 
 def configure_plot():
+    """Configure standard values for Matplotlib rcParams."""
     plt.rcParams['figure.figsize'] = [18, 8]
     plt.rcParams['font.size'] = 14
     plt.rcParams['legend.fontsize'] = 12
@@ -22,23 +23,48 @@ def configure_plot():
 
 
 def group_block_names(names, subcassettes):
+    """Returns list of group names based on lists of names and subcassettes.
+
+    Args:
+        names (list of str): Block names/labels, in which first two characters
+            represent a block type.
+        subcassettes (list of str): Subcassette labels list.
+
+    Returns:
+        list of str: List of block names, to which cassette names were
+            prepended (<cassette>_<block>).
+            If there are two consecutive blocks in the input names list which
+            are of the same type, both labels are grouped in a single label
+            (<cassette>_<block>_<block of the same type>).
+    """
     group_names = []
     prev_btype = None
-    
+
     for nm, sc in zip(names, subcassettes):
         btype = nm[:2]
-                
+
         if prev_btype is not None and btype == prev_btype:
             group_names[-1] += '-' + nm
         else:
             group_names.append(sc + '_' + nm)
-        
+
         prev_btype = btype
 
     return group_names
 
 
 def get_block_names_and_shims(filename):
+    """Create blocks shimming info dictionaries from .xls file.
+
+    Args:
+        filename (str): .xls file path.
+
+    Returns:
+        dict: dictionary containing block names grouped by subcassette,
+            as 4 lists of names keyed by 'CID', 'CIE', 'CSD' and 'CSE'.
+        dict: dictionary containing block shims grouped by subcassette,
+            as 4 lists of shims keyed by 'CID', 'CIE', 'CSD' and 'CSE'.
+    """
     cid_df = pd.read_excel(filename, sheet_name='CID', header=0)
     cie_df = pd.read_excel(filename, sheet_name='CIE', header=0)
     csd_df = pd.read_excel(filename, sheet_name='CSD', header=0)
@@ -75,11 +101,33 @@ def get_block_names_and_shims(filename):
         'csd': csd_shims,
         'cse': cse_shims,
     }
-    
+
     return block_names_dict, block_shims_dict
 
 
 def configure_model(model, polarization, kstr, solve=True):
+    """Move Delta undulator to a given state and execute solve.
+
+    Args:
+        model (Delta): insertion device model object, instance of the Delta
+            class or any of its subcassettes.
+        polarization (str): undulator polarization state.
+            Available options are:
+            'hp': Horizontal polarization
+            'vp': Vertical polarization
+            'cp': Circular polarization
+        kstr (str): deflection parameter (K) state.
+        Available options are:
+            'k0': Minimum, zero, K.
+            'kmax': State with maximum K.
+            'kmed': Intermediate cassettes position between 'k0' and 'kmax'.
+        solve (bool, optional): Boolean value determining wether the solve()
+            method will be executed after undulator state is set.
+            Defaults to True.
+
+    Returns:
+        bool: True
+    """
     if polarization == 'hp':
         dp = 0
     elif polarization == 'cp':
@@ -104,6 +152,33 @@ def configure_model(model, polarization, kstr, solve=True):
 
 def create_model(
         nr_periods, add_errors=False, remove_subdivision=False):
+    """Returns a standard DeltaSabia undulator model with options for
+        introducing errors and removing block subdivisions.
+
+        If chosen to be included, all the following errors are introduced:
+            > period error: 0.2 mm added to 52.5 mm period.
+            > magnetization amplitude error: equal to 2%, meaning modulus of
+                magnetization between 98% and 102% of the nominal value.
+            > magnetization angle error: equal to 2pi/180 rad ~ 34.9 mrad,
+                meaning the maximum angle by which the ideal magnetization
+                direction will be rotated around a random direction.
+            > position errors: random translations applied to x, y
+                (transversal directions) and z (longitudinal directions)
+                with maximum amplitudes of 0.1 mm, 0.1 mm and 0.05 mm,
+                respectively.
+        The errors are applied both to core and termination blocks.
+
+    Args:
+        nr_periods (int): number of periods. All other undulator properties
+            are set to the default DeltaSabia values.
+        add_errors (bool, optional): If True, position and magnetization errors
+            are applied on the device (see above). Defaults to False.
+        remove_subdivision (bool, optional): If True, device object will be
+            created without block subdivisions. Defaults to False.
+
+    Returns:
+        DeltaSabia: undulator object.
+    """
     block_names_dict, _ = get_block_names_and_shims(
         FILES.get_filename_undulator_data())
 
@@ -126,7 +201,7 @@ def create_model(
         verr = 0
         lerr = 0
         term_err = False
-        core_err = False 
+        core_err = False
 
     if remove_subdivision:
         model = models.DeltaSabia(
@@ -168,6 +243,19 @@ def create_model(
 
 
 def get_trajectory_params(nr_periods):
+    """Returns trajectory calculation parameters depending on nr_points.
+
+    Args:
+        nr_periods (int): number of periods, must be either 3, 9 or 12.
+
+    Raises:
+        ValueError: If nr_periods is not 3, 9 or 12.
+
+    Returns:
+        dict: dictionary containing minimum and maximum values of z, number
+            of z points, x and y positions, keyed respectively by 'zmin',
+            'zmax', 'znpts', 'x', and 'y'.
+    """
     params = {}
     params['energy'] = 3
     params['rkstep'] = 1
@@ -189,10 +277,24 @@ def get_trajectory_params(nr_periods):
         params['znpts'] = 901
         params['x'] = 0
         params['y'] = 0
+    else:
+        raise ValueError('Number of periods must be either 3, 9 or 21')
     return params
 
 
 def get_phase_error_params(nr_periods):
+    """Returns phase error calculation parameters depending on nr_points.
+
+    Args:
+        nr_periods (int): number of periods, must be either 3, 9 or 12.
+
+    Raises:
+        ValueError: If nr_periods is not 3, 9 or 12.
+
+    Returns:
+        dict: dictionary containing minimum and maximum values of z keyed
+            respectively by 'zmin' and 'zmax'.
+    """
     params = {}
     if nr_periods == 3:
         params['zmin'] = -50
@@ -203,10 +305,40 @@ def get_phase_error_params(nr_periods):
     elif nr_periods == 21:
         params['zmin'] = -530
         params['zmax'] = 550
+    else:
+        raise ValueError('Number of periods must be either 3, 9 or 21')
     return params
 
 
 def load_measurement(nr_periods, polarization, kstr, zshift=0, add_label=None):
+    """Create insertion device data object from data files.
+
+    Measurement file name is not given as a function input, but is determined
+    from polarization, kstr and add_label by a ShimmingFiles object (thus,
+    following such object's naming scheme).
+
+    Args:
+        nr_periods (str): undulator number of periods.
+        polarization (str): polarization identifier string.
+            Available options are:
+            'hp': Horizontal polarization
+            'vp': Vertical polarization
+            'cp': Circular polarization
+        kstr (str): deflection parameter identifier string.
+            Available options are:
+            'k0': zero deflection parameter.
+            'kmed': intermediate deflection parameter.
+            'kmax': maximum deflection parameter.
+        add_label (str, optional): optional additional label passed to filename
+            determination (appended to name like _<add_label>).
+            Defaults to None.
+        zshift (float, optional): z shift optionally applied to
+            InsertionDeviceData object. Defaults to 0.
+
+    Returns:
+        imaids.InsertionDeviceData: insertion device data object created
+            from file whose name is determined by input parameters.
+    """
     period = 52.5
     gap = 13.6
     filename_meas = FILES.get_filename_measurement(
@@ -222,19 +354,70 @@ def load_model(
         nr_periods, polarization, kstr,
         solve=True, with_errors=False,
         remove_subdivision=False):
+    """Create insertion device model object from data files.
+
+    Model file name is not given as a function input, but is determined from
+    from polarization, kstr, solve, with_errors and remove_subdivision by a
+    ShimmingFiles object method (thus, following such object's naming scheme).
+
+    Args:
+        nr_periods (str): undulator number of periods.
+        polarization (str): polarization identifier string.
+            Available options are:
+            'hp': Horizontal polarization
+            'vp': Vertical polarization
+            'cp': Circular polarization
+        kstr (str): deflection parameter identifier string.
+            Available options are:
+            'k0': zero deflection parameter.
+            'kmed': intermediate deflection parameter.
+            'kmax': maximum deflection parameter.
+        solve (bool, optional): Boolean value determining a solve behavior,
+            passed to filename determination method. Defaults to True.
+        with_errors (bool, optional): Boolean value determining wether errors
+            are introduced to model, passed to filename determination
+            method. Defaults to False.
+        remove_subdivision (bool, optional): Boolean value determining wether
+            subdivisions are removed from the model, passed to filename
+            determination method. Defaults to False.
+
+    Returns:
+        imaids.DeltaSabia: Delta Sabia insertion device model object created
+            from file whose name is determined by input parameters.
+    """
     filename_model = FILES.get_filename_model(
         with_errors=with_errors,
         remove_subdivision=remove_subdivision,
     )
     if not os.path.isfile(filename_model):
         return None
- 
+
     model = models.DeltaSabia.load_state(filename_model)
     configure_model(model, polarization, kstr, solve=solve)
     return model
 
 
 def plot_traj(obj, xl=0, yl=0):
+    """Calculates and plots trajectory for object.
+
+        Object may be any sinusoidal field source object, containing
+        the attribute nr_periods. Trajectory parameters are automatically
+        set by the number of periods in such object by using the
+        get_trajectory_params method.
+
+    The function plots the resulting trajectory, but only returns a True bool.
+
+    Args:
+        obj (SinusoidalFieldSource): Sinusoidal field force object for
+            trajectory calculation.
+        xl (float, optional): x component for initial velocity (parametrized
+            by trajectory length). In rad or dimensionless. Defaults to 0.
+        yl (float, optional): y component for initial velocity (parametrized
+            by trajectory length). In rad or dimensionless. Defaults to 0.
+
+    Returns:
+        bool: True
+    """
     params = get_trajectory_params(obj.nr_periods)
 
     zl = np.sqrt(1 - xl**2 - yl**2)
@@ -259,6 +442,30 @@ def plot_traj(obj, xl=0, yl=0):
 
 
 def plot_compare_field(model, meas):
+    """Calculate and plot 1d field maps along z for two objects and plot
+        both results in different axes of a same figure.
+
+        Objects may be any source field object for which a get_field() method
+        can be called.
+
+        Minimum and maximum z values as well as number of z points are
+        obtained from the get_trajectory_params method. called using
+        the FIRST argument of this method.
+
+        This method is useful for comparing the fields calculated from a
+        model object from a data (measurement) object.
+
+        Resulting graph is plotted, but only returns a True bool.
+
+    Args:
+        model (FieldSource): First object for calculating field profile,
+            typically a FieldModel object.
+        meas (FieldSource): First object for calculating field profile,
+            typically a FieldData object.
+
+    Returns:
+        bool: True
+    """
     params = get_trajectory_params(model.nr_periods)
 
     z = np.linspace(
@@ -282,6 +489,30 @@ def plot_compare_field(model, meas):
 
 
 def get_rescale_factor(model, meas, field_comp=None):
+    """Determine rescale factor by which magnetizations in input Radia model
+        should be scaled so that its field profile matches the one in an input
+        field data object.
+
+    Args:
+        model (Block, Cassette, Delta, AppleX, AppleII, APU or Planar):
+            FieldModel object containing magnetized blocks with characteristic
+            magnetization modulus (mr)
+        meas (FieldSource): First object for calculating field profile,
+            typically a FieldData object.
+        field_comp (int, optional): Determines which field component from meas
+            will be used for determining rescale factor:
+                field_comp = 0: x field component will be used.
+                field_comp = 1: y field component will be used.
+                field_comp = None: resulting vector sum from x and y
+                    components will be used.
+            Defaults to None.
+
+    Returns:
+        float: scaling factor. Ratio between field amplitude fitted to meas
+            field profile and field amplitude fitted to model field profile.
+            Fitted component for determining amplitudes is x, y or sqrt(x^2 +
+            y^2), depending on the value of field_comp.
+    """
     bx_model, by_model, _, _ = model.calc_field_amplitude()
     bx_meas, by_meas, _, _ = meas.calc_field_amplitude()
 
@@ -293,11 +524,25 @@ def get_rescale_factor(model, meas, field_comp=None):
         b_model = np.sqrt(bx_model**2 + by_model**2)
         b_meas = np.sqrt(bx_meas**2 + by_meas**2)
         fres = b_meas/b_model
-    
+
     return fres
 
 
 def rescale_model(model, fres):
+    """Returns a copy of input model in which the magnetization modulus
+        values of all permanent magnets (mr remanence values) are multiplied
+        a given rescale factor.
+
+    Args:
+        model (Block, Cassette, Delta, AppleX, AppleII, APU, Planar):
+            input FieldModel object containing magnetized blocks with
+            characteristic magnetization modulus (mr).
+        fres (float): rescale factor.
+
+    Returns:
+        Block, Cassette, Delta, AppleX, AppleII, APU or Planar: a copy of
+            input model with scaled mr values (mr multiplied by fres).
+    """
     mr = model.cassette_properties['mr']
     dgv = model.dgv
     dp = model.dp
@@ -322,6 +567,22 @@ def rescale_model(model, fres):
 
 
 def calc_kicks(nr_periods, obj, dz=0):
+    """Calculate kicks related to final trajectory point in object using
+        response matrix as calculated in run_calc_ff_matrix.
+
+    Args:
+        nr_periods (int): number of periods for determining trajectory
+            calculation parameters (using get_trajectory_params function).
+        obj (FieldSource): field source object for calculating trajectory,
+            typically an undulator.
+        dz (float, optional): optional shift maximum z. This value is
+            subtracted from get_trajectory_params(nr_periods)['zmax'].
+            Defaults to 0.
+
+    Returns:
+        numpy.ndarray: list of kicks calculated from final point of trajectory
+            and response matrix.
+    """
     filename_matrix = FILES.get_filename_ffmatrix()
     matrix = np.loadtxt(filename_matrix)
 
@@ -352,6 +613,16 @@ def calc_kicks(nr_periods, obj, dz=0):
 
 
 def round_shims(shims):
+    """Round each value in input list of shims to closest value found in
+        built-in list of available shims (from -0.25 mm to 0.25 mm in steps
+        of 0.05 mm).
+
+    Args:
+        shims (list): list of input shims to be rounded.
+
+    Returns:
+        list: rounded shims.
+    """
     available_shims = [
             0.00,
             0.05,
@@ -377,6 +648,11 @@ def round_shims(shims):
 
 
 def run_create_model():
+    """Creates DeltaSabia device and plots electron trajectory.
+
+    Returns:
+        bool: True
+    """
     nr_periods = 21
     polarization = 'hp'
     kstr = 'kmax'
@@ -389,7 +665,7 @@ def run_create_model():
         nr_periods, add_errors, remove_subdivision)
     configure_model(model, polarization, kstr)
     plot_traj(model)
-    
+
     plt.suptitle(polarization.upper() + ' ' + kstr.capitalize())
     plt.show()
 
@@ -397,6 +673,11 @@ def run_create_model():
 
 
 def run_plot_field_integrals():
+    """Plot x and y first and second field integrals as a function of
+        deflection parameter (k=0, k=kmax, k=kmed) for horizontal, vertical,
+        and circular polarization in a DeltaSabia.
+    """
+
     nr_periods = 21
 
     k = {}
@@ -422,10 +703,10 @@ def run_plot_field_integrals():
 
             if polarization not in ibx:
                 k[polarization] = []
-                ibx[polarization] = [] 
-                iby[polarization] = [] 
-                iibx[polarization] = [] 
-                iiby[polarization] = [] 
+                ibx[polarization] = []
+                iby[polarization] = []
+                iibx[polarization] = []
+                iiby[polarization] = []
 
             if polarization == 'vp':
                 k[polarization].append(kv)
@@ -471,6 +752,15 @@ def run_plot_field_integrals():
 
 
 def run_plot_field_integrals_profile():
+    """Plot field integrals profile along x for DeltaSabia model.
+        Calculations are made for horizontal, vertical and circular
+            polarizations ('hp', 'vp', 'cp') and k=0, k=kmax and k=kmed
+            deflection parameters ('kmax', 'kmed' and 'k0').
+        Performed combinations are:
+         'hp_kmax', 'hp_kmed', 'hp_k0',
+         'vp_kmax', 'vp_kmed',
+         'cp_kmax', 'cp_kmed',
+    """
     nr_periods = 21
     xs = np.linspace(-5.0, 5.0, 11)
 
@@ -497,12 +787,12 @@ def run_plot_field_integrals_profile():
         kstr = config.split('_')[1]
         meas = load_measurement(nr_periods, polarization, kstr)
 
-        ibx[config] = [] 
-        iby[config] = [] 
-        iibx[config] = [] 
-        iiby[config] = [] 
+        ibx[config] = []
+        iby[config] = []
+        iibx[config] = []
+        iiby[config] = []
 
-        for x in xs: 
+        for x in xs:
             ib, iib = meas.calc_field_integrals(z_list=z, x=x)
             ibx[config].append(ib[-1, 0])
             iby[config].append(ib[-1, 1])
@@ -537,19 +827,22 @@ def run_plot_field_integrals_profile():
 
 
 def run_save_model_fieldmap():
+    """Calculate field map for DeltaSabia model in a specific polarization and
+        deflection parameter configuration and save result to file.
+    """
     nr_periods = 21
     polarization = 'cp'
     kstr = 'kmed'
     solved = True
     with_errors = False
     remove_subdivision = False
-    
+
     model = load_model(
         nr_periods, polarization, kstr,
         solve=solved,
         with_errors=with_errors,
         remove_subdivision=remove_subdivision)
-    
+
     filename = FILES.get_filename_fieldmap(
         polarization=polarization,
         kstr=kstr,
@@ -565,11 +858,23 @@ def run_save_model_fieldmap():
 
 
 def run_calc_response_matrix():
+    """Calculates response matrix for DeltaSabia mode.
+
+    Raises:
+        Exception: if path returned by get_filename_matrix corresponds to
+            a file which already exists.
+
+    Returns:
+        numpy.ndarray: Response matrix, containing one line per optimized
+            parameter (slopes and, possibly, phase errors) and one column
+            per shimmed block. Same output as returned by calc_response_matrix.
+    """
+
     nr_periods = 21
     polarization = 'hp'
     kstr = 'kmax'
     field_comp = 1
-    
+
     cassettes = ['csd', 'cse']
     block_type = 'v'
     segments_type = 'half_period'
@@ -587,14 +892,14 @@ def run_calc_response_matrix():
         nr_periods, polarization, kstr,
         solve=solved_matrix, with_errors=with_errors,
         remove_subdivision=remove_subdivision)
-    
+
     if model is None:
         model = create_model(
             nr_periods,
             add_errors=with_errors,
             remove_subdivision=remove_subdivision)
         configure_model(model, polarization, kstr)
-   
+
     traj_params = get_trajectory_params(model.nr_periods)
     pe_params = get_phase_error_params(model.nr_periods)
     sh = shimming.UndulatorShimming(
@@ -610,7 +915,7 @@ def run_calc_response_matrix():
         field_comp=field_comp,
         solved_matrix=solved_matrix,
         )
-    
+
     filename_segs = FILES.get_filename_segs(
         block_type=block_type,
         segments_type=segments_type,
@@ -618,7 +923,7 @@ def run_calc_response_matrix():
         kstr=kstr)
     model_segs = sh.calc_segments(
         model, filename=filename_segs)
-    
+
     filename_matrix = FILES.get_filename_matrix(
         cassettes=cassettes,
         block_type=block_type,
@@ -630,7 +935,7 @@ def run_calc_response_matrix():
 
     if os.path.isfile(filename_matrix):
         raise Exception(
-            'File: {0:s} already exists!'.format(filename_matrix))  
+            'File: {0:s} already exists!'.format(filename_matrix))
 
     response_matrix = sh.calc_response_matrix(
         model, model_segs, filename=filename_matrix)
@@ -639,6 +944,8 @@ def run_calc_response_matrix():
 
 
 def run_apply_shimming():
+    """Apply shims to model and save results to results folder (dirname)
+    """
     dirname = 'delta_sabia_shimming_b_add_cte'
     plot_field = True
     plot_rescale_field = False
@@ -741,7 +1048,7 @@ def run_apply_shimming():
         include_pe= include_pe,
         polarization=polarization,
         kstr=kstr)
-    response_matrix = sh.read_response_matrix(filename_matrix)    
+    response_matrix = sh.read_response_matrix(filename_matrix)
     print('response matrix loaded')
 
     filename_segs = FILES.get_filename_segs(
@@ -774,7 +1081,7 @@ def run_apply_shimming():
 
     filename_shims = FILES.get_filename_shims(
         dirname, polarization=polarization, kstr=kstr)
-    if os.path.isfile(filename_shims):   
+    if os.path.isfile(filename_shims):
         shims = sh.read_shims(filename_shims)
         print('load shims')
     else:
@@ -794,7 +1101,7 @@ def run_apply_shimming():
         shim_signature = sh.calc_shim_signature(
             model, shims, filename=filename_sig)
         print('calc shim signature')
-    
+
     filename_shimmed = FILES.get_filename_shimmed(
         dirname, polarization=polarization, kstr=kstr)
     if os.path.isfile(filename_shimmed):
@@ -820,7 +1127,7 @@ def run_apply_shimming():
         yls = [0, 0, 0]
         results = sh.calc_results(objs, labels, xls, yls, filename=filename_results)
         print('calc results')
-    
+
     suptitle = polarization.upper() + ' ' + kstr.capitalize()
     filename_fig = FILES.get_filename_fig(
         dirname, polarization=polarization, kstr=kstr)
@@ -831,6 +1138,10 @@ def run_apply_shimming():
 
 
 def run_plot_shims():
+    """Plot and average shim values for various polarization and deflection
+        parameter conditions. Round average values to available shims. Save
+        results to file.
+    """
     dirname = 'delta_sabia_shimming_b'
     avg = True
 
@@ -842,7 +1153,6 @@ def run_plot_shims():
         'cp_kmax',
         'cp_kmed',
     ]
-
     shims_all = []
     fmt = '-'
 
@@ -853,7 +1163,7 @@ def run_plot_shims():
         filename = FILES.get_filename_shims(
             dirname, polarization=polarization, kstr=kstr)
         shims = np.loadtxt(filename)
-        ax.plot(shims, fmt, label=name) 
+        ax.plot(shims, fmt, label=name)
 
         shims_all.append(shims)
 
@@ -883,7 +1193,7 @@ def run_plot_shims():
         ]
     initial_shim = 0.25
     possible_shims = np.array(available_shims) - initial_shim
-    
+
     # tol = 0.01
     # val = 0.05
     # filt = ((possible_shims < val - tol) | (possible_shims > val + tol))
@@ -917,6 +1227,9 @@ def run_plot_shims():
 
 
 def run_calc_joined_shims():
+    """Perform shim calculation for all polarization and deflection parameter
+        configurations combined (single response matrix for all).
+    """
     dirname = 'delta_sabia_shimming_b'
     nr_periods = 21
     nsv = 40
@@ -937,7 +1250,7 @@ def run_calc_joined_shims():
     segments_type = 'half_period'
     include_pe = True
     solved_matrix = False
-    
+
     m_list = []
     err_list = []
     ws_list = []
@@ -1029,6 +1342,8 @@ def run_calc_joined_shims():
 
 
 def run_compare_join_avg_shims():
+    """Plot average and combined/joined shims for comparing their results.
+    """
     dirname = 'delta_sabia_shimming_b'
     rounded = False
 
@@ -1052,6 +1367,9 @@ def run_compare_join_avg_shims():
 
 
 def run_plot_shims_results():
+    """Calculate, save to files and plot results from shimming procedure at
+        various polarization and deflection parameter conditions.
+    """
     fast = True
     dirname_shim = 'delta_sabia_shimming_b'
     dirname = dirname_shim + '_shims_avg'
@@ -1144,7 +1462,7 @@ def run_plot_shims_results():
             shim_signature = sh.calc_shim_signature(
                 model, shims, filename=filename_sig)
             print('calc shim signature')
-        
+
         filename_shimmed = FILES.get_filename_shimmed(
             dirname, polarization=polarization, kstr=kstr)
         if os.path.isfile(filename_shimmed):
@@ -1184,7 +1502,7 @@ def run_plot_shims_results():
             results = sh.calc_results(
                 objs, labels, xls, yls, filename=filename_results)
             print('calc results')
-        
+
         suptitle = polarization.upper() + ' ' + kstr.capitalize()
         filename_fig = FILES.get_filename_fig(
             dirname, polarization=polarization, kstr=kstr)
@@ -1194,6 +1512,13 @@ def run_plot_shims_results():
 
 
 def run_calc_ff_matrix():
+    """Calculate response matrix relating initial x' and y' kicks to variations
+        on the final x, y, x', y' trajectory coordinates and saves it to file.
+
+    Raises:
+        Exception: If there already is a matrix with the name corresponding
+            to the calculated case (given by the get_filename_ffmatrix.
+    """
     nr_periods = 21
     solve = True
     with_errors = False
@@ -1266,6 +1591,10 @@ def run_calc_ff_matrix():
 
 
 def run_plot_correct_traj():
+    """Use response matrix calculated by run_calc_ff_matrix (loaded from file)
+        to correct trajectory using kicks. Plot original and corrected
+        trajectories.
+    """
     nr_periods = 21
     polarization = 'cp'
     kstr = 'kmax'
@@ -1326,6 +1655,14 @@ def run_plot_correct_traj():
 
 
 def run_modify_matrix():
+    """Change shimming response matrix from an original matrix calculated
+        with respect to an original list of cassettes to a new matrix
+        calculated with respect to a new list of cassettes.
+
+        This function works by eliminating matrix columns associated with
+            eliminated cassettes, so the new list of cassettes must be
+            contained in the old list.
+    """
     configs = [
         'hp_kmax',
         'hp_kmed',
@@ -1347,7 +1684,7 @@ def run_modify_matrix():
         print(config)
         polarization = config.split('_')[0]
         kstr = config.split('_')[1]
-        
+
         filename_old = FILES.get_filename_matrix(
             cassettes=cassettes_old,
             block_type=block_type,
@@ -1383,6 +1720,8 @@ def run_modify_matrix():
 
 
 def run_add_column_to_excel():
+    """Add shim results to excel file.
+    """
     dirname = 'delta_sabia_shimming_a_shims_test8_checked_solved'
 
     polarization = ''
@@ -1390,7 +1729,7 @@ def run_add_column_to_excel():
     avg = False
     rounded = True
     fname = 'shims.txt'
-    
+
     shim_cassettes = ['csd', 'cse']
     all_cassettes = ['cie', 'cid', 'cse', 'csd']
 
@@ -1399,7 +1738,7 @@ def run_add_column_to_excel():
     filename_shims = os.path.join(FILES.get_dir_results(dirname), fname)
 
     filename_block_names = FILES.get_filename_block_names(dirname)
-    
+
     shims = shimming.UndulatorShimming.read_shims(filename_shims)
     names = shimming.UndulatorShimming.read_block_names(filename_block_names)
 
@@ -1412,14 +1751,14 @@ def run_add_column_to_excel():
 
     filename_excel = os.path.join(
         FILES.get_dir_results(dirname), '21periods_check_shims.xlsx')
-   
+
     dfs = []
     for cassette in all_cassettes:
         df = pd.read_excel(filename_excel, sheet_name=cassette.upper(), header=0)
-        
+
         if cassette not in shim_cassettes:
             dfs.append(df)
-        
+
         else:
             colblocks = []
             colsubs = []
@@ -1432,22 +1771,22 @@ def run_add_column_to_excel():
 
                 if block_name in shim_dict:
                     new_shim = shim_dict[block_name]['shim']
-                    
+
                     if new_shim == 0:
                         colblocks.append('')
                         colsubs.append('')
-                        coldiff.append('')                
+                        coldiff.append('')
                         colshims.append(old_shim)
 
                     else:
                         colblocks.append(block_name)
                         colsubs.append(shim_dict[block_name]['subcassette'])
-                        coldiff.append(new_shim)                
+                        coldiff.append(new_shim)
                         colshims.append(new_shim + old_shim)
                 else:
                     colblocks.append('')
                     colsubs.append('')
-                    coldiff.append('')                
+                    coldiff.append('')
                     colshims.append(old_shim)
 
             df['ShimmingA Subcassete'] = colsubs
@@ -1458,16 +1797,25 @@ def run_add_column_to_excel():
 
     fn = filename_excel.replace('.xlsx', '_new.xlsx')
     with pd.ExcelWriter(fn) as writer:
-        for df, cassette in zip(dfs, all_cassettes): 
+        for df, cassette in zip(dfs, all_cassettes):
             df.to_excel(writer, sheet_name=cassette.upper(), index=False)
 
 
 def run_group_shims():
+    """Read shims from file and approximate the set of shims to a new,
+        simpler, set of shims. This is done by the steps:
+            > If one shim in a pair of consecutive shims is very small,
+              such small shim is set to zero and the other shim of the pair
+              is set to the difference between its original value and the
+              almost-zero shims.
+            > If both shims are very close to each other, both shims
+              are then set to zero.
+    """
     dirname = 'delta_sabia_shimming_a'
     avg = False
     rounded = False
     fname = 'test8.txt'
-    
+
     filename_shim = FILES.get_filename_shims(
         dirname, avg=avg, rounded=rounded)
     shims = np.loadtxt(filename_shim)
@@ -1503,6 +1851,9 @@ def run_group_shims():
 
 
 def run_plot_meas_results():
+    """Calculates and displays results for different measurements. Including
+        measurements before and after shimming iterations.
+    """
     dirname = 'delta_sabia_meas_results_shimming_a_other_phases'
 
     nr_periods = 21
@@ -1606,7 +1957,7 @@ def run_plot_meas_results():
     results = sh.calc_results(
         objs, labels, xls, yls, filename=filename_results)
     print('calc results')
-    
+
     suptitle = polarization.upper() + ' ' + kstr.capitalize()
     filename_fig = FILES.get_filename_fig(
         dirname, polarization=polarization, kstr=kstr)
@@ -1618,6 +1969,7 @@ def run_plot_meas_results():
 
 
 def run_compare_model_meas():
+    """Generate a plot for comparing model and measured field."""
     nr_periods = 21
     polarization = 'vp'
     kstr = 'kmed'
@@ -1629,7 +1981,7 @@ def run_compare_model_meas():
     z = np.linspace(
         traj_params['zmin'],
         traj_params['zmax'],
-        traj_params['znpts'])   
+        traj_params['znpts'])
 
     model = load_model(
         nr_periods, polarization, kstr,
@@ -1680,7 +2032,7 @@ def run_compare_model_meas():
     # print(np.mean(np.array(pv_by_meas) - np.array(pv_by_model)))
 
     fig, axs = plt.subplots(3)
-    for idx, comp in enumerate(['bx', 'by', 'bz']):      
+    for idx, comp in enumerate(['bx', 'by', 'bz']):
         axs[idx].plot(z, bmodel[:, idx])
         axs[idx].plot(z, bmeas[:, idx])
         axs[idx].grid(alpha=0.3)
@@ -1688,12 +2040,12 @@ def run_compare_model_meas():
     axs[2].set_xlabel('z [mm]')
 
     fig, axs = plt.subplots(3)
-    for idx, comp in enumerate(['bx', 'by', 'bz']):      
+    for idx, comp in enumerate(['bx', 'by', 'bz']):
         axs[idx].plot(z, bdiff[:, idx])
         axs[idx].grid(alpha=0.3)
         axs[idx].set_ylabel('diff' + comp + ' [T]')
     axs[2].set_xlabel('z [mm]')
-   
+
     fig, axs = plt.subplots(3)
     for idx, comp in enumerate(['bx', 'by', 'bz']):
         if comp == 'bx':
@@ -1705,7 +2057,7 @@ def run_compare_model_meas():
         else:
             pv_model = pv_bz_model
             pv_meas = pv_bz_meas
-        
+
         axs[idx].plot(np.abs(bmodel[pv_model, idx])[2:-2], '-o')
         axs[idx].plot(np.abs(bmeas[pv_meas, idx])[2:-2], '-o')
         axs[idx].grid(alpha=0.3)
@@ -1731,4 +2083,3 @@ run_plot_meas_results()
 
 print('end')
 print(time.time() - t0)
-

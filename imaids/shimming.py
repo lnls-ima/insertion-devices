@@ -1209,7 +1209,7 @@ class UndulatorShimming():
         ax0.grid(alpha=0.3)
         ax0.legend(loc='best')
         ax0.patch.set_edgecolor('black')
-        ax0.patch.set_linewidth('2')
+        ax0.patch.set_linewidth(2)
         if trajx_lim is not None:
             ax0.set_ylim(trajx_lim)
 
@@ -1217,7 +1217,7 @@ class UndulatorShimming():
         ax1.set_ylabel('TrajY [um]')
         ax1.grid(alpha=0.3)
         ax1.patch.set_edgecolor('black')
-        ax1.patch.set_linewidth('2')
+        ax1.patch.set_linewidth(2)
         if trajy_lim is not None:
             ax1.set_ylim(trajy_lim)
 
@@ -1225,7 +1225,7 @@ class UndulatorShimming():
         ax2.set_ylabel('Phase error [deg]')
         ax2.grid(alpha=0.3)
         ax2.patch.set_edgecolor('black')
-        ax2.patch.set_linewidth('2')
+        ax2.patch.set_linewidth(2)
         if pe_lim is not None:
             ax2.set_ylim(pe_lim)
 

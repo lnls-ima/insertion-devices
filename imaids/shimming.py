@@ -77,10 +77,13 @@ class UndulatorShimming():
                 defined by SinusoidalFieldSource.calc_phase_error method to
                 output file. Defaults to False.
             field_comp (int, optional): When calculating phase errors, this
-                optional argument may be used to force one of the components
-                (x or y) to be used to determine the poles.
-                    If field_comp==0, poles are defined by y'==0 (or, by Bx).
+                optional argument may be used to force the use of x or y field
+                components for determining poles at phase error calculations
+                and field zeros at segment limits determination.
+                    If field_comp==0, poles are defined by y'==0 (or, by Bx),
+                                      and segment limits by Bx zeros.
                     If field_comp==1, poles are defined by x'==0 (or, by By).
+                                      and segment limits by By zeros.
                     If None, field amplitudes are used instead.
                 Defaults to None.
             solved_shim (bool, optional): If True, magnetostatic problem is

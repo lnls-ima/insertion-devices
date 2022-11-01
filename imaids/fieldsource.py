@@ -1235,6 +1235,10 @@ class FieldData(FieldSource):
     def bz(self):
         return self._bz
 
+    @property
+    def raw_data(self):
+        return self._raw_data
+
     def _update_interpolation_functions(self):
         """Update field data using scipy interpolation functions.
             Interpolations 1D or 2D only.

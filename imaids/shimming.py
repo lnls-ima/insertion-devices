@@ -93,9 +93,10 @@ class UndulatorShimming():
             ValueError: If block_type is not 'v', 'vpos' or 'vneg'.
             ValueError: If segments_type is not "period" or "half_period".
         """
-        if block_type not in ('v', 'vpos', 'vneg'):
-            raise ValueError(
-                'Invalid block_type value. Valid options: "v", "vpos", "vneg"')
+        if block_type not in ('v', 'vpos', 'vneg', 'vlpair'):
+            msg = 'Invalid block_type value. Valid options: '
+            msg += '"v", "vpos", "vneg", "vlpair"'
+            raise ValueError(msg)
 
         if segments_type not in ('period', 'half_period'):
             raise ValueError('Invalid segments_type value. Valid options: ' +
@@ -732,10 +733,39 @@ class UndulatorShimming():
         elif self.block_type == 'vneg':
             # negative y component (including sing) is predominant over mres.
             filt = regular_mag[:, 1]*(-1) > mres
+        elif self.block_type == 'vlpair':
+            # This is a special option which groups the blocks in pairs
+            # for shimming, the first block of the pair is a vertical
+            # 'v' block. During the shimming, blocks in a pair are
+            # displaced together.
+            # First, the 'v' filter is defined.
+            filt_single = _np.abs(regular_mag[:, 1]) > mres
+            # Then, the filter is expanded so that each True value
+            # causes the next list element to also be True.
+            filt = [filt_single[0]]
+            for i in range(1, len(filt_single)):
+               filt.append((filt_single[i] or filt_single[i-1]))
 
         shim_regular_blocks = regular_blocks[filt]
 
-        return shim_regular_blocks
+        # Shim elements are the  items which are going to be moved.
+        # They mey be a single block (array with one block) or more
+        # than one block (array of blocks).
+        if self.block_type in ['v', 'vpos', 'vneg']:
+            # In these cases, blocks are shimmed individually.
+            shim_elements = [[x] for x in shim_regular_blocks]
+        elif self.block_type == 'vlpair':
+            # In this case, blocks are grouped in pairs.
+            if len(shim_regular_blocks)%2 == 1:
+                raise ValueError('Could not determine "vlpair" type ' + \
+                                    'block pairs. Odd number of blocks')
+            shim_elements = \
+                [[shim_regular_blocks[i], shim_regular_blocks[i+1]] \
+                    for i in range(0, len(shim_regular_blocks), 2)]
+
+        shim_elements = _np.array(shim_elements)
+
+        return shim_elements
 
     def calc_response_matrix(
             self, model, model_segs, filename=None, shim=0.1):

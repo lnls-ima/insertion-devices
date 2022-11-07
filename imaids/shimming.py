@@ -708,29 +708,34 @@ class UndulatorShimming():
         """
         cas = model.cassettes[cassette]
         mag = _np.array(cas.magnetization_list)
+        blocks = _np.array(cas.blocks)
+
+        # Eliminate termination blocks.
+        nr_start = len(cas.start_blocks_length)
+        nr_end = len(cas.end_blocks_length)
+        if nr_end == 0:
+            regular_mag = mag[nr_start:]
+            regular_blocks = blocks[nr_start:]
+        else:
+            regular_mag = mag[nr_start:-nr_end]
+            regular_blocks = blocks[nr_start:-nr_end]
+
         # Total magnetization outside y (tranversal 'vertical') direction:
-        mres = _np.sqrt(mag[:, 0]**2 + mag[:, 2]**2)
+        mres = _np.sqrt(regular_mag[:, 0]**2 + regular_mag[:, 2]**2)
 
         if self.block_type == 'v':
             # absolute value of y component is predominant over mres.
-            filt = _np.abs(mag[:, 1]) > mres
+            filt = _np.abs(regular_mag[:, 1]) > mres
         elif self.block_type == 'vpos':
             # y component (including sign) is predominant over mres.
-            filt = mag[:, 1] > mres
+            filt = regular_mag[:, 1] > mres
         elif self.block_type == 'vneg':
             # negative y component (including sing) is predominant over mres.
-            filt = mag[:, 1]*(-1) > mres
+            filt = regular_mag[:, 1]*(-1) > mres
 
-        blocks = _np.array(cas.blocks)[filt]
+        shim_regular_blocks = regular_blocks[filt]
 
-        # Use block length to check wether it is a termination block.
-        tol = 0.1
-        regular_blocks = []
-        for block in blocks:
-            if block.length > (1 - tol)*model.period_length/4:
-                regular_blocks.append(block)
-
-        return regular_blocks
+        return shim_regular_blocks
 
     def calc_response_matrix(
             self, model, model_segs, filename=None, shim=0.1):

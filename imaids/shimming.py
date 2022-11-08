@@ -847,15 +847,17 @@ class UndulatorShimming():
         for cassette in self.cassettes:
             blocks = self.get_shimming_blocks(model, cassette)
 
-            for idx in range(len(blocks)):
-                blocks[idx].shift([0, shim, 0])
+            for idx0 in range(len(blocks)):
+                for idx1 in range(len(blocks[idx0])):
+                    blocks[idx0, idx1].shift([0, shim, 0])
 
                 if self.solved_matrix:
                     model.solve()
                 sx, sy, pe = self.calc_slope_and_phase_error(
                     model, model_segs, 0, 0)
 
-                blocks[idx].shift([0, -shim, 0])
+                for idx1 in range(len(blocks[idx0])):
+                    blocks[idx0, idx1].shift([0, -shim, 0])
 
                 dpx = (sx - sx0)/shim
                 mx.append(dpx)
@@ -1023,8 +1025,9 @@ class UndulatorShimming():
         count = 0
         for cassette in self.cassettes:
             blocks = self.get_shimming_blocks(model, cassette)
-            for idx in range(len(blocks)):
-                blocks[idx].shift([0, shims[count], 0])
+            for idx0 in range(len(blocks)):
+                for idx1 in range(len(blocks[idx0])):
+                    blocks[idx0, idx1].shift([0, shims[count], 0])
                 count += 1
 
         if self.solved_shim:
@@ -1036,8 +1039,9 @@ class UndulatorShimming():
         count = 0
         for cassette in self.cassettes:
             blocks = self.get_shimming_blocks(model, cassette)
-            for idx in range(len(blocks)):
-                blocks[idx].shift([0, (-1)*shims[count], 0])
+            for idx0 in range(len(blocks)):
+                for idx1 in range(len(blocks[idx0])):
+                    blocks[idx0, idx1].shift([0, (-1)*shims[count], 0])
                 count += 1
 
         if self.solved_shim:

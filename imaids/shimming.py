@@ -654,7 +654,7 @@ class UndulatorShimming():
 
         return sx, sy, pe
 
-    def get_block_names(self, model, filename=None):
+    def get_block_names(self, model, filename=None, flatten=False):
         """Get list of names for the blocks used in shimming.
 
         Thesse blocks are selected from the cassettes in the cassettes object
@@ -665,6 +665,10 @@ class UndulatorShimming():
         class AND must have non-empty cassettes dictionary (see help on
         get_shimming_blocks for details on the available built-in models).
 
+        By default, the returned numpy array will have the same shame as the
+        shimming elements array. But it may be flattened as an 1d array of
+        blocks by the 'flatten' argument.
+
         Args:
             model (InsertionDeviceModel derivate, see above): Device model
                 with the considered cassettes (cassettes attribute).
@@ -672,14 +676,18 @@ class UndulatorShimming():
                 a file in which names will be written. Defaults to None.
                 File format:
                     One name per line
+            flatten (bool, optional): If True, names array will be flattened
+                to a 1d array. Defaults to False.
 
         Returns:
-            list: list of names for blocks used in shimming.
+            numpy.ndarray: list of names for blocks used in shimming.
         """
-        names = []
+        access_names = _np.vectorize(lambda block: block.name)
         for cassette in self.cassettes:
             blocks = self.get_shimming_blocks(model, cassette)
-            names.extend([b.name for b in blocks])
+            names = access_names(blocks)
+        if flatten:
+            names = names.flatten()
         if filename is not None:
             _np.savetxt(filename, names, fmt='%s')
         return names

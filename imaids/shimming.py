@@ -664,7 +664,7 @@ class UndulatorShimming():
         """Get list of names for the blocks used in shimming.
 
         The blocks are selected from the cassettes in the cassettes attribute
-        and filtered and grouped accordint to block_type attribute (see help
+        and filtered and grouped according to block_type attribute (see help
         on get_shimming_blocks for details on the filtering and grouping).
 
         Model must be an instance of InsertionDeviceModel or of a derivate
@@ -791,7 +791,7 @@ class UndulatorShimming():
     def calc_response_matrix(
             self, model, model_segs, filename=None, shim=0.1):
         """Calculate response matrix associated to the effect of individual
-        shims to a set of optimizable parammeters, including segment slopes,
+        shims to a set of optimizable parameters, including segment slopes,
         and, possibly (if include_pe==True), phase errors.
 
         Each shim consists in displacing a single block by a small positive
@@ -810,7 +810,7 @@ class UndulatorShimming():
         the given segment limits list. Phase errors are determined by the
         calc_phase_error method from the input model.
 
-        The resulting matirix represents the linear operation:
+        The resulting matrix represents the linear operation:
 
             (optimizable parameters) = (response matrix) @ (shims)
 
@@ -1015,7 +1015,7 @@ class UndulatorShimming():
 
     def calc_shim_signature(self, model, shims, filename=None):
         """Calculate the field difference between the non-shimmed and
-        the shimmed insertion device (shiming signature).
+        the shimmed insertion device (shimming signature).
 
         Model may be an instance of InsertionDeviceModel or any derivate class.
 
@@ -1037,7 +1037,7 @@ class UndulatorShimming():
             InsertionDeviceData: Data object with the same number of periods,
                 period length and gap as the input model object.
                 Contains the resulting signature field (difference between
-                shimemd and unshimmed fields) in the format of raw_data.
+                shimmemd and unshimmed fields) in the format of raw_data.
                 (List of x, y, z positions and mm and bx, by, bz fields in T)
         """
         zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
@@ -1136,7 +1136,7 @@ class UndulatorShimming():
         return shimmed_meas
 
     def calc_results(self, objs, labels, xls=None, yls=None, filename=None):
-        """Recieves a list of objects, calculates various for them (see Returns
+        """Receives a list of objects, calculates various for them (see Returns
             section), and compiles the results in a nested dictionary.
             Dictionary entries are keyed by the labels argument. Entries are
             dictionaries themselves, compiling the results for the objects.
@@ -1230,7 +1230,7 @@ class UndulatorShimming():
                 from calc_results method.
             table_fontsize (int, optional): Table font size. Defaults to 12.
             table_decimals (int, optional): Number of decimals for rounding
-                values diaplaied in table. Defaults to 1.
+                values displayed in table. Defaults to 1.
             filename (str, optional): If not None, represents file in which
                 figure is saved. Defaults to None.
             suptitle (str, optional): Title for figure. Defaults to None.

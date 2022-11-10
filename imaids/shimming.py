@@ -37,14 +37,18 @@ class UndulatorShimming():
                 dictionary of the considered insertion device model.
             block_type (str, optional): String specifying which types of blocks
                 will be used for shimming. Available options are:
-                'v' :   Vertical, blocks whose magnetization points mostly to
-                        the y direction ("vertical" up or down transversal).
-                'vpos'  Vertical positive, blocks whose magnetization points
-                        mostly to the positive y direction ("vertical" up
-                        transversal)
-                'vneg'  Vertical negative, blocks whose magnetization points
-                        mostly to the negative y direction ("vertical" down
-                        transversal)
+                'v'     : Vertical, blocks whose magnetization points mostly to
+                          the y direction ("vertical" up or down transversal).
+                'vpos'  : Vertical positive, blocks whose magnetization points
+                          mostly to the positive y direction ("vertical" up
+                          transversal)
+                'vneg'  : Vertical negative, blocks whose magnetization points
+                          mostly to the negative y direction ("vertical" down
+                          transversal)
+                'vlpair': Pairs of vertical ('v') and their next adjacent block
+                          (longitudinal) used for shimming. Both blocks of a
+                          pair are displaced together by the same shift during
+                          the shimming procedure.
                 Defaults to 'v'.
             segments_type (str, optional): Defines how field zeros are used to
                 obtain segments limits. Such zeros are the zeros z positions of
@@ -90,12 +94,13 @@ class UndulatorShimming():
                 matrix. Otherwise, solve method is not run. Defaults to False.
 
         Raises:
-            ValueError: If block_type is not 'v', 'vpos' or 'vneg'.
+            ValueError: If block_type is not allowed.
             ValueError: If segments_type is not "period" or "half_period".
         """
-        if block_type not in ('v', 'vpos', 'vneg'):
-            raise ValueError(
-                'Invalid block_type value. Valid options: "v", "vpos", "vneg"')
+        if block_type not in ('v', 'vpos', 'vneg', 'vlpair'):
+            msg = 'Invalid block_type value. Valid options: '
+            msg += '"v", "vpos", "vneg", "vlpair"'
+            raise ValueError(msg)
 
         if segments_type not in ('period', 'half_period'):
             raise ValueError('Invalid segments_type value. Valid options: ' +
@@ -328,7 +333,8 @@ class UndulatorShimming():
                 File format:
                     Lines corresponding to optimizable parameters (slopes and,
                         possibly, phase errors) and columns corresponding to
-                        specific blocks used for shimming.
+                        individual shims (each one consisting in displacing
+                        one block or a pair of blocks).
         Returns:
             numpy.ndarray: Response matrix (same format as the output
                 from the calc_response_matrix method).
@@ -435,7 +441,8 @@ class UndulatorShimming():
         Args:
             filename (str): Name of file with names.
                 File format:
-                    One name per line.
+                    Each line contains the block names corresponding to
+                    a single shim.
 
         Returns:
             numpy.ndarray: Array of block names.
@@ -653,16 +660,20 @@ class UndulatorShimming():
 
         return sx, sy, pe
 
-    def get_block_names(self, model, filename=None):
+    def get_block_names(self, model, filename=None, flatten=False):
         """Get list of names for the blocks used in shimming.
 
-        Thesse blocks are selected from the cassettes in the cassettes object
-        attribute and filtered accordint to block_type attribute (see help on
-        get_shimming_blocks for details on the filtering).
+        The blocks are selected from the cassettes in the cassettes attribute
+        and filtered and grouped according to block_type attribute (see help
+        on get_shimming_blocks for details on the filtering and grouping).
 
         Model must be an instance of InsertionDeviceModel or of a derivate
         class AND must have non-empty cassettes dictionary (see help on
         get_shimming_blocks for details on the available built-in models).
+
+        By default, the returned numpy array will have the same shame as the
+        shimming elements array. But it may be flattened as an 1d array of
+        blocks by the 'flatten' argument.
 
         Args:
             model (InsertionDeviceModel derivate, see above): Device model
@@ -671,14 +682,19 @@ class UndulatorShimming():
                 a file in which names will be written. Defaults to None.
                 File format:
                     One name per line
+            flatten (bool, optional): If True, names array will be flattened
+                to a 1d array. Defaults to False.
 
         Returns:
-            list: list of names for blocks used in shimming.
+            numpy.ndarray, NxM: array of names for blocks used in shimming
+                (N sets/elements of M blocks).
         """
-        names = []
+        access_names = _np.vectorize(lambda block: block.name)
         for cassette in self.cassettes:
             blocks = self.get_shimming_blocks(model, cassette)
-            names.extend([b.name for b in blocks])
+            names = access_names(blocks)
+        if flatten:
+            names = names.flatten()
         if filename is not None:
             _np.savetxt(filename, names, fmt='%s')
         return names
@@ -702,49 +718,101 @@ class UndulatorShimming():
                 dictionary of the model.
 
         Returns:
-            numpy.ndarray: Array containing blocks.Block objects listed from
-                specified cassette and filtered acording to block_type object
-                attribute (only non-termination blocks are included).
+            numpy.ndarray, NxM: Array containing blocks.Block objects.
+                The blocks are filtered from the specified cassette and
+                grouped according to the block_type. Only non-termination
+                blocks are included.
+                The array shape represents N shimming elements, each one
+                conssisting of M blocks. In the 'v', 'vpos' and 'vneg' cases,
+                each element is a single block (Nx1). For the 'vlpair' case,
+                each element is an array of two blocks (Nx2), and each block
+                is displaced as a single unit during the shimming procedure.
         """
         cas = model.cassettes[cassette]
         mag = _np.array(cas.magnetization_list)
+        blocks = _np.array(cas.blocks)
+
+        # Eliminate termination blocks.
+        nr_start = len(cas.start_blocks_length)
+        nr_end = len(cas.end_blocks_length)
+        if nr_end == 0:
+            regular_mag = mag[nr_start:]
+            regular_blocks = blocks[nr_start:]
+        else:
+            regular_mag = mag[nr_start:-nr_end]
+            regular_blocks = blocks[nr_start:-nr_end]
+
         # Total magnetization outside y (tranversal 'vertical') direction:
-        mres = _np.sqrt(mag[:, 0]**2 + mag[:, 2]**2)
+        mres = _np.sqrt(regular_mag[:, 0]**2 + regular_mag[:, 2]**2)
 
         if self.block_type == 'v':
             # absolute value of y component is predominant over mres.
-            filt = _np.abs(mag[:, 1]) > mres
+            filt = _np.abs(regular_mag[:, 1]) > mres
         elif self.block_type == 'vpos':
             # y component (including sign) is predominant over mres.
-            filt = mag[:, 1] > mres
+            filt = regular_mag[:, 1] > mres
         elif self.block_type == 'vneg':
             # negative y component (including sing) is predominant over mres.
-            filt = mag[:, 1]*(-1) > mres
+            filt = regular_mag[:, 1]*(-1) > mres
+        elif self.block_type == 'vlpair':
+            # This is a special option which groups the blocks in pairs
+            # for shimming, the first block of the pair is a vertical
+            # 'v' block. During the shimming, blocks in a pair are
+            # displaced together.
+            # First, the 'v' filter is defined.
+            filt_single = _np.abs(regular_mag[:, 1]) > mres
+            # Then, the filter is expanded so that each True value
+            # causes the next list element to also be True.
+            filt = [filt_single[0]]
+            for i in range(1, len(filt_single)):
+               filt.append((filt_single[i] or filt_single[i-1]))
 
-        blocks = _np.array(cas.blocks)[filt]
+        shim_regular_blocks = regular_blocks[filt]
 
-        # Use block length to check wether it is a termination block.
-        tol = 0.1
-        regular_blocks = []
-        for block in blocks:
-            if block.length > (1 - tol)*model.period_length/4:
-                regular_blocks.append(block)
+        # Shim elements are the  items which are going to be moved.
+        # They mey be a single block (array with one block) or more
+        # than one block (array of blocks).
+        if self.block_type in ['v', 'vpos', 'vneg']:
+            # In these cases, blocks are shimmed individually.
+            shim_elements = [[x] for x in shim_regular_blocks]
+        elif self.block_type == 'vlpair':
+            # In this case, blocks are grouped in pairs.
+            if len(shim_regular_blocks)%2 == 1:
+                raise ValueError('Could not determine "vlpair" type ' + \
+                                    'block pairs. Odd number of blocks')
+            shim_elements = \
+                [[shim_regular_blocks[i], shim_regular_blocks[i+1]] \
+                    for i in range(0, len(shim_regular_blocks), 2)]
 
-        return regular_blocks
+        shim_elements = _np.array(shim_elements)
+
+        return shim_elements
 
     def calc_response_matrix(
             self, model, model_segs, filename=None, shim=0.1):
         """Calculate response matrix associated to the effect of individual
-        blocks shimming to a set of optimizable parammeters, which include
-        segment slopes and, possibly (if include_pe==True), phase errors.
+        shims to a set of optimizable parameters, including segment slopes,
+        and, possibly (if include_pe==True), phase errors.
+
+        Each shim consists in displacing a single block by a small positive
+        shift (local y+) or displacing a set of blocks together.
+            Examples:
+            'vneg'  : a shim, related a single row of the shimming matrix, is
+                      the displacement of a single "vertical negative" block
+                      (magnetization pointing to local y-).
+            'vlpair': a shim, related a single row of the shimming matrix, is
+                      the simultaneous displacement of a pair of blocks, a
+                      vertical one and a longitudinal one (y+, z-) or (y-, z+).
+        Thus, self.block_type specifies the blocks and their grouping, while
+        self.cassettes specifies the cassettes from which blocks are selected.
+
+        The slopes (optimizable parameters) are determined with respect to
+        the given segment limits list. Phase errors are determined by the
+        calc_phase_error method from the input model.
+
+        The resulting matrix represents the linear operation:
 
             (optimizable parameters) = (response matrix) @ (shims)
-
-        The matrix is computed for a specific radia insertion device model.
-        > Slopes are determined with respect to given segment limits list.
-        > Blocks considered for shimming are taken from specific cassettes
-          and filtered by a specific block_type, both are inputs at the
-          UndulatorShimming object initizlization.
 
         Model must be an instance of InsertionDeviceModel or of a derivate
         class AND must have non-empty cassettes dictionary.
@@ -764,25 +832,23 @@ class UndulatorShimming():
                 creating output files. If this argument is given, the following
                 files are created:
                     name_mx.extension: in which each line contains the x slopes
-                        derivatives with respect to shim for a given block.
+                        derivatives with respect to a given shim.
                     name_my.extension: in which each line contains the y slopes
-                        derivatives with respect to shim for a given block.
+                        derivatives with respect to a given shim.
                     name_mpe.extension: in which each line contains the phase
-                        errors with respect to shim for a given block
-                        (empty if include_pe==False).
+                        error derivatives with respect to a given shim.
                     name.extension: response matrix, in which each line
-                        corresponds to an optimized parameter (slopes and,
+                        corresponds to an optimizable parameter (slopes and,
                         possibly, phase errors) and each column corresponds
-                        to a shimmed block.
+                        to a given shim.
                 Defaults to None.
-            shim (float, optional): Small displacement (shim) value applied to
-                each block (individually) for determining the response matrix.
-                In mm. Defaults to 0.1.
+            shim (float, optional): Displacement (shim) value applied to blocks
+                for determining the response matrix. In mm. Defaults to 0.1.
 
         Returns:
             numpy.ndarray: Response matrix, containing one line per optimized
                 parameter (slopes and, possibly, phase errors) and one column
-                per shimmed block.
+                per shim.
         """
         response_matrix = None
 
@@ -804,15 +870,17 @@ class UndulatorShimming():
         for cassette in self.cassettes:
             blocks = self.get_shimming_blocks(model, cassette)
 
-            for idx in range(len(blocks)):
-                blocks[idx].shift([0, shim, 0])
+            for idx0 in range(len(blocks)):
+                for idx1 in range(len(blocks[idx0])):
+                    blocks[idx0, idx1].shift([0, shim, 0])
 
                 if self.solved_matrix:
                     model.solve()
                 sx, sy, pe = self.calc_slope_and_phase_error(
                     model, model_segs, 0, 0)
 
-                blocks[idx].shift([0, -shim, 0])
+                for idx1 in range(len(blocks[idx0])):
+                    blocks[idx0, idx1].shift([0, -shim, 0])
 
                 dpx = (sx - sx0)/shim
                 mx.append(dpx)
@@ -947,7 +1015,7 @@ class UndulatorShimming():
 
     def calc_shim_signature(self, model, shims, filename=None):
         """Calculate the field difference between the non-shimmed and
-        the shimmed insertion device (shiming signature).
+        the shimmed insertion device (shimming signature).
 
         Model may be an instance of InsertionDeviceModel or any derivate class.
 
@@ -955,10 +1023,8 @@ class UndulatorShimming():
             model (InsertionDeviceModel): Model used for calculating fields
                 before and after shimming.
             shims (numpy.ndarray): List of shims for which signature is to
-                be calculated. List should contain one value for each block
-                used for shimming (from self.cassettes and of type given by
-                block_type) and must not contain more elements than available
-                blocks.
+                be calculated. The block displacement represented by such
+                list are determined by self.cassettes and self.block_type.
             filename (str, optional): If provided, resulting field map will
                 be saved in a file with name filename.
                     File format:
@@ -971,7 +1037,7 @@ class UndulatorShimming():
             InsertionDeviceData: Data object with the same number of periods,
                 period length and gap as the input model object.
                 Contains the resulting signature field (difference between
-                shimemd and unshimmed fields) in the format of raw_data.
+                shimmemd and unshimmed fields) in the format of raw_data.
                 (List of x, y, z positions and mm and bx, by, bz fields in T)
         """
         zpos = _np.linspace(self.zmin, self.zmax, self.znpts)
@@ -980,8 +1046,9 @@ class UndulatorShimming():
         count = 0
         for cassette in self.cassettes:
             blocks = self.get_shimming_blocks(model, cassette)
-            for idx in range(len(blocks)):
-                blocks[idx].shift([0, shims[count], 0])
+            for idx0 in range(len(blocks)):
+                for idx1 in range(len(blocks[idx0])):
+                    blocks[idx0, idx1].shift([0, shims[count], 0])
                 count += 1
 
         if self.solved_shim:
@@ -993,8 +1060,9 @@ class UndulatorShimming():
         count = 0
         for cassette in self.cassettes:
             blocks = self.get_shimming_blocks(model, cassette)
-            for idx in range(len(blocks)):
-                blocks[idx].shift([0, (-1)*shims[count], 0])
+            for idx0 in range(len(blocks)):
+                for idx1 in range(len(blocks[idx0])):
+                    blocks[idx0, idx1].shift([0, (-1)*shims[count], 0])
                 count += 1
 
         if self.solved_shim:
@@ -1068,7 +1136,7 @@ class UndulatorShimming():
         return shimmed_meas
 
     def calc_results(self, objs, labels, xls=None, yls=None, filename=None):
-        """Recieves a list of objects, calculates various for them (see Returns
+        """Receives a list of objects, calculates various for them (see Returns
             section), and compiles the results in a nested dictionary.
             Dictionary entries are keyed by the labels argument. Entries are
             dictionaries themselves, compiling the results for the objects.
@@ -1162,7 +1230,7 @@ class UndulatorShimming():
                 from calc_results method.
             table_fontsize (int, optional): Table font size. Defaults to 12.
             table_decimals (int, optional): Number of decimals for rounding
-                values diaplaied in table. Defaults to 1.
+                values displayed in table. Defaults to 1.
             filename (str, optional): If not None, represents file in which
                 figure is saved. Defaults to None.
             suptitle (str, optional): Title for figure. Defaults to None.
@@ -1172,6 +1240,8 @@ class UndulatorShimming():
                 when plotting y component of trajectory. Defaults to None.
             pe_lim (list, 2, optional): Vertical axis lower and upper limits
                 when plotting phase errors. Defaults to None.
+            figsize (tuple, 2, optional): Pair of floats specifying figure size
+                Defaults to (12, 6).
         """
         labels = list(results.keys())
 

@@ -493,6 +493,8 @@ def get_rescale_factor(model, meas, field_comp=None):
         should be scaled so that its field profile matches the one in an input
         field data object.
 
+        This is a wrapper to the UndulatorShimming.get_rescale_factor method
+
     Args:
         model (Block, Cassette, Delta, AppleX, AppleII, APU or Planar):
             FieldModel object containing magnetized blocks with characteristic
@@ -513,19 +515,10 @@ def get_rescale_factor(model, meas, field_comp=None):
             Fitted component for determining amplitudes is x, y or sqrt(x^2 +
             y^2), depending on the value of field_comp.
     """
-    bx_model, by_model, _, _ = model.calc_field_amplitude()
-    bx_meas, by_meas, _, _ = meas.calc_field_amplitude()
 
-    if field_comp == 0:
-        fres = bx_meas/bx_model
-    elif field_comp == 1:
-        fres = by_meas/by_model
-    else:
-        b_model = np.sqrt(bx_model**2 + by_model**2)
-        b_meas = np.sqrt(bx_meas**2 + by_meas**2)
-        fres = b_meas/b_model
-
-    return fres
+    return shimming.UndulatorShimming.get_rescale_factor(model,
+                                                         meas,
+                                                         field_comp=field_comp)
 
 
 def rescale_model(model, fres):

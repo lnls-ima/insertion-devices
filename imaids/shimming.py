@@ -445,6 +445,52 @@ class UndulatorShimming():
         """
         return _np.loadtxt(filename, dtype=str)
 
+    @staticmethod
+    def get_rescale_factor(model, meas, field_comp=None, **kwargs):
+        """Determine rescale factor by which magnetizations in input Radia model
+            should be scaled so that its field profile matches the one in an input
+            field data object.
+
+        Args:
+            model (Block, Cassette, Delta, AppleX, AppleII, APU or Planar):
+                FieldModel object containing magnetized blocks with characteristic
+                magnetization modulus (mr)
+            meas (FieldSource): First object for calculating field profile,
+                typically a FieldData object.
+            field_comp (int, optional): Determines which field component from meas
+                will be used for determining rescale factor:
+                    field_comp = 0: x field component will be used.
+                    field_comp = 1: y field component will be used.
+                    field_comp = None: resulting vector sum from x and y
+                        components will be used.
+                Defaults to None.
+            **kwargs: additional keyword arguments optionally passsed to
+                calc_field_amplitude, which is called for finding the
+                amplitudes used for scaling.
+                By default, such method runs wich its default values,
+                which are ok for most use cases. Check the documentation
+                on calc_field_amplitude for details.
+
+        Returns:
+            float: scaling factor. Ratio between field amplitude fitted to meas
+                field profile and field amplitude fitted to model field profile.
+                Fitted component for determining amplitudes is x, y or sqrt(x^2 +
+                y^2), depending on the value of field_comp.
+        """
+        bx_model, by_model, _, _ = model.calc_field_amplitude(**kwargs)
+        bx_meas, by_meas, _, _ = meas.calc_field_amplitude(**kwargs)
+
+        if field_comp == 0:
+            fres = bx_meas/bx_model
+        elif field_comp == 1:
+            fres = by_meas/by_model
+        else:
+            b_model = _np.sqrt(bx_model**2 + by_model**2)
+            b_meas = _np.sqrt(bx_meas**2 + by_meas**2)
+            fres = b_meas/b_model
+
+        return fres
+
     def _calc_traj(self, obj, xl, yl):
         """Calculate trajectory of electron with initial transversal velocity
             (xl,yl) passing through a field source object.

@@ -1377,4 +1377,4 @@ class UndulatorShimming():
         if filename is not None:
             _plt.savefig(filename, dpi=400)
 
-
+        return fig;

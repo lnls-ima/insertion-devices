@@ -76,15 +76,23 @@ class UndulatorShimming():
                 slopes for average trajectory also writes the phase errors
                 defined by SinusoidalFieldSource.calc_phase_error method to
                 output file. Defaults to False.
-            field_comp (int, optional): When calculating phase errors, this
-                optional argument may be used to force the use of x or y field
-                components for determining poles at phase error calculations
-                and field zeros at segment limits determination.
-                    If field_comp==0, poles are defined by y'==0 (or, by Bx),
-                                      and segment limits by Bx zeros.
-                    If field_comp==1, poles are defined by x'==0 (or, by By).
-                                      and segment limits by By zeros.
-                    If None, field amplitudes are used instead.
+            field_comp (int, optional): This optional argument may be used to
+                force the use of x or y field components for determining poles
+                at phase error calculations (if performed), field zeros at
+                segment limits determination and amplitudes for determining
+                magnetization rescaling factor.
+                    If field_comp==0 > y'==0 (related to Bx) defines poles.
+                                     > Bx defines segment limits.
+                                     > Bx field amplitude defines magnetization
+                                       rescaling factor.
+                    If field_comp==1 > x'==0 (related to By) defines poles.
+                                     > By defines segment limits.
+                                     > By field amplitude defines magnetization
+                                       rescaling factor.
+                    If None          > greater amplitude defines poles.
+                                     > greater amplitude defines segments.
+                                     > total amplitude, sqrt(Bx^2 + By^2)
+                                       defines magnetization rescaling factor.
                 Defaults to None.
             solved_shim (bool, optional): If True, magnetostatic problem is
                 solved (Radia solve method is run) for the insertion device
@@ -453,50 +461,25 @@ class UndulatorShimming():
         return _np.loadtxt(filename, dtype=str)
 
     @staticmethod
-    def get_rescale_factor(model, meas, field_comp=None, **kwargs):
-        """Determine rescale factor by which magnetizations in input Radia model
-            should be scaled so that its field profile matches the one in an input
-            field data object.
+    def read_rescale_factor(filename):
+        """Read rescaling factor from a rescaling log file in JSON format.
+
+        The returned float value for the rescaling factor should be keyed by
+        'fres' (str) in the JSON file, and represents the factor by which the
+        magnetization is multiplied for matching a given field measurement.
 
         Args:
-            model (Block, Cassette, Delta, AppleX, AppleII, APU or Planar):
-                FieldModel object containing magnetized blocks with characteristic
-                magnetization modulus (mr)
-            meas (FieldSource): First object for calculating field profile,
-                typically a FieldData object.
-            field_comp (int, optional): Determines which field component from meas
-                will be used for determining rescale factor:
-                    field_comp = 0: x field component will be used.
-                    field_comp = 1: y field component will be used.
-                    field_comp = None: resulting vector sum from x and y
-                        components will be used.
-                Defaults to None.
-            **kwargs: additional keyword arguments optionally passsed to
-                calc_field_amplitude, which is called for finding the
-                amplitudes used for scaling.
-                By default, such method runs wich its default values,
-                which are ok for most use cases. Check the documentation
-                on calc_field_amplitude for details.
+            filename (str): Name of file with names.
+                File format:
+                    JSON file (log exported by get_rescale_factor) in which
+                    the rescale factor is keyed by the string 'fres'.
 
         Returns:
-            float: scaling factor. Ratio between field amplitude fitted to meas
-                field profile and field amplitude fitted to model field profile.
-                Fitted component for determining amplitudes is x, y or sqrt(x^2 +
-                y^2), depending on the value of field_comp.
+            float: Rescaling factor.
         """
-        bx_model, by_model, _, _ = model.calc_field_amplitude(**kwargs)
-        bx_meas, by_meas, _, _ = meas.calc_field_amplitude(**kwargs)
-
-        if field_comp == 0:
-            fres = bx_meas/bx_model
-        elif field_comp == 1:
-            fres = by_meas/by_model
-        else:
-            b_model = _np.sqrt(bx_model**2 + by_model**2)
-            b_meas = _np.sqrt(bx_meas**2 + by_meas**2)
-            fres = b_meas/b_model
-
-        return fres
+        with open(filename, 'r') as f:
+            results = _json.load(f)
+        return results['fres']
 
     def _calc_traj(self, obj, xl, yl):
         """Calculate trajectory of electron with initial transversal velocity
@@ -583,6 +566,61 @@ class UndulatorShimming():
         ib, iib = obj.calc_field_integrals(z_list=z)
         return ib, iib
 
+    def calc_rescale_factor(self, model, meas, filename=None, **kwargs):
+        """Determine rescale factor by which magnetizations in input Radia model
+            should be scaled so that its field profile matches the one in an input
+            field data object.
+
+        Args:
+            model (Block, Cassette, Delta, AppleX, AppleII, APU or Planar):
+                FieldModel object containing magnetized blocks with characteristic
+                magnetization modulus (mr)
+            meas (FieldSource): First object for calculating field profile,
+                typically a FieldData object.
+            filename (str, optional): If provided, a log file containing
+                information on the rescaling procedure, including the
+                resulting scaling factor, will be saved to this file in JSON
+                format. Rescale factor is keyed by a 'fres' string.
+                Defaults to None.
+            **kwargs: additional keyword arguments optionally passed to
+                calc_field_amplitude, which is called for finding the
+                amplitudes used for scaling.
+                By default, such method runs with its default values,
+                which are ok for most use cases. Check the documentation
+                on calc_field_amplitude for details.
+
+        Returns:
+            float: scaling factor. Ratio between field amplitude fitted to meas
+                field profile and field amplitude fitted to model field profile.
+                Fitted component for determining amplitudes is x, y or sqrt(x^2 +
+                y^2), depending on the value of field_comp.
+        """
+        bx_model, by_model, _, _ = model.calc_field_amplitude(**kwargs)
+        bx_meas, by_meas, _, _ = meas.calc_field_amplitude(**kwargs)
+
+        if self.field_comp == 0:
+            fres = bx_meas/bx_model
+        elif self.field_comp == 1:
+            fres = by_meas/by_model
+        else:
+            b_model = _np.sqrt(bx_model**2 + by_model**2)
+            b_meas = _np.sqrt(bx_meas**2 + by_meas**2)
+            fres = b_meas/b_model
+
+        if filename is not None:
+            with open(filename, '+w') as f:
+                rescale_log = {
+                    'calc_field_amplitude_kwargs':kwargs,
+                    'model_bx_amplitude':bx_model,
+                    'model_by_amplitude':by_model,
+                    'meas_bx_amplitude':bx_meas,
+                    'meas_by_amplitude':by_meas,
+                    'fres':fres
+                }
+                _json.dump(rescale_log, f, indent=2)
+
+        return fres
+
     def calc_segments(self, obj, filename=None):
         """Generate longitudinal positions list for defining segment limits
             (see fit_trajectory_segments help for how such list might be used).
@@ -596,7 +634,7 @@ class UndulatorShimming():
             If segments_type=='half_period' (default), all zeros are used as
                 segment limits.
         Regardless of segments_type value, additional limits are appended at
-        the beggining and end of the limits list, separated by period_length
+        the beginning and end of the limits list, separated by period_length
         (of object) from the previous first and last limits.
 
         Source objects may be an instance of FieldModel, FieldData, or of any
@@ -655,7 +693,7 @@ class UndulatorShimming():
         The trajectory is calculated for an electron with initial transversal
         velocity (xl,yl) passing through a sinusoidal field object. The object
         also provides the period used for trajectory averaging and for defining
-        the maximun length of last segmennt.
+        the maximum length of last segment.
         Sinusoidal field object may be an instance of InsertionDeviceData,
         InsertionDeviceModel, Cassette, or any class which derived from them.
 

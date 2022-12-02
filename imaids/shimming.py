@@ -966,7 +966,7 @@ class UndulatorShimming():
         mx = []
         my = []
         mpe = []
-        blocks = self.get_shimming_blocks(model, 'all')
+        blocks = self.get_shimming_blocks(model, cassette)
 
         for idx0 in range(len(blocks)):
             for idx1 in range(len(blocks[idx0])):
@@ -1110,6 +1110,23 @@ class UndulatorShimming():
             _np.savetxt(filename, shims)
 
         return shims
+
+    def save_shims_to_xls(self, model, shims, filename):
+        """Export shim values to excel format.
+
+        Args:
+            model (InsertionDeviceModel): Model used from shimming from which
+                blocks are taken.
+            shims (numpy.ndarray): List of calcualted shims for being saved
+                to file.
+            filename (str, optional): File to which .xls data will be saved.
+                    File format:
+                        Two columns, representing block names and respective
+                        shims as two columns.
+        """
+        names = self.get_block_names(model, flatten=True)
+        df = _pd.DataFrame({'blocks':names, 'shims':shims})
+        df.to_excel(filename)
 
     def calc_shim_signature(self, model, shims, filename=None):
         """Calculate the field difference between the non-shimmed and

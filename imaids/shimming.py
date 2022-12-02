@@ -3,6 +3,7 @@ import json as _json
 import numpy as _np
 import matplotlib.pyplot as _plt
 import matplotlib.gridspec as _gridspec
+import pandas as _pd
 
 from . import utils as _utils
 from . import fieldsource as _fieldsource
@@ -777,9 +778,8 @@ class UndulatorShimming():
                 (N sets/elements of M blocks).
         """
         access_names = _np.vectorize(lambda block: block.name)
-        for cassette in self.cassettes:
-            blocks = self.get_shimming_blocks(model, cassette)
-            names = access_names(blocks)
+        blocks = self.get_shimming_blocks(model, 'all')
+        names = access_names(blocks)
         if flatten:
             names = names.flatten()
         if filename is not None:
@@ -803,6 +803,10 @@ class UndulatorShimming():
                 with the cassette from which the blocks will be listed.
             cassette (str): Key specifying the cassette in the cassettes
                 dictionary of the model.
+                If cassette=='all', the function will be executed for all
+                cassettes, in the order as they appear in the cassettes
+                object attribute. A single NxM array of all the blocks
+                will be returned.
 
         Returns:
             numpy.ndarray, NxM: Array containing blocks.Block objects.
@@ -815,61 +819,69 @@ class UndulatorShimming():
                 each element is an array of two blocks (Nx2), and each block
                 is displaced as a single unit during the shimming procedure.
         """
-        cas = model.cassettes[cassette]
-        mag = _np.array(cas.magnetization_list)
-        blocks = _np.array(cas.blocks)
+        if cassette == 'all':
 
-        # Eliminate termination blocks.
-        nr_start = len(cas.start_blocks_length)
-        nr_end = len(cas.end_blocks_length)
-        if nr_end == 0:
-            regular_mag = mag[nr_start:]
-            regular_blocks = blocks[nr_start:]
+            shim_elements = [self.get_shimming_blocks(model, cas)
+                             for cas in self.cassettes]
+            shim_elements = _np.concatenate(shim_elements, axis=0)
+
         else:
-            regular_mag = mag[nr_start:-nr_end]
-            regular_blocks = blocks[nr_start:-nr_end]
 
-        # Total magnetization outside y (tranversal 'vertical') direction:
-        mres = _np.sqrt(regular_mag[:, 0]**2 + regular_mag[:, 2]**2)
+            cas = model.cassettes[cassette]
+            mag = _np.array(cas.magnetization_list)
+            blocks = _np.array(cas.blocks)
 
-        if self.block_type == 'v':
-            # absolute value of y component is predominant over mres.
-            filt = _np.abs(regular_mag[:, 1]) > mres
-        elif self.block_type == 'vpos':
-            # y component (including sign) is predominant over mres.
-            filt = regular_mag[:, 1] > mres
-        elif self.block_type == 'vneg':
-            # negative y component (including sing) is predominant over mres.
-            filt = regular_mag[:, 1]*(-1) > mres
-        elif self.block_type == 'vlpair':
-            # This is a special option which groups the blocks in pairs
-            # for shimming, the first block of the pair is a vertical
-            # 'v' block. During the shimming, blocks in a pair are
-            # displaced together.
-            # First, the 'v' filter is defined.
-            filt_single = _np.abs(regular_mag[:, 1]) > mres
-            # Then, the filter is expanded so that each True value
-            # causes the next list element to also be True.
-            filt = [filt_single[0]]
-            for i in range(1, len(filt_single)):
-               filt.append((filt_single[i] or filt_single[i-1]))
+            # Eliminate termination blocks.
+            nr_start = len(cas.start_blocks_length)
+            nr_end = len(cas.end_blocks_length)
+            if nr_end == 0:
+                regular_mag = mag[nr_start:]
+                regular_blocks = blocks[nr_start:]
+            else:
+                regular_mag = mag[nr_start:-nr_end]
+                regular_blocks = blocks[nr_start:-nr_end]
 
-        shim_regular_blocks = regular_blocks[filt]
+            # Total magnetization outside y (tranversal 'vertical') direction:
+            mres = _np.sqrt(regular_mag[:, 0]**2 + regular_mag[:, 2]**2)
 
-        # Shim elements are the  items which are going to be moved.
-        # They mey be a single block (array with one block) or more
-        # than one block (array of blocks).
-        if self.block_type in ['v', 'vpos', 'vneg']:
-            # In these cases, blocks are shimmed individually.
-            shim_elements = [[x] for x in shim_regular_blocks]
-        elif self.block_type == 'vlpair':
-            # In this case, blocks are grouped in pairs.
-            if len(shim_regular_blocks)%2 == 1:
-                raise ValueError('Could not determine "vlpair" type ' + \
-                                    'block pairs. Odd number of blocks')
-            shim_elements = \
-                [[shim_regular_blocks[i], shim_regular_blocks[i+1]] \
-                    for i in range(0, len(shim_regular_blocks), 2)]
+            if self.block_type == 'v':
+                # absolute value of y component is predominant over mres.
+                filt = _np.abs(regular_mag[:, 1]) > mres
+            elif self.block_type == 'vpos':
+                # y component (including sign) is predominant over mres.
+                filt = regular_mag[:, 1] > mres
+            elif self.block_type == 'vneg':
+                # negative y component (including sing) is predominant over mres.
+                filt = regular_mag[:, 1]*(-1) > mres
+            elif self.block_type == 'vlpair':
+                # This is a special option which groups the blocks in pairs
+                # for shimming, the first block of the pair is a vertical
+                # 'v' block. During the shimming, blocks in a pair are
+                # displaced together.
+                # First, the 'v' filter is defined.
+                filt_single = _np.abs(regular_mag[:, 1]) > mres
+                # Then, the filter is expanded so that each True value
+                # causes the next list element to also be True.
+                filt = [filt_single[0]]
+                for i in range(1, len(filt_single)):
+                    filt.append((filt_single[i] or filt_single[i-1]))
+
+            shim_regular_blocks = regular_blocks[filt]
+
+            # Shim elements are the  items which are going to be moved.
+            # They mey be a single block (array with one block) or more
+            # than one block (array of blocks).
+            if self.block_type in ['v', 'vpos', 'vneg']:
+                # In these cases, blocks are shimmed individually.
+                shim_elements = [[x] for x in shim_regular_blocks]
+            elif self.block_type == 'vlpair':
+                # In this case, blocks are grouped in pairs.
+                if len(shim_regular_blocks)%2 == 1:
+                    raise ValueError('Could not determine "vlpair" type ' + \
+                                        'block pairs. Odd number of blocks')
+                shim_elements = \
+                    [[shim_regular_blocks[i], shim_regular_blocks[i+1]] \
+                        for i in range(0, len(shim_regular_blocks), 2)]
 
         shim_elements = _np.array(shim_elements)
 
@@ -954,44 +966,43 @@ class UndulatorShimming():
         mx = []
         my = []
         mpe = []
-        for cassette in self.cassettes:
-            blocks = self.get_shimming_blocks(model, cassette)
+        blocks = self.get_shimming_blocks(model, 'all')
 
-            for idx0 in range(len(blocks)):
-                for idx1 in range(len(blocks[idx0])):
-                    blocks[idx0, idx1].shift([0, shim, 0])
+        for idx0 in range(len(blocks)):
+            for idx1 in range(len(blocks[idx0])):
+                blocks[idx0, idx1].shift([0, shim, 0])
 
-                if self.solved_matrix:
-                    model.solve()
-                sx, sy, pe = self.calc_slope_and_phase_error(
-                    model, model_segs, 0, 0)
+            if self.solved_matrix:
+                model.solve()
+            sx, sy, pe = self.calc_slope_and_phase_error(
+                model, model_segs, 0, 0)
 
-                for idx1 in range(len(blocks[idx0])):
-                    blocks[idx0, idx1].shift([0, -shim, 0])
+            for idx1 in range(len(blocks[idx0])):
+                blocks[idx0, idx1].shift([0, -shim, 0])
 
-                dpx = (sx - sx0)/shim
-                mx.append(dpx)
+            dpx = (sx - sx0)/shim
+            mx.append(dpx)
 
-                dpy = (sy - sy0)/shim
-                my.append(dpy)
+            dpy = (sy - sy0)/shim
+            my.append(dpy)
+
+            if self.include_pe:
+                dpe = (pe - pe0)/shim
+                mpe.append(dpe)
+
+            if filename is not None:
+                with open(filename_mx, 'a+') as fx:
+                    strx = '\t'.join('{0:g}'.format(v) for v in dpx)
+                    fx.write(strx + '\n')
+
+                with open(filename_my, 'a+') as fy:
+                    stry = '\t'.join('{0:g}'.format(v) for v in dpy)
+                    fy.write(stry + '\n')
 
                 if self.include_pe:
-                    dpe = (pe - pe0)/shim
-                    mpe.append(dpe)
-
-                if filename is not None:
-                    with open(filename_mx, 'a+') as fx:
-                        strx = '\t'.join('{0:g}'.format(v) for v in dpx)
-                        fx.write(strx + '\n')
-
-                    with open(filename_my, 'a+') as fy:
-                        stry = '\t'.join('{0:g}'.format(v) for v in dpy)
-                        fy.write(stry + '\n')
-
-                    if self.include_pe:
-                        with open(filename_mpe, 'a+') as fpe:
-                            strpe = '\t'.join('{0:g}'.format(v) for v in dpe)
-                            fpe.write(strpe + '\n')
+                    with open(filename_mpe, 'a+') as fpe:
+                        strpe = '\t'.join('{0:g}'.format(v) for v in dpe)
+                        fpe.write(strpe + '\n')
 
         mx = _np.array(mx)
         my = _np.array(my)

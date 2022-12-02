@@ -966,7 +966,7 @@ class UndulatorShimming():
         mx = []
         my = []
         mpe = []
-        blocks = self.get_shimming_blocks(model, cassette)
+        blocks = self.get_shimming_blocks(model, 'all')
 
         for idx0 in range(len(blocks)):
             for idx1 in range(len(blocks[idx0])):

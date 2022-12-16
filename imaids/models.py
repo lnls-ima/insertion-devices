@@ -378,7 +378,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        if self.trf_on_blocks:    
+        if self.trf_on_blocks:
             for block in cie.blocks:
                 block.shift([0, -self._gap/2, 0])
                 block.rotate([0, 0, 0], [0, 0, 1], _np.pi/2)
@@ -396,7 +396,7 @@ class AppleX(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        if self.trf_on_blocks:    
+        if self.trf_on_blocks:
             for block in cid.blocks:
                 block.shift([0, -self._gap/2, 0])
         else:
@@ -583,11 +583,11 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
             position_err=position_err_dict.get(name))
         if self.trf_on_blocks:
             for block in cse.blocks:
-                block.shift([0, -self._gap/2, 0])
+                block.shift([0, -self._gap/2, self.dp + self.dcp])
                 block.mirror([0, 0, 0], [1, 0, 0])
                 block.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         else:
-            cse.shift([0, -self._gap/2, 0])
+            cse.shift([0, -self._gap/2, self.dp + self.dcp])
             cse.mirror([0, 0, 0], [1, 0, 0])
             cse.rotate([0, 0, 0], [0, 0, 1], _np.pi)
         self._cassettes[name] = cse
@@ -619,7 +619,7 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        if self.trf_on_blocks:    
+        if self.trf_on_blocks:
             for block in cie.blocks:
                 block.shift([0, -self._gap/2, 0])
         else:
@@ -635,12 +635,12 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
             position_err=position_err_dict.get(name))
-        if self.trf_on_blocks:    
+        if self.trf_on_blocks:
             for block in cid.blocks:
-                block.shift([0, -self._gap/2, 0])
+                block.shift([0, -self._gap/2, self.dp - self.dcp])
                 block.mirror([0, 0, 0], [1, 0, 0])
         else:
-            cid.shift([0, -self._gap/2, 0])
+            cid.shift([0, -self._gap/2, self.dp - self.dcp])
             cid.mirror([0, 0, 0], [1, 0, 0])
         self._cassettes[name] = cid
 

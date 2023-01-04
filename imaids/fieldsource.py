@@ -89,7 +89,7 @@ class FieldSource():
         """
         return _utils.delete_all()
 
-    def calc_field_integrals(self, z_list, x=0, y=0, field_list=None, 
+    def calc_field_integrals(self, z_list, x=0, y=0, field_list=None,
                                 nproc=None, chunksize=100):
         """Calculate field integrals.
 
@@ -108,7 +108,7 @@ class FieldSource():
                 multiprocessing module will not be used). Defaults to None.
             chunksize (int, optional): multiprocessing parameter specifying
                 size of list section sent to each process. Defaults to 100.
-            
+
         Note:
             Python multiprocessing does not work interactively, it must be
             run in a __main__ module, inside the clause:
@@ -186,7 +186,7 @@ class FieldSource():
 
         z0 = r[2]
         lz = _np.abs(zmax/1000 - z0)
-        
+
         while _np.abs(r[2]- z0) < lz:
             pos = [p*1000 for p in r[:3]]
             if on_axis_field:
@@ -240,7 +240,7 @@ class FieldSource():
                 multiprocessing module will not be used). Defaults to None.
             chunksize (int, optional): multiprocessing parameter specifying
                 size of list section sent to each process. Defaults to 100.
-        
+
         Note:
             Python multiprocessing does not work interactively, it must be
             run in a __main__ module, inside the clause:
@@ -350,9 +350,9 @@ class FieldSource():
                 for y in y_list:
                     for x in x_list:
                         pos_list.append([x,y,z])
-                        
+
             if nproc is not None:
-            
+
                 nproc = int(nproc)
                 if nproc < 1:
                     raise ValueError('Number or processes must be >=1.')
@@ -375,7 +375,7 @@ class FieldSource():
 
         return True
 
-    def save_fieldmap_spectra(self, filename, x_list, y_list, z_list, 
+    def save_fieldmap_spectra(self, filename, x_list, y_list, z_list,
                                 nproc=None, chunksize=100):
         """Save fieldmap file to use in spectra.
 
@@ -449,9 +449,9 @@ class FieldSource():
                 for y in y_list:
                     for z in z_list:
                         pos_list.append([x,y,z])
-                        
+
             if nproc is not None:
-            
+
                 nproc = int(nproc)
                 if nproc < 1:
                     raise ValueError('Number or processes must be >=1.')
@@ -1082,14 +1082,14 @@ class FieldModel(FieldSource):
     def radia_object(self):
         """Number of the radia object."""
         return self._radia_object
-    
+
     @property
     def center_point(self):
         """Vector coordinates ([x,y,z]) of radia object geometrical center."""
 
         if self.radia_object is None:
             raise None
-                
+
         centers = _np.array(_rad.ObjM(self.radia_object))[:,0]
         center = centers.mean(axis=0)
         return list(center)

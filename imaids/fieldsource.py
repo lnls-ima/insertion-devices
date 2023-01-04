@@ -788,16 +788,34 @@ class SinusoidalFieldSource(FieldSource):
         return bx_amp, by_amp, bz_amp, bxy_phase
 
     def calc_roll_off_peaks(self, z, x, y=0, field_comp=None):
-        """_summary_
+        """Calculate roll-off of peak fields at x=0 along x lines.
+
+        The roll-off at x=xp is defined as:
+
+            1 - bi(x=xp,z=z_peak_j) / bi(x=0, z=z_peak_j)
+
+        The i-th component of the field b is calculated in two points, in which
+            z_peak_j is the position of the j-th field peak along x=0.
+        The y position is fixed throughout all the calculations,
+            defaulting to 0.
 
         Args:
-            z (_type_): _description_
-            x (_type_): _description_
-            y (int, optional): _description_. Defaults to 0.
-            field_comp (_type_, optional): _description_. Defaults to None.
+            z (list): z positions along which the peak positions will be
+                determined at x=0 and y=y.
+            x (list): x positions for which peaks roll-off will be determined.
+            y (float, optional): y position for calculations. Defaults to 0.
+            field_comp (int, optional): Parameter used to force one of the
+                components to be used for determining peak positions.
+                    If field_comp==0, peaks z position are Bx maxima.
+                    If field_comp==1, peaks z position are By maxima.
+                    If None, the component with greater amplitude will be used.
+                Defaults to None.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray 3 x N x len(x): Array of roll-off values for the
+                3 field components, N found peaks and len(x) points in x.
+                Ex: [1, 3, 10] will be the By roll-ff of the 3rd peak
+                    at the 10th x value.
         """
         if field_comp is None:
             field0 = self.get_field(x=0, y=y, z=z)
@@ -820,15 +838,28 @@ class SinusoidalFieldSource(FieldSource):
         return rolloff_array
 
     def calc_roll_off_amplitude(self, z, x, y=0):
-        """_summary_
+        """Calculate roll-off of field amplitudes along x.
+
+        The roll-off at x=xp is defined as:
+
+            1 - Ampl_i(x=xp) / Ampl_i(x=0)
+
+        Where Ampl_i is the amplitude of the i-th field component, which is
+            calculated for field profiles along z in x=xp and x=0.
+        The y position is fixed throughout all the calculations,
+            defaulting to 0.
 
         Args:
-            z (_type_): _description_
-            x (_type_): _description_
-            y (int, optional): _description_. Defaults to 0.
+            z (list): z positions for calculating field profiles when
+                determining field amplitudes.
+            x (list): x positions for which peaks roll-off will be determined.
+            y (float, optional): y position for calculations. Defaults to 0.
 
         Returns:
-            _type_: _description_
+            numpy.ndarray 3 x len(x): Array of roll-ff values for the
+                3 field components and len(x) points in x.
+                Ex: [1, 5] will be the By amplitude roll-off
+                    at the 5th x value.
         """
         field0 = self.get_field(x=0, y=y, z=z)
         ampl0 = self.calc_field_amplitude(z_list=z, field_list=field0)

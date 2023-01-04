@@ -787,6 +787,63 @@ class SinusoidalFieldSource(FieldSource):
 
         return bx_amp, by_amp, bz_amp, bxy_phase
 
+    def calc_roll_off_peaks(self, z, x, y=0, field_comp=None):
+        """_summary_
+
+        Args:
+            z (_type_): _description_
+            x (_type_): _description_
+            y (int, optional): _description_. Defaults to 0.
+            field_comp (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
+        if field_comp is None:
+            field0 = self.get_field(x=0, y=y, z=z)
+            ampl0 = self.calc_field_amplitude(z_list=z, field_list=field0)
+            field_comp = int(ampl0[1] >= ampl0[0])
+
+        field0 = self.get_field(x=0, y=y, z=z)
+        peaks = self.find_peaks(field0[:,field_comp]) # These are peak indices
+                                                      # in field0, and thus
+                                                      # in the z list as well.
+
+        rolloff_array = _np.zeros((3, len(peaks), len(x)))
+        for i in range(3): # Field components.
+            for peak_idx, peak in enumerate(peaks): # Peak indices (indexed).
+                b0 = field0[peak]
+                for x_idx, xp in enumerate(x): # x values (indexed).
+                    b = self.get_field(x=xp, y=y, z=z[peak])[0]
+                    rolloff_array[i, peak_idx, x_idx] = 1 - b[i]/b0[i]
+
+        return rolloff_array
+
+    def calc_roll_off_amplitude(self, z, x, y=0):
+        """_summary_
+
+        Args:
+            z (_type_): _description_
+            x (_type_): _description_
+            y (int, optional): _description_. Defaults to 0.
+
+        Returns:
+            _type_: _description_
+        """
+        field0 = self.get_field(x=0, y=y, z=z)
+        ampl0 = self.calc_field_amplitude(z_list=z, field_list=field0)
+        ampl0 = _np.array(ampl0)
+
+        rolloff_array = _np.zeros((3, len(x)))
+
+        for xp_idx, xp in enumerate(x):
+            field = self.get_field(x=xp, y=y, z=z)
+            ampl = self.calc_field_amplitude(z_list=z, field_list=field)
+            ampl = _np.array(ampl)
+            rolloff_array[:, xp_idx] = 1 - ampl[:3]/ampl0[:3]
+
+        return rolloff_array
+
     def calc_deflection_parameter(self, bx_amp=None, by_amp=None):
         """Calculate deflection parameter.
 

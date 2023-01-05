@@ -89,7 +89,7 @@ class FieldSource():
         """
         return _utils.delete_all()
 
-    def calc_field_integrals(self, z_list, x=0, y=0, field_list=None, 
+    def calc_field_integrals(self, z_list, x=0, y=0, field_list=None,
                                 nproc=None, chunksize=100):
         """Calculate field integrals.
 
@@ -108,7 +108,7 @@ class FieldSource():
                 multiprocessing module will not be used). Defaults to None.
             chunksize (int, optional): multiprocessing parameter specifying
                 size of list section sent to each process. Defaults to 100.
-            
+
         Note:
             Python multiprocessing does not work interactively, it must be
             run in a __main__ module, inside the clause:
@@ -219,7 +219,7 @@ class FieldSource():
 
         z0 = r[2]
         lz = _np.abs(zmax/1000 - z0)
-        
+
         while _np.abs(r[2]- z0) < lz:
             pos = [p*1000 for p in r[:3]]
             if on_axis_field:
@@ -273,7 +273,7 @@ class FieldSource():
                 multiprocessing module will not be used). Defaults to None.
             chunksize (int, optional): multiprocessing parameter specifying
                 size of list section sent to each process. Defaults to 100.
-        
+
         Note:
             Python multiprocessing does not work interactively, it must be
             run in a __main__ module, inside the clause:
@@ -383,9 +383,9 @@ class FieldSource():
                 for y in y_list:
                     for x in x_list:
                         pos_list.append([x,y,z])
-                        
+
             if nproc is not None:
-            
+
                 nproc = int(nproc)
                 if nproc < 1:
                     raise ValueError('Number or processes must be >=1.')
@@ -408,7 +408,7 @@ class FieldSource():
 
         return True
 
-    def save_fieldmap_spectra(self, filename, x_list, y_list, z_list, 
+    def save_fieldmap_spectra(self, filename, x_list, y_list, z_list,
                                 nproc=None, chunksize=100):
         """Save fieldmap file to use in spectra.
 
@@ -482,9 +482,9 @@ class FieldSource():
                 for y in y_list:
                     for z in z_list:
                         pos_list.append([x,y,z])
-                        
+
             if nproc is not None:
-            
+
                 nproc = int(nproc)
                 if nproc < 1:
                     raise ValueError('Number or processes must be >=1.')
@@ -820,6 +820,94 @@ class SinusoidalFieldSource(FieldSource):
 
         return bx_amp, by_amp, bz_amp, bxy_phase
 
+    def calc_roll_off_peaks(self, z, x, y=0, field_comp=None):
+        """Calculate roll-off of peak fields at x=0 along x lines.
+
+        The roll-off at x=xp is defined as:
+
+            1 - bi(x=xp,z=z_peak_j) / bi(x=0, z=z_peak_j)
+
+        The i-th component of the field b is calculated in two points, in which
+            z_peak_j is the position of the j-th field peak along x=0.
+        The y position is fixed throughout all the calculations,
+            defaulting to 0.
+
+        Args:
+            z (list): z positions along which the peak positions will be
+                determined at x=0 and y=y.
+            x (list): x positions for which peaks roll-off will be determined.
+            y (float, optional): y position for calculations. Defaults to 0.
+            field_comp (int, optional): Parameter used to force one of the
+                components to be used for determining peak positions.
+                    If field_comp==0, peaks z position are Bx maxima.
+                    If field_comp==1, peaks z position are By maxima.
+                    If None, the component with greater amplitude will be used.
+                Defaults to None.
+
+        Returns:
+            numpy.ndarray 3 x N x len(x): Array of roll-off values for the
+                3 field components, N found peaks and len(x) points in x.
+                Ex: [1, 3, 10] will be the By roll-ff of the 3rd peak
+                    at the 10th x value.
+        """
+        if field_comp is None:
+            field0 = self.get_field(x=0, y=y, z=z)
+            ampl0 = self.calc_field_amplitude(z_list=z, field_list=field0)
+            field_comp = int(ampl0[1] >= ampl0[0])
+
+        field0 = self.get_field(x=0, y=y, z=z)
+        peaks = self.find_peaks(field0[:,field_comp]) # These are peak indices
+                                                      # in field0, and thus
+                                                      # in the z list as well.
+
+        rolloff_array = _np.zeros((3, len(peaks), len(x)))
+        for i in range(3): # Field components.
+            for peak_idx, peak in enumerate(peaks): # Peak indices (indexed).
+                b0 = field0[peak]
+                for x_idx, xp in enumerate(x): # x values (indexed).
+                    b = self.get_field(x=xp, y=y, z=z[peak])[0]
+                    rolloff_array[i, peak_idx, x_idx] = 1 - b[i]/b0[i]
+
+        return rolloff_array
+
+    def calc_roll_off_amplitude(self, z, x, y=0):
+        """Calculate roll-off of field amplitudes along x.
+
+        The roll-off at x=xp is defined as:
+
+            1 - Ampl_i(x=xp) / Ampl_i(x=0)
+
+        Where Ampl_i is the amplitude of the i-th field component, which is
+            calculated for field profiles along z in x=xp and x=0.
+        The y position is fixed throughout all the calculations,
+            defaulting to 0.
+
+        Args:
+            z (list): z positions for calculating field profiles when
+                determining field amplitudes.
+            x (list): x positions for which peaks roll-off will be determined.
+            y (float, optional): y position for calculations. Defaults to 0.
+
+        Returns:
+            numpy.ndarray 3 x len(x): Array of roll-ff values for the
+                3 field components and len(x) points in x.
+                Ex: [1, 5] will be the By amplitude roll-off
+                    at the 5th x value.
+        """
+        field0 = self.get_field(x=0, y=y, z=z)
+        ampl0 = self.calc_field_amplitude(z_list=z, field_list=field0)
+        ampl0 = _np.array(ampl0)
+
+        rolloff_array = _np.zeros((3, len(x)))
+
+        for xp_idx, xp in enumerate(x):
+            field = self.get_field(x=xp, y=y, z=z)
+            ampl = self.calc_field_amplitude(z_list=z, field_list=field)
+            ampl = _np.array(ampl)
+            rolloff_array[:, xp_idx] = 1 - ampl[:3]/ampl0[:3]
+
+        return rolloff_array
+
     def calc_deflection_parameter(self, bx_amp=None, by_amp=None):
         """Calculate deflection parameter.
 
@@ -1058,14 +1146,14 @@ class FieldModel(FieldSource):
     def radia_object(self):
         """Number of the radia object."""
         return self._radia_object
-    
+
     @property
     def center_point(self):
         """Vector coordinates ([x,y,z]) of radia object geometrical center."""
 
         if self.radia_object is None:
             raise None
-                
+
         centers = _np.array(_rad.ObjM(self.radia_object))[:,0]
         center = centers.mean(axis=0)
         return list(center)

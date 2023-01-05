@@ -145,6 +145,39 @@ class FieldSource():
 
         return ib, iib
 
+    def calc_integral_multipole_coef(self, z, x):
+        """Calculates skew and normal multipole coefficients for the first field
+        integrals. The integrals are calculated along z for the input list of
+        x coordinates at y=0.
+
+        Args:
+            z (list, M): z values used for calculating first field integrals.
+                (z is the integration variable) In mm.
+            x (list, N): x values in which first field integrals along z are
+                computed. In mm.
+
+        Returns:
+            numpy.ndarray, max_power: array containing skew components.
+                Higher order first. Maximum order is min(15, len(x)-1).
+                In T.m^(1-n) for the n-th coefficient.
+            numpy.ndarray, max_power: array containing normal components 
+                Higher order first. Maximum order is min(15, len(x)-1).
+                In T.m^(1-n) for the n-th coefficient.
+        """
+
+        integs = _np.array([self.calc_field_integrals(z, x=xp, y=0) for xp in x])
+        # The array above has the shape: (len(x), 2, len(z), 3):
+        #   len(x) x coordinates, 2 field integrals (first and second),
+        #   len(z) z coordinates, 3 field components.
+
+        ibx_x = integs[:, 0, -1, 0]
+        iby_x = integs[:, 0, -1, 1]
+        # Defining the first field integrals along x.
+        # Indices correspond to all x points (:), the first integral (0),
+        #   at the last z (-1) for the bx and by components (0 and 1)
+
+        return _utils.fit_integral_multipole_coef(x, ibx_x, x, iby_x)
+
     def calc_trajectory(
             self, energy, r0, zmax, rkstep, dz=0, on_axis_field=False):
         """Calculate electron trajectory.

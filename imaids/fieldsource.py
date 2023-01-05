@@ -146,9 +146,9 @@ class FieldSource():
         return ib, iib
 
     def calc_integral_multipole_coef(self, z, x):
-        """Calculates skew and normal multipole coefficients for the first field
-        integrals. The integrals are calculated along z for the input list of
-        x coordinates at y=0.
+        """Calculates skew and normal integrated multipole coefficients for the
+        first field integrals. The integrals are calculated along z for the
+        input list of x coordinates at y=0.
 
         Args:
             z (list, M): z values used for calculating first field integrals.
@@ -158,11 +158,11 @@ class FieldSource():
 
         Returns:
             numpy.ndarray, max_power: array containing skew components.
-                Higher order first. Maximum order is min(15, len(x)-1).
-                In T.m^(1-n) for the n-th coefficient.
-            numpy.ndarray, max_power: array containing normal components 
-                Higher order first. Maximum order is min(15, len(x)-1).
-                In T.m^(1-n) for the n-th coefficient.
+                Higher order first. In units of T.m^(1-N), ... , T.m.
+                Maximum order is N = min(15, len(x)-1).
+            numpy.ndarray, max_power: array containing normal components
+                Higher order first. In units of T.m^(1-N), ... , T.m.
+                Maximum order is N = min(15, len(x)-1).
         """
 
         integs = _np.array([self.calc_field_integrals(z, x=xp, y=0) for xp in x])

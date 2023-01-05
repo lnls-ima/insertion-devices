@@ -172,11 +172,13 @@ def fit_integral_multipole_coef(ibx_x, ibx, iby_x, iby):
 
     Returns:
         numpy.ndarray, max_power: Polynomial fit (multipole) coefficients
-            for the bx integral (skew component). Higher order first.
-            In T.m^(1-n) for the n-th coefficient.
+            for the bx integral (skew component).
+            Higher order first. In units of T.m^(1-N), ... , T.m.
+            Maximum order is N = min(15, len(x)-1).
         numpy.ndarray, max_power: Polynomial fit (multipole) coefficients
-            for the bx integral (normal component). Higher order first.
-            In T.m^(1-n) for the n-th coefficient.
+            for the bx integral (normal component).
+            Higher order first. In units of T.m^(1-N), ... , T.m.
+            Maximum order is N = min(15, len(x)-1).
     """
     max_power = min([15, len(ibx_x)-1, len(iby_x)-1])
 

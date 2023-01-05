@@ -170,13 +170,13 @@ class FieldSource():
         #   len(x) x coordinates, 2 field integrals (first and second),
         #   len(z) z coordinates, 3 field components.
 
-        ibx_x = integs[:, 0, -1, 0]
-        iby_x = integs[:, 0, -1, 1]
+        ibx = integs[:, 0, -1, 0]
+        iby = integs[:, 0, -1, 1]
         # Defining the first field integrals along x.
         # Indices correspond to all x points (:), the first integral (0),
         #   at the last z (-1) for the bx and by components (0 and 1)
 
-        return _utils.fit_integral_multipole_coef(x, ibx_x, x, iby_x)
+        return _utils.fit_integral_multipole_coef(x, ibx, x, iby)
 
     def calc_trajectory(
             self, energy, r0, zmax, rkstep, dz=0, on_axis_field=False):

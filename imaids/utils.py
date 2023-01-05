@@ -155,6 +155,39 @@ def calc_beff_vs_gap_fit(gap_over_period, beff, br):
         fit_function, gap_over_period, beff, p0=(a0, b0, c0))[0]
 
 
+def fit_integral_multipole_coef(ibx_x, ibx, iby_x, iby):
+    """Fits x and y components field integrals data to x positions in
+        order to find multipole components.
+
+    The number of output coefficients equals min(15, nx-1), where nx
+        is the smaller number of x values among the input x lists.
+
+    IMPORTANT: The inputs must be data for y=0 if the results are to
+               interpreted as skew and normal multipole coefficients.
+    Args:
+        ibx_x (list, N): x positions in which x integrals are given. In mm.
+        ibx (list, N): x field first integrals at the x positions. In T.m.
+        iby_x (list, M): x positions in which y integrals are given. In mm.
+        iby (list, M): y field first integrals at the x positions. In T.m.
+
+    Returns:
+        numpy.ndarray, max_power: Polynomial fit (multipole) coefficients
+            for the bx integral (skew component).
+            Higher order first. In units of T.m^(1-N), ... , T.m.
+            Maximum order is N = min(15, len(x)-1).
+        numpy.ndarray, max_power: Polynomial fit (multipole) coefficients
+            for the bx integral (normal component).
+            Higher order first. In units of T.m^(1-N), ... , T.m.
+            Maximum order is N = min(15, len(x)-1).
+    """
+    max_power = min([15, len(ibx_x)-1, len(iby_x)-1])
+
+    coef_skew = _np.polyfit(ibx_x*1e-3, ibx, max_power)
+    coef_normal = _np.polyfit(iby_x*1e-3, iby, max_power)
+
+    return coef_skew, coef_normal
+
+
 def calc_deflection_parameter(b_amp, period_length):
     """Field amplitude or Effective field to K conversion.
 

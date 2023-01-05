@@ -1,0 +1,45 @@
+{
+
+    "model_xls_filename": "2022-04-04_d52-data.xlsx",
+    "model_xls_cassette_sheets": {"cid":"CID", "cie":"CIE",
+                                  "csd":"CSD", "cse":"CSE"},
+    "model_xls_names_column": 0,
+    "model_xls_subcassettes_column": 4,
+
+    "zmin": -900,
+    "zmax": 900,
+    "znpts": 901,
+    "rkstep": 0.5,
+    "zmin_pe": -530,
+    "zmax_pe": 550,
+
+    "field_comp":null,
+    "cassettes": ["csd", "cse"],
+    "block_type": "v",
+    "segments_type": "half_period",
+    "solved_matrix": true,
+    "solved_shim": true,
+
+    "meas_filename": "2022-03-30_d52-Meas-Phase02.dat",
+    "selected_y": 0,
+    "scale_mr": true,
+    "dgv": 26.25,
+    "dp": 0,
+    "out_filename_stem": "hp_kmax",
+
+    "error_weight_factors": null,
+    "nsv": null,
+
+    "load_rescale_factor":false,
+    "load_segment_limits":false,
+    "load_response_matrix":false,
+    "load_errors":false,
+    "load_shims":false,
+    "load_field_signature":false,
+    "load_field_corrected":false,
+    "load_results":false,
+
+    "plot_field_profiles":true,
+    "plot_singular_values":true
+
+}

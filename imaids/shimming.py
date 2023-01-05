@@ -3,6 +3,7 @@ import json as _json
 import numpy as _np
 import matplotlib.pyplot as _plt
 import matplotlib.gridspec as _gridspec
+import pandas as _pd
 
 from . import utils as _utils
 from . import fieldsource as _fieldsource
@@ -76,12 +77,23 @@ class UndulatorShimming():
                 slopes for average trajectory also writes the phase errors
                 defined by SinusoidalFieldSource.calc_phase_error method to
                 output file. Defaults to False.
-            field_comp (int, optional): When calculating phase errors, this
-                optional argument may be used to force one of the components
-                (x or y) to be used to determine the poles.
-                    If field_comp==0, poles are defined by y'==0 (or, by Bx).
-                    If field_comp==1, poles are defined by x'==0 (or, by By).
-                    If None, field amplitudes are used instead.
+            field_comp (int, optional): This optional argument may be used to
+                force the use of x or y field components for determining poles
+                at phase error calculations (if performed), field zeros at
+                segment limits determination and amplitudes for determining
+                magnetization rescaling factor.
+                    If field_comp==0 > y'==0 (related to Bx) defines poles.
+                                     > Bx defines segment limits.
+                                     > Bx field amplitude defines magnetization
+                                       rescaling factor.
+                    If field_comp==1 > x'==0 (related to By) defines poles.
+                                     > By defines segment limits.
+                                     > By field amplitude defines magnetization
+                                       rescaling factor.
+                    If None          > greater amplitude defines poles.
+                                     > greater amplitude defines segments.
+                                     > total amplitude, sqrt(Bx^2 + By^2)
+                                       defines magnetization rescaling factor.
                 Defaults to None.
             solved_shim (bool, optional): If True, magnetostatic problem is
                 solved (Radia solve method is run) for the insertion device
@@ -449,6 +461,27 @@ class UndulatorShimming():
         """
         return _np.loadtxt(filename, dtype=str)
 
+    @staticmethod
+    def read_rescale_factor(filename):
+        """Read rescaling factor from a rescaling log file in JSON format.
+
+        The returned float value for the rescaling factor should be keyed by
+        'fres' (str) in the JSON file, and represents the factor by which the
+        magnetization is multiplied for matching a given field measurement.
+
+        Args:
+            filename (str): Name of file with names.
+                File format:
+                    JSON file (log exported by get_rescale_factor) in which
+                    the rescale factor is keyed by the string 'fres'.
+
+        Returns:
+            float: Rescaling factor.
+        """
+        with open(filename, 'r') as f:
+            results = _json.load(f)
+        return results['fres']
+
     def _calc_traj(self, obj, xl, yl):
         """Calculate trajectory of electron with initial transversal velocity
             (xl,yl) passing through a field source object.
@@ -534,6 +567,61 @@ class UndulatorShimming():
         ib, iib = obj.calc_field_integrals(z_list=z)
         return ib, iib
 
+    def calc_rescale_factor(self, model, meas, filename=None, **kwargs):
+        """Determine rescale factor by which magnetizations in input Radia model
+            should be scaled so that its field profile matches the one in an input
+            field data object.
+
+        Args:
+            model (Block, Cassette, Delta, AppleX, AppleII, APU or Planar):
+                FieldModel object containing magnetized blocks with characteristic
+                magnetization modulus (mr)
+            meas (FieldSource): First object for calculating field profile,
+                typically a FieldData object.
+            filename (str, optional): If provided, a log file containing
+                information on the rescaling procedure, including the
+                resulting scaling factor, will be saved to this file in JSON
+                format. Rescale factor is keyed by a 'fres' string.
+                Defaults to None.
+            **kwargs: additional keyword arguments optionally passed to
+                calc_field_amplitude, which is called for finding the
+                amplitudes used for scaling.
+                By default, such method runs with its default values,
+                which are ok for most use cases. Check the documentation
+                on calc_field_amplitude for details.
+
+        Returns:
+            float: scaling factor. Ratio between field amplitude fitted to meas
+                field profile and field amplitude fitted to model field profile.
+                Fitted component for determining amplitudes is x, y or sqrt(x^2 +
+                y^2), depending on the value of field_comp.
+        """
+        bx_model, by_model, _, _ = model.calc_field_amplitude(**kwargs)
+        bx_meas, by_meas, _, _ = meas.calc_field_amplitude(**kwargs)
+
+        if self.field_comp == 0:
+            fres = bx_meas/bx_model
+        elif self.field_comp == 1:
+            fres = by_meas/by_model
+        else:
+            b_model = _np.sqrt(bx_model**2 + by_model**2)
+            b_meas = _np.sqrt(bx_meas**2 + by_meas**2)
+            fres = b_meas/b_model
+
+        if filename is not None:
+            with open(filename, '+w') as f:
+                rescale_log = {
+                    'calc_field_amplitude_kwargs':kwargs,
+                    'model_bx_amplitude':bx_model,
+                    'model_by_amplitude':by_model,
+                    'meas_bx_amplitude':bx_meas,
+                    'meas_by_amplitude':by_meas,
+                    'fres':fres
+                }
+                _json.dump(rescale_log, f, indent=2)
+
+        return fres
+
     def calc_segments(self, obj, filename=None):
         """Generate longitudinal positions list for defining segment limits
             (see fit_trajectory_segments help for how such list might be used).
@@ -547,7 +635,7 @@ class UndulatorShimming():
             If segments_type=='half_period' (default), all zeros are used as
                 segment limits.
         Regardless of segments_type value, additional limits are appended at
-        the beggining and end of the limits list, separated by period_length
+        the beginning and end of the limits list, separated by period_length
         (of object) from the previous first and last limits.
 
         Source objects may be an instance of FieldModel, FieldData, or of any
@@ -606,7 +694,7 @@ class UndulatorShimming():
         The trajectory is calculated for an electron with initial transversal
         velocity (xl,yl) passing through a sinusoidal field object. The object
         also provides the period used for trajectory averaging and for defining
-        the maximun length of last segmennt.
+        the maximum length of last segment.
         Sinusoidal field object may be an instance of InsertionDeviceData,
         InsertionDeviceModel, Cassette, or any class which derived from them.
 
@@ -690,9 +778,8 @@ class UndulatorShimming():
                 (N sets/elements of M blocks).
         """
         access_names = _np.vectorize(lambda block: block.name)
-        for cassette in self.cassettes:
-            blocks = self.get_shimming_blocks(model, cassette)
-            names = access_names(blocks)
+        blocks = self.get_shimming_blocks(model, 'all')
+        names = access_names(blocks)
         if flatten:
             names = names.flatten()
         if filename is not None:
@@ -716,6 +803,10 @@ class UndulatorShimming():
                 with the cassette from which the blocks will be listed.
             cassette (str): Key specifying the cassette in the cassettes
                 dictionary of the model.
+                If cassette=='all', the function will be executed for all
+                cassettes, in the order as they appear in the cassettes
+                object attribute. A single NxM array of all the blocks
+                will be returned.
 
         Returns:
             numpy.ndarray, NxM: Array containing blocks.Block objects.
@@ -728,61 +819,69 @@ class UndulatorShimming():
                 each element is an array of two blocks (Nx2), and each block
                 is displaced as a single unit during the shimming procedure.
         """
-        cas = model.cassettes[cassette]
-        mag = _np.array(cas.magnetization_list)
-        blocks = _np.array(cas.blocks)
+        if cassette == 'all':
 
-        # Eliminate termination blocks.
-        nr_start = len(cas.start_blocks_length)
-        nr_end = len(cas.end_blocks_length)
-        if nr_end == 0:
-            regular_mag = mag[nr_start:]
-            regular_blocks = blocks[nr_start:]
+            shim_elements = [self.get_shimming_blocks(model, cas)
+                             for cas in self.cassettes]
+            shim_elements = _np.concatenate(shim_elements, axis=0)
+
         else:
-            regular_mag = mag[nr_start:-nr_end]
-            regular_blocks = blocks[nr_start:-nr_end]
 
-        # Total magnetization outside y (tranversal 'vertical') direction:
-        mres = _np.sqrt(regular_mag[:, 0]**2 + regular_mag[:, 2]**2)
+            cas = model.cassettes[cassette]
+            mag = _np.array(cas.magnetization_list)
+            blocks = _np.array(cas.blocks)
 
-        if self.block_type == 'v':
-            # absolute value of y component is predominant over mres.
-            filt = _np.abs(regular_mag[:, 1]) > mres
-        elif self.block_type == 'vpos':
-            # y component (including sign) is predominant over mres.
-            filt = regular_mag[:, 1] > mres
-        elif self.block_type == 'vneg':
-            # negative y component (including sing) is predominant over mres.
-            filt = regular_mag[:, 1]*(-1) > mres
-        elif self.block_type == 'vlpair':
-            # This is a special option which groups the blocks in pairs
-            # for shimming, the first block of the pair is a vertical
-            # 'v' block. During the shimming, blocks in a pair are
-            # displaced together.
-            # First, the 'v' filter is defined.
-            filt_single = _np.abs(regular_mag[:, 1]) > mres
-            # Then, the filter is expanded so that each True value
-            # causes the next list element to also be True.
-            filt = [filt_single[0]]
-            for i in range(1, len(filt_single)):
-               filt.append((filt_single[i] or filt_single[i-1]))
+            # Eliminate termination blocks.
+            nr_start = len(cas.start_blocks_length)
+            nr_end = len(cas.end_blocks_length)
+            if nr_end == 0:
+                regular_mag = mag[nr_start:]
+                regular_blocks = blocks[nr_start:]
+            else:
+                regular_mag = mag[nr_start:-nr_end]
+                regular_blocks = blocks[nr_start:-nr_end]
 
-        shim_regular_blocks = regular_blocks[filt]
+            # Total magnetization outside y (tranversal 'vertical') direction:
+            mres = _np.sqrt(regular_mag[:, 0]**2 + regular_mag[:, 2]**2)
 
-        # Shim elements are the  items which are going to be moved.
-        # They mey be a single block (array with one block) or more
-        # than one block (array of blocks).
-        if self.block_type in ['v', 'vpos', 'vneg']:
-            # In these cases, blocks are shimmed individually.
-            shim_elements = [[x] for x in shim_regular_blocks]
-        elif self.block_type == 'vlpair':
-            # In this case, blocks are grouped in pairs.
-            if len(shim_regular_blocks)%2 == 1:
-                raise ValueError('Could not determine "vlpair" type ' + \
-                                    'block pairs. Odd number of blocks')
-            shim_elements = \
-                [[shim_regular_blocks[i], shim_regular_blocks[i+1]] \
-                    for i in range(0, len(shim_regular_blocks), 2)]
+            if self.block_type == 'v':
+                # absolute value of y component is predominant over mres.
+                filt = _np.abs(regular_mag[:, 1]) > mres
+            elif self.block_type == 'vpos':
+                # y component (including sign) is predominant over mres.
+                filt = regular_mag[:, 1] > mres
+            elif self.block_type == 'vneg':
+                # negative y component (including sing) is predominant over mres.
+                filt = regular_mag[:, 1]*(-1) > mres
+            elif self.block_type == 'vlpair':
+                # This is a special option which groups the blocks in pairs
+                # for shimming, the first block of the pair is a vertical
+                # 'v' block. During the shimming, blocks in a pair are
+                # displaced together.
+                # First, the 'v' filter is defined.
+                filt_single = _np.abs(regular_mag[:, 1]) > mres
+                # Then, the filter is expanded so that each True value
+                # causes the next list element to also be True.
+                filt = [filt_single[0]]
+                for i in range(1, len(filt_single)):
+                    filt.append((filt_single[i] or filt_single[i-1]))
+
+            shim_regular_blocks = regular_blocks[filt]
+
+            # Shim elements are the  items which are going to be moved.
+            # They mey be a single block (array with one block) or more
+            # than one block (array of blocks).
+            if self.block_type in ['v', 'vpos', 'vneg']:
+                # In these cases, blocks are shimmed individually.
+                shim_elements = [[x] for x in shim_regular_blocks]
+            elif self.block_type == 'vlpair':
+                # In this case, blocks are grouped in pairs.
+                if len(shim_regular_blocks)%2 == 1:
+                    raise ValueError('Could not determine "vlpair" type ' + \
+                                        'block pairs. Odd number of blocks')
+                shim_elements = \
+                    [[shim_regular_blocks[i], shim_regular_blocks[i+1]] \
+                        for i in range(0, len(shim_regular_blocks), 2)]
 
         shim_elements = _np.array(shim_elements)
 
@@ -867,44 +966,43 @@ class UndulatorShimming():
         mx = []
         my = []
         mpe = []
-        for cassette in self.cassettes:
-            blocks = self.get_shimming_blocks(model, cassette)
+        blocks = self.get_shimming_blocks(model, 'all')
 
-            for idx0 in range(len(blocks)):
-                for idx1 in range(len(blocks[idx0])):
-                    blocks[idx0, idx1].shift([0, shim, 0])
+        for idx0 in range(len(blocks)):
+            for idx1 in range(len(blocks[idx0])):
+                blocks[idx0, idx1].shift([0, shim, 0])
 
-                if self.solved_matrix:
-                    model.solve()
-                sx, sy, pe = self.calc_slope_and_phase_error(
-                    model, model_segs, 0, 0)
+            if self.solved_matrix:
+                model.solve()
+            sx, sy, pe = self.calc_slope_and_phase_error(
+                model, model_segs, 0, 0)
 
-                for idx1 in range(len(blocks[idx0])):
-                    blocks[idx0, idx1].shift([0, -shim, 0])
+            for idx1 in range(len(blocks[idx0])):
+                blocks[idx0, idx1].shift([0, -shim, 0])
 
-                dpx = (sx - sx0)/shim
-                mx.append(dpx)
+            dpx = (sx - sx0)/shim
+            mx.append(dpx)
 
-                dpy = (sy - sy0)/shim
-                my.append(dpy)
+            dpy = (sy - sy0)/shim
+            my.append(dpy)
+
+            if self.include_pe:
+                dpe = (pe - pe0)/shim
+                mpe.append(dpe)
+
+            if filename is not None:
+                with open(filename_mx, 'a+') as fx:
+                    strx = '\t'.join('{0:g}'.format(v) for v in dpx)
+                    fx.write(strx + '\n')
+
+                with open(filename_my, 'a+') as fy:
+                    stry = '\t'.join('{0:g}'.format(v) for v in dpy)
+                    fy.write(stry + '\n')
 
                 if self.include_pe:
-                    dpe = (pe - pe0)/shim
-                    mpe.append(dpe)
-
-                if filename is not None:
-                    with open(filename_mx, 'a+') as fx:
-                        strx = '\t'.join('{0:g}'.format(v) for v in dpx)
-                        fx.write(strx + '\n')
-
-                    with open(filename_my, 'a+') as fy:
-                        stry = '\t'.join('{0:g}'.format(v) for v in dpy)
-                        fy.write(stry + '\n')
-
-                    if self.include_pe:
-                        with open(filename_mpe, 'a+') as fpe:
-                            strpe = '\t'.join('{0:g}'.format(v) for v in dpe)
-                            fpe.write(strpe + '\n')
+                    with open(filename_mpe, 'a+') as fpe:
+                        strpe = '\t'.join('{0:g}'.format(v) for v in dpe)
+                        fpe.write(strpe + '\n')
 
         mx = _np.array(mx)
         my = _np.array(my)
@@ -1012,6 +1110,23 @@ class UndulatorShimming():
             _np.savetxt(filename, shims)
 
         return shims
+
+    def save_shims_to_xls(self, model, shims, filename):
+        """Export shim values to excel format.
+
+        Args:
+            model (InsertionDeviceModel): Model used from shimming from which
+                blocks are taken.
+            shims (numpy.ndarray): List of calcualted shims for being saved
+                to file.
+            filename (str, optional): File to which .xls data will be saved.
+                    File format:
+                        Two columns, representing block names and respective
+                        shims as two columns.
+        """
+        names = self.get_block_names(model, flatten=True)
+        df = _pd.DataFrame({'blocks':names, 'shims':shims})
+        df.to_excel(filename)
 
     def calc_shim_signature(self, model, shims, filename=None):
         """Calculate the field difference between the non-shimmed and
@@ -1328,4 +1443,4 @@ class UndulatorShimming():
         if filename is not None:
             _plt.savefig(filename, dpi=400)
 
-
+        return fig;

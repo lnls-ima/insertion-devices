@@ -425,9 +425,8 @@ class Cassette(
     def magnetization_list(self):
         """List of magnetization vectors attributes from blocks.
 
-        This getter method will return the current magnetizations of the
-        blocks, regardless of how they were set (including start and
-        end blocks).
+        This getter method will return the actual magnetization used for
+        setting up the blocks.
         """
         mag_list = [block.magnetization for block in self._blocks]
         return mag_list

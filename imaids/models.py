@@ -697,15 +697,27 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
 class APU(_insertiondevice.InsertionDeviceModel):
     """Adjustable phase undulador model."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, cs_block_shape, ci_block_shape, *args, **kwargs):
         """Create radia model."""
         self._dg = 0
+        self._cs_block_shape = cs_block_shape
+        self._ci_block_shape = ci_block_shape
         super().__init__(*args, **kwargs)
 
     @property
     def dg(self):
         """Longitudinal cassette displacement in mm."""
         return self._dg
+
+    @property
+    def cs_block_shape(self):
+        """Superior cassette block shape."""
+        return self._cs_block_shape
+
+    @property
+    def ci_block_shape(self):
+        """Inferior cassette block shape."""
+        return self._ci_block_shape
 
     @dg.setter
     def dg(self, value):
@@ -738,10 +750,12 @@ class APU(_insertiondevice.InsertionDeviceModel):
             position_err_dict = {}
 
         name = 'cs'
+        self.cs_cassette_properties = self.cassette_properties.copy()
+        self.cs_cassette_properties['block_shape'] = self.cs_block_shape
         cs = _cassettes.Cassette(
             upper_cassette=True, name=name,
             nr_periods=self.nr_periods, period_length=self.period_length,
-            init_radia_object=False, **self.cassette_properties)
+            init_radia_object=False, **self.cs_cassette_properties)
         cs.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
@@ -756,10 +770,12 @@ class APU(_insertiondevice.InsertionDeviceModel):
         self._cassettes[name] = cs
 
         name = 'ci'
+        self.ci_cassette_properties = self.cassette_properties.copy()
+        self.ci_cassette_properties['block_shape'] = self.ci_block_shape
         ci = _cassettes.Cassette(
             upper_cassette=False, name=name,
             nr_periods=self.nr_periods, period_length=self.period_length,
-            init_radia_object=False, **self.cassette_properties)
+            init_radia_object=False, **self.ci_cassette_properties)
         ci.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),

@@ -432,6 +432,8 @@ class FieldSource():
                 if __name__ == '__main__':
 
         Raises:
+            ValueError: Number of points in the longitudinal direction
+                must be >=4.
             ValueError: If provided, number of processes must be >=1.
 
         Returns:

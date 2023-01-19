@@ -46,6 +46,9 @@ class UndulatorShimming():
                 'vneg'  : Vertical negative, blocks whose magnetization points
                           mostly to the negative y direction ("vertical" down
                           transversal)
+                'vlf'   : Vertical and longitudinal foward, the same as 'v'
+                          plus the blocks whose magnetization points mostly
+                          to the positive z direction ("foward" longitudinal).
                 'vlpair': Pairs of vertical ('v') and their next adjacent block
                           (longitudinal) used for shimming. Both blocks of a
                           pair are displaced together by the same shift during
@@ -109,9 +112,10 @@ class UndulatorShimming():
             ValueError: If block_type is not allowed.
             ValueError: If segments_type is not "period" or "half_period".
         """
-        if block_type not in ('v', 'vpos', 'vneg', 'vlpair'):
+        if block_type not in ('v', 'vpos', 'vneg', 'vlpair', 'vlf'):
+            print(block_type)
             msg = 'Invalid block_type value. Valid options: '
-            msg += '"v", "vpos", "vneg", "vlpair"'
+            msg += '"v", "vpos", "vneg", "vlpair, "vlf"'
             raise ValueError(msg)
 
         if segments_type not in ('period', 'half_period'):
@@ -842,24 +846,32 @@ class UndulatorShimming():
                 regular_blocks = blocks[nr_start:-nr_end]
 
             # Total magnetization outside y (tranversal 'vertical') direction:
-            mres = _np.sqrt(regular_mag[:, 0]**2 + regular_mag[:, 2]**2)
+            mres_zx = _np.sqrt(regular_mag[:, 0]**2 + regular_mag[:, 2]**2)
+            mres_xy = _np.sqrt(regular_mag[:, 0]**2 + regular_mag[:, 1]**2)
 
             if self.block_type == 'v':
-                # absolute value of y component is predominant over mres.
-                filt = _np.abs(regular_mag[:, 1]) > mres
+                # absolute value of y component is predominant over mres_zx.
+                filt = _np.abs(regular_mag[:, 1]) > mres_zx
             elif self.block_type == 'vpos':
-                # y component (including sign) is predominant over mres.
-                filt = regular_mag[:, 1] > mres
+                # y component (with sign) is predominant over mres_zx.
+                filt = regular_mag[:, 1] > mres_zx
             elif self.block_type == 'vneg':
-                # negative y component (including sing) is predominant over mres.
-                filt = regular_mag[:, 1]*(-1) > mres
+                # negative y component (with sing) is predominant over mres_zx.
+                filt = regular_mag[:, 1]*(-1) > mres_zx
+            elif self.block_type == 'vlf':
+                # absolute value of y component is predominant over mres.
+                filt_v = _np.abs(regular_mag[:, 1]) > mres_zx
+                # z component (with sign) is predominant over mres_xy.
+                filt_vlf = regular_mag[:, 2] > mres_xy
+                # Resulting filter.
+                filt = _np.logical_or(filt_v, filt_vlf)
             elif self.block_type == 'vlpair':
                 # This is a special option which groups the blocks in pairs
                 # for shimming, the first block of the pair is a vertical
                 # 'v' block. During the shimming, blocks in a pair are
                 # displaced together.
                 # First, the 'v' filter is defined.
-                filt_single = _np.abs(regular_mag[:, 1]) > mres
+                filt_single = _np.abs(regular_mag[:, 1]) > mres_zx
                 # Then, the filter is expanded so that each True value
                 # causes the next list element to also be True.
                 filt = [filt_single[0]]
@@ -871,7 +883,7 @@ class UndulatorShimming():
             # Shim elements are the  items which are going to be moved.
             # They mey be a single block (array with one block) or more
             # than one block (array of blocks).
-            if self.block_type in ['v', 'vpos', 'vneg']:
+            if self.block_type in ['v', 'vpos', 'vneg', 'vlf']:
                 # In these cases, blocks are shimmed individually.
                 shim_elements = [[x] for x in shim_regular_blocks]
             elif self.block_type == 'vlpair':

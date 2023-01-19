@@ -697,7 +697,8 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
 class APU(_insertiondevice.InsertionDeviceModel):
     """Adjustable phase undulador model."""
 
-    def __init__(self, cs_block_shape, ci_block_shape, *args, **kwargs):
+    def __init__(self, cs_block_shape=None,
+                       ci_block_shape=None, *args, **kwargs):
         """Create radia model."""
         self._dg = 0
         self._cs_block_shape = cs_block_shape
@@ -750,8 +751,11 @@ class APU(_insertiondevice.InsertionDeviceModel):
             position_err_dict = {}
 
         name = 'cs'
-        self.cs_cassette_properties = self.cassette_properties.copy()
-        self.cs_cassette_properties['block_shape'] = self.cs_block_shape
+        if self.cs_block_shape is not None:
+            self.cs_cassette_properties = self.cassette_properties.copy()
+            self.cs_cassette_properties['block_shape'] = self.cs_block_shape
+        else:
+            self.cs_cassette_properties = self.cassette_properties
         cs = _cassettes.Cassette(
             upper_cassette=True, name=name,
             nr_periods=self.nr_periods, period_length=self.period_length,
@@ -770,8 +774,11 @@ class APU(_insertiondevice.InsertionDeviceModel):
         self._cassettes[name] = cs
 
         name = 'ci'
-        self.ci_cassette_properties = self.cassette_properties.copy()
-        self.ci_cassette_properties['block_shape'] = self.ci_block_shape
+        if self.ci_block_shape is not None:
+            self.ci_cassette_properties = self.cassette_properties.copy()
+            self.ci_cassette_properties['block_shape'] = self.ci_block_shape
+        else:
+            self.ci_cassette_properties = self.cassette_properties
         ci = _cassettes.Cassette(
             upper_cassette=False, name=name,
             nr_periods=self.nr_periods, period_length=self.period_length,

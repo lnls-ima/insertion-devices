@@ -53,6 +53,9 @@ class UndulatorShimming():
                           (longitudinal) used for shimming. Both blocks of a
                           pair are displaced together by the same shift during
                           the shimming procedure.
+                Alternatively, this attribute may be passed as a dictionary,
+                    specifying a block type per cassette:
+                    e.g. {'cse':'v', 'cie':'vpos'}
                 Defaults to 'v'.
             segments_type (str, optional): Defines how field zeros are used to
                 obtain segments limits. Such zeros are the zeros z positions of
@@ -110,13 +113,18 @@ class UndulatorShimming():
 
         Raises:
             ValueError: If block_type is not allowed.
+            ValueError: If block_type dictionary keys do not match cassettes.
             ValueError: If segments_type is not "period" or "half_period".
         """
-        if block_type not in ('v', 'vpos', 'vneg', 'vlpair', 'vlf'):
-            print(block_type)
-            msg = 'Invalid block_type value. Valid options: '
-            msg += '"v", "vpos", "vneg", "vlpair, "vlf"'
-            raise ValueError(msg)
+        if type(block_type) is str:
+            block_type = {cassette:block_type for cassette in cassettes}
+        for bt in block_type.values():
+            if bt not in ('v', 'vpos', 'vneg', 'vlpair', 'vlf'):
+                msg = 'Invalid block_type value. Valid options: '
+                msg += '"v", "vpos", "vneg", "vlpair, "vlf"'
+                raise ValueError(msg)
+        if set(block_type.keys()) != set(cassettes):
+            raise ValueError('Block type dict does not match cassettes list')
 
         if segments_type not in ('period', 'half_period'):
             raise ValueError('Invalid segments_type value. Valid options: ' +
@@ -830,8 +838,8 @@ class UndulatorShimming():
             shim_elements = _np.concatenate(shim_elements, axis=0)
 
         else:
-
             cas = model.cassettes[cassette]
+            cas_block_type = self.block_type[cassette]
             mag = _np.array(cas.magnetization_list)
             blocks = _np.array(cas.blocks)
 
@@ -849,23 +857,23 @@ class UndulatorShimming():
             mres_zx = _np.sqrt(regular_mag[:, 0]**2 + regular_mag[:, 2]**2)
             mres_xy = _np.sqrt(regular_mag[:, 0]**2 + regular_mag[:, 1]**2)
 
-            if self.block_type == 'v':
+            if cas_block_type == 'v':
                 # absolute value of y component is predominant over mres_zx.
                 filt = _np.abs(regular_mag[:, 1]) > mres_zx
-            elif self.block_type == 'vpos':
+            elif cas_block_type == 'vpos':
                 # y component (with sign) is predominant over mres_zx.
                 filt = regular_mag[:, 1] > mres_zx
-            elif self.block_type == 'vneg':
+            elif cas_block_type == 'vneg':
                 # negative y component (with sing) is predominant over mres_zx.
                 filt = regular_mag[:, 1]*(-1) > mres_zx
-            elif self.block_type == 'vlf':
+            elif cas_block_type == 'vlf':
                 # absolute value of y component is predominant over mres.
                 filt_v = _np.abs(regular_mag[:, 1]) > mres_zx
                 # z component (with sign) is predominant over mres_xy.
                 filt_vlf = regular_mag[:, 2] > mres_xy
                 # Resulting filter.
                 filt = _np.logical_or(filt_v, filt_vlf)
-            elif self.block_type == 'vlpair':
+            elif cas_block_type == 'vlpair':
                 # This is a special option which groups the blocks in pairs
                 # for shimming, the first block of the pair is a vertical
                 # 'v' block. During the shimming, blocks in a pair are
@@ -883,10 +891,10 @@ class UndulatorShimming():
             # Shim elements are the  items which are going to be moved.
             # They mey be a single block (array with one block) or more
             # than one block (array of blocks).
-            if self.block_type in ['v', 'vpos', 'vneg', 'vlf']:
+            if cas_block_type in ['v', 'vpos', 'vneg', 'vlf']:
                 # In these cases, blocks are shimmed individually.
                 shim_elements = [[x] for x in shim_regular_blocks]
-            elif self.block_type == 'vlpair':
+            elif cas_block_type == 'vlpair':
                 # In this case, blocks are grouped in pairs.
                 if len(shim_regular_blocks)%2 == 1:
                     raise ValueError('Could not determine "vlpair" type ' + \

@@ -579,7 +579,8 @@ class UndulatorShimming():
         ib, iib = obj.calc_field_integrals(z_list=z)
         return ib, iib
 
-    def calc_rescale_factor(self, model, meas, filename=None, **kwargs):
+    def calc_rescale_factor(self, model, meas, filename=None,
+                            solved=True, **kwargs):
         """Determine rescale factor by which magnetizations in input Radia model
             should be scaled so that its field profile matches the one in an input
             field data object.
@@ -608,6 +609,8 @@ class UndulatorShimming():
                 Fitted component for determining amplitudes is x, y or sqrt(x^2 +
                 y^2), depending on the value of field_comp.
         """
+        if solved:
+            model.solve()
         bx_model, by_model, _, _ = model.calc_field_amplitude(**kwargs)
         bx_meas, by_meas, _, _ = meas.calc_field_amplitude(**kwargs)
 

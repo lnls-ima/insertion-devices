@@ -170,8 +170,8 @@ class FieldSource():
         #   len(x) x coordinates, 2 field integrals (first and second),
         #   len(z) z coordinates, 3 field components.
 
-        ibx = integs[:, 0, -1, 0]
-        iby = integs[:, 0, -1, 1]
+        ibx = integs[:, 0, -1, 0]*1e-6
+        iby = integs[:, 0, -1, 1]*1e-6
         # Defining the first field integrals along x.
         # Indices correspond to all x points (:), the first integral (0),
         #   at the last z (-1) for the bx and by components (0 and 1)
@@ -907,6 +907,53 @@ class SinusoidalFieldSource(FieldSource):
             rolloff_array[:, xp_idx] = 1 - ampl[:3]/ampl0[:3]
 
         return rolloff_array
+
+    def calc_multipoles_peaks(self, z, x, field_comp=None):
+        """Calculates skew and normal multipole coefficients for the peaks
+        of the field. The peaks are found for for x=y=0 along z.
+
+        Args:
+            z (list, M): z values used for calculating first field integrals.
+                (z is the integration variable) In mm.
+            x (list, N): x values in which first field integrals along z are
+                computed. In mm.
+            field_comp (int, optional): Parameter used to force one of the
+                components to be used for determining peak positions.
+                    If field_comp==0, peaks z position are Bx maxima.
+                    If field_comp==1, peaks z position are By maxima.
+                    If None, the component with greater amplitude will be used.
+                Defaults to None.
+
+        Returns:
+            numpy.ndarray 2 x max_power x N: Array of multipole
+                coefficients (up to max_power) for the N found peaks.
+                Ex 1: [1, 0, 3] will be the dipole normal component of the 3rd 
+                    peak.
+                Ex 2: [0, 0, 3] will be the dipole skew component of the 3rd 
+                    peak.
+        """
+        if field_comp is None:
+            field0 = self.get_field(x=0, y=0, z=z)
+            ampl0 = self.calc_field_amplitude(z_list=z, field_list=field0)
+            field_comp = int(ampl0[1] >= ampl0[0])
+
+        field0 = self.get_field(x=0, y=0, z=z)
+        peaks = self.find_peaks(field0[:,field_comp]) # These are peak indices
+                                                      # in field0, and thus
+                                                      # in the z list as well.
+
+        max_power = min([15, len(x)-1])
+
+        multipole_array = _np.zeros((2, max_power, len(peaks)))
+        for peak_idx, peak in enumerate(peaks): # Peak indices (indexed).
+            b_peak = self.get_field(x=x, y=0, z=z[peak])
+            bx_peak = b_peak[:, 0]
+            by_peak = b_peak[:, 1]
+            multipoles = _utils.fit_multipole_coef(x, bx_peak, x, by_peak)
+            multipole_array[0, :, peak_idx] = multipoles[0]
+            multipole_array[1, :, peak_idx] = multipoles[1]
+
+        return multipole_array
 
     def calc_deflection_parameter(self, bx_amp=None, by_amp=None):
         """Calculate deflection parameter.

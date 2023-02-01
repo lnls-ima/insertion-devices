@@ -176,7 +176,7 @@ class FieldSource():
         # Indices correspond to all x points (:), the first integral (0),
         #   at the last z (-1) for the bx and by components (0 and 1)
 
-        return _utils.fit_integral_multipole_coef(x, ibx, x, iby)
+        return _utils.fit_multipole_coef(x, ibx, x, iby)
 
     def calc_trajectory(
             self, energy, r0, zmax, rkstep, dz=0, on_axis_field=False):

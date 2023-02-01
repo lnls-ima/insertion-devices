@@ -185,7 +185,7 @@ def fit_multipole_coef(bx_x, bx, by_x, by):
             Higher order first. In units of T.m^(-N), ... , T. if the input is
             field in T or units of T.m^(1-N), ... , T.m. if the input is field
             integral in T.m.
-            Maximum order is N = min(15, len(x)-1).
+            Maximum order is N = min(14, len(x)-1).
     """
     max_power = min([14, len(bx_x)-1, len(by_x)-1])
 

@@ -187,7 +187,7 @@ def fit_multipole_coef(bx_x, bx, by_x, by):
             integral in T.m.
             Maximum order is N = min(15, len(x)-1).
     """
-    max_power = min([15, len(bx_x)-1, len(by_x)-1])
+    max_power = min([14, len(bx_x)-1, len(by_x)-1])
 
     coef_skew = _np.polyfit(bx_x*1e-3, bx, max_power)
     coef_normal = _np.polyfit(by_x*1e-3, by, max_power)

@@ -168,21 +168,21 @@ def fit_multipole_coef(bx_x, bx, by_x, by):
         bx_x (list, N): x positions in which x fields or integrals are given.
             In mm.
         bx (list, N): x fields or field first  integrals at the x positions.
-            In T or T.m.
+            In T if the input is field or T.m if the input is field integral.
         by_x (list, M): x positions in which y fields or integrals are given.
             In mm.
         by (list, M): y fields or field first integrals at the x positions.
-            In T or T.m.
+            In T if the input is field or T.m if the input is field integral.
 
     Returns:
         numpy.ndarray, max_power: Polynomial fit (multipole) coefficients
             for the bx or bx integral (skew component).
-            Higher order first. In units of T.m^(N), ... , T. if the input is
+            Higher order first. In units of T.m^(-N), ... , T. if the input is
             field in T or units of T.m^(1-N), ... , T.m. if the input is field
             integral in T.m.
         numpy.ndarray, max_power: Polynomial fit (multipole) coefficients
             for the by or by integral (normal component).
-            Higher order first. In units of T.m^(N), ... , T. if the input is
+            Higher order first. In units of T.m^(-N), ... , T. if the input is
             field in T or units of T.m^(1-N), ... , T.m. if the input is field
             integral in T.m.
             Maximum order is N = min(15, len(x)-1).

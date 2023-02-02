@@ -432,6 +432,8 @@ class FieldSource():
                 if __name__ == '__main__':
 
         Raises:
+            ValueError: Number of points in the longitudinal direction
+                must be >=4.
             ValueError: If provided, number of processes must be >=1.
 
         Returns:
@@ -455,22 +457,27 @@ class FieldSource():
         nz = len(z_list)
 
         if len(x_list) == 1:
-            xstep = 0
+            nx = 2
+            xstep = 1
+            x_list = [x_list[0], x_list[0]]
         else:
             xstep = x_list[1] - x_list[0]
 
         if len(y_list) == 1:
-            ystep = 0
+            ny = 2
+            ystep = 1
+            y_list = [y_list[0], y_list[0]]
         else:
             ystep = y_list[1] - y_list[0]
 
-        if len(z_list) == 1:
-            zstep = 0
+        if len(z_list) < 4:
+            raise ValueError('Number of points in the longitudinal direction ' +
+                                'must be >=4.')
         else:
             zstep = z_list[1] - z_list[0]
 
         header_data = [xstep, ystep, zstep, nx, ny, nz]
-        header = '{0:g} {1:g} {2:g} {3:d} {4:d} {5:d}\n'.format(*header_data)
+        header = '{0:g}\t{1:g}\t{2:g}\t{3:d}\t{4:d}\t{5:d}\n'.format(*header_data)
 
         with open(filename, 'w') as fieldmap:
             fieldmap.write(header)
@@ -492,12 +499,10 @@ class FieldSource():
                 with _ProcessPoolExecutor(max_workers=nproc) as executor:
                     field_gen = executor.map(self.get_field_at_point, pos_list,
                                             chunksize=chunksize)
-                    for field, pos in zip(field_gen, pos_list):
-                        x, y, z = pos
+                    for field in field_gen:
                         bx, by, bz = field
                         line = line_fmt.format(bx, by, bz)
                         fieldmap.write(line)
-
             else:
                 for pos in pos_list:
                     bx, by, bz = self.get_field_at_point(pos)

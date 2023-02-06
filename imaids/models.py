@@ -700,15 +700,15 @@ class APU(_insertiondevice.InsertionDeviceModel):
     def __init__(self, cs_block_shape=None,
                        ci_block_shape=None, *args, **kwargs):
         """Create radia model."""
-        self._dg = 0
+        self._dp = 0
         self._cs_block_shape = cs_block_shape
         self._ci_block_shape = ci_block_shape
         super().__init__(*args, **kwargs)
 
     @property
-    def dg(self):
+    def dp(self):
         """Longitudinal cassette displacement in mm."""
-        return self._dg
+        return self._dp
 
     @property
     def cs_block_shape(self):
@@ -720,9 +720,9 @@ class APU(_insertiondevice.InsertionDeviceModel):
         """Inferior cassette block shape."""
         return self._ci_block_shape
 
-    @dg.setter
-    def dg(self, value):
-        self.set_cassete_positions(dg=value)
+    @dp.setter
+    def dp(self, value):
+        self.set_cassete_positions(dp=value)
 
     def create_radia_object(
             self,
@@ -797,25 +797,25 @@ class APU(_insertiondevice.InsertionDeviceModel):
         self._radia_object = _rad.ObjCnt(
             [c.radia_object for c in [cs, ci]])
 
-    def set_cassete_positions(self, dg=None):
+    def set_cassete_positions(self, dp=None):
         """Change longitudinal cassette position.
 
         Args:
-            dg (float, optional): Energy adjust (in mm).
+            dp (float, optional): Energy adjust (in mm).
                 Defaults to None.
 
         Returns:
             bool: True.
         """
-        if dg is None:
-            dg = self._dg
+        if dp is None:
+            dp = self._dp
 
-        diff_dg = dg - self._dg
+        diff_dp = dp - self._dp
 
         cs = self._cassettes['cs']
-        cs.shift([0, 0, diff_dg])
+        cs.shift([0, 0, diff_dp])
 
-        self._dg = dg
+        self._dp = dp
         return True
 
 

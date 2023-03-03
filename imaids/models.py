@@ -1774,8 +1774,8 @@ class PAPU(APU):
         # created by rotation of the inferior cassette around (0,0,1).
         magnetization_dict = {'cs': -1*magnetizations, 'ci': magnetizations}
 
-        block_names = {'cs':[f'block_{n:02d}' for n in range(85)],
-                       'ci':[f'block_{n:02d}' for n in range(85)]}
+        block_names = {'cs':[f'block_{n:02d}' for n in range(4*nr_periods+13)],
+                       'ci':[f'block_{n:02d}' for n in range(4*nr_periods+13)]}
 
         self.create_radia_object(
                     magnetization_dict=magnetization_dict,

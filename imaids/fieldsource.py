@@ -1534,33 +1534,46 @@ class FieldData(FieldSource):
 
         self._update_interpolation_functions()
 
-    def correct_cross_talk(
-            self, k0=7.56863157e-06, k1=-1.67524756e-02,
-            k2=-6.78110439e-03):
-        """Correct hall probe 03121 Bx cross talk.
+    def correct_cross_talk(self, ky=[-0.006781104386361973,
+                                     -0.01675247563602003,
+                                     7.568631573320983e-06],
+                           kz=[-0.006170829583118335,
+                               -0.016051627320478382,
+                               7.886674928668737e-06]):
+        """Correct hall probe 03121 Bx crosstalk.
             Default values were measured in CNPEM.
 
         Args:
-            k0 (float, optional): Polynomial coefficient k0.
-                Defaults to 7.56863157e-06.
-            k1 (float, optional): Polynomial coefficient k1.
-                Defaults to -1.67524756e-02.
-            k2 (float, optional): Polynomial coefficient k2.
-                Defaults to -6.78110439e-03.
+            ky (list): Polynomial coefficients from By x Bx curve.
+            kz (list): Polynomial coefficients from Bz x Bx curve.
         """
-        tmp_bx = _np.copy(self._bx)
-        tmp_by = _np.copy(self._by)
-        tmp_bz = _np.copy(self._bz)
 
-        tmp_bx_corr = []
+        tmpBx = _np.copy(self._bx)
+        tmpBy = _np.copy(self._by)
+        tmpBz = _np.copy(self._bz)
 
-        for b in range(len(tmp_bx)):
-            tmp_bx_corr.append((tmp_bx[b] + (((
-                k0 + k1*tmp_by[b] + k2*tmp_by[b]**2) + (
-                k0 + k1*tmp_bz[b] + k2*tmp_bz[b]**2)))/2))
+        tmpBxCorr = []
 
-        self._bx = _np.array(tmp_bx_corr)
+        for x in range(len(tmpBx)):
+            tmpBxCorr.append([])
+            for z in range(len(tmpBx[x])):
+                if (abs(tmpBz[x][z]/tmpBy[x][z]) > 10 or
+                    abs(tmpBy[x][z]/tmpBz[x][z]) > 10):
+                    tmpBxCorr[x].append(tmpBx[x][z])
+                else:
+                    tmpBxCorr[x].append(tmpBx[x][z] - (
+                        (
+                            ky[2] + ky[1]*tmpBy[x][z] +
+                            ky[0]*tmpBy[x][z]**2)
+                        *0.3825*tmpBz[x][z]/tmpBy[x][z] +
+                        (
+                            kz[2] + kz[1]*tmpBz[x][z] +
+                            kz[0]*tmpBz[x][z]**2)
+                        *0.6175*tmpBy[x][z]/tmpBz[x][z]
+                        )
+                                        )
 
+        self._bx = _np.array(tmpBxCorr)
         self._update_interpolation_functions()
 
     def get_field_at_point(self, point):

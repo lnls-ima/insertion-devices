@@ -1681,7 +1681,7 @@ class PAPU(APU):
 
     def __init__(
             self, block_shape='default',
-            nr_periods=18, period_length=50.0, gap=8.0, mr=1.25,
+            nr_periods=18, period_length=50.0, gap=24.5, mr=1.22,
             block_subdivision='default',
             rectangular=False, longitudinal_distance=0.2,
             start_blocks_length='default', start_blocks_distance='default',

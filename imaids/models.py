@@ -1781,6 +1781,7 @@ class PAPU(APU):
                     magnetization_dict=magnetization_dict,
                     block_names_dict=block_names)
 
+        self.shift([-1.7, 0, 0])
 
 class HybridAPU(APU):
     """Hybrid APU undulador."""

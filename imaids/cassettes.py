@@ -275,7 +275,7 @@ class Cassette(
         return _deepcopy(self._block_shape)
 
     @property
-    def nr_period(self):
+    def nr_periods(self):
         """Number of complete periods."""
         return self._nr_periods
 

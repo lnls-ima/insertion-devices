@@ -697,15 +697,28 @@ class AppleII(_insertiondevice.InsertionDeviceModel):
 class APU(_insertiondevice.InsertionDeviceModel):
     """Adjustable phase undulador model."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, cs_block_shape=None,
+                       ci_block_shape=None, *args, **kwargs):
         """Create radia model."""
         self._dg = 0
+        self._cs_block_shape = cs_block_shape
+        self._ci_block_shape = ci_block_shape
         super().__init__(*args, **kwargs)
 
     @property
     def dg(self):
         """Longitudinal cassette displacement in mm."""
         return self._dg
+
+    @property
+    def cs_block_shape(self):
+        """Superior cassette block shape."""
+        return self._cs_block_shape
+
+    @property
+    def ci_block_shape(self):
+        """Inferior cassette block shape."""
+        return self._ci_block_shape
 
     @dg.setter
     def dg(self, value):
@@ -738,10 +751,15 @@ class APU(_insertiondevice.InsertionDeviceModel):
             position_err_dict = {}
 
         name = 'cs'
+        if self.cs_block_shape is not None:
+            self.cs_cassette_properties = self.cassette_properties.copy()
+            self.cs_cassette_properties['block_shape'] = self.cs_block_shape
+        else:
+            self.cs_cassette_properties = self.cassette_properties
         cs = _cassettes.Cassette(
             upper_cassette=True, name=name,
             nr_periods=self.nr_periods, period_length=self.period_length,
-            init_radia_object=False, **self.cassette_properties)
+            init_radia_object=False, **self.cs_cassette_properties)
         cs.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
@@ -756,10 +774,15 @@ class APU(_insertiondevice.InsertionDeviceModel):
         self._cassettes[name] = cs
 
         name = 'ci'
+        if self.ci_block_shape is not None:
+            self.ci_cassette_properties = self.cassette_properties.copy()
+            self.ci_cassette_properties['block_shape'] = self.ci_block_shape
+        else:
+            self.ci_cassette_properties = self.cassette_properties
         ci = _cassettes.Cassette(
             upper_cassette=False, name=name,
             nr_periods=self.nr_periods, period_length=self.period_length,
-            init_radia_object=False, **self.cassette_properties)
+            init_radia_object=False, **self.ci_cassette_properties)
         ci.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
@@ -1653,6 +1676,113 @@ class Kyma58(APU):
             name=name, **kwargs)
 
 
+class PAPU(APU):
+    """Prototype Adjustable Phase Undulador model."""
+
+    def __init__(
+            self, block_shape='default',
+            nr_periods=18, period_length=50.0, gap=24.0, mr=1.22,
+            block_subdivision='default',
+            rectangular=False, longitudinal_distance=0.2,
+            start_blocks_length='default', start_blocks_distance='default',
+            end_blocks_length='default', end_blocks_distance='default',
+            name='PAPU', **kwargs):
+
+        """Create PAPU model.
+
+        Args:
+            block_shape (str, optional): List of points [x, y] to
+                create blocks shape (in mm). Defaults to 'default'.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to 50.
+            period_length (int or float, optional): Period length (in mm).
+                Defaults to 50.0.
+            gap (float, optional): Insertion device magnetic gap
+                (in mm). Defaults to 8.0.
+            mr (float, optional): Remanent magnetization (in T).
+                Defaults to 1.25.
+            block_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            rectangular (bool, optional): If True, create model with
+                rectangular blocks. Defaults to False.
+            longitudinal_distance (float, optional): Longitunal
+                distance between blocks (in mm). Defaults to 0.2.
+            start_blocks_length (str or list, optional): List of block lengths
+                in the start of the cassette (in mm). Defaults to 'default'.
+            start_blocks_distance (str or list, optional): List of distance
+                between blocks in the start of the cassette (in mm).
+                Defaults to 'default'.
+            end_blocks_length (str or list, optional): List of block lengths
+                in the end of the cassette (in mm). Defaults to 'default'.
+            end_blocks_distance (str or list, optional): List of distance
+                between blocks in the end of the cassette (in mm).
+                Defaults to 'default'.
+            name (str, optional): Insertion device name.
+                Defaults to 'PAPU'.
+        """
+
+        if block_shape == 'default':
+            block_shape = _blocks.Block.get_predefined_shape('papu')
+            block_shape_flip = _blocks.Block.get_predefined_shape('papu_flip')
+
+        if block_subdivision == 'default':
+            block_subdivision = _blocks.Block.get_predefined_subdivision(
+                                                                        'papu')
+
+        block_len = period_length/4 - longitudinal_distance
+        lenghts = [block_len/4, block_len/4, block_len/4,
+                   block_len/4, block_len/4, block_len/4, block_len]
+        distances = [6, 0, 2.9, 1, 0, 0.2, 0.2]
+
+        if start_blocks_length == 'default':
+            start_blocks_length = lenghts
+
+        if start_blocks_distance == 'default':
+            start_blocks_distance = distances
+
+        if end_blocks_length == 'default':
+            end_blocks_length = lenghts[0:-1][::-1]
+
+        if end_blocks_distance == 'default':
+            end_blocks_distance = distances[0:-1][::-1]
+
+        super().__init__(
+            cs_block_shape=block_shape_flip, ci_block_shape=block_shape,
+            mr=mr, gap=gap, nr_periods=nr_periods,
+            period_length=period_length,
+            block_subdivision=block_subdivision,
+            rectangular=rectangular,
+            longitudinal_distance=longitudinal_distance,
+            start_blocks_length=start_blocks_length,
+            start_blocks_distance=start_blocks_distance,
+            end_blocks_length=end_blocks_length,
+            end_blocks_distance=end_blocks_distance,
+            name=name, **kwargs)
+
+        magnetizations = _np.array(
+              [[0,mr,0],
+               [0,0,-mr], [0,0,-mr],
+               [0,-mr,0], [0,-mr,0], [0,-mr,0],
+               [0,0,mr]]
+            + nr_periods*[[0,mr,0], [0,0,-mr],
+                          [0,-mr,0], [0,0,mr]]
+            + [[0,mr,0], [0,mr,0], [0,mr,0],
+               [0,0,-mr], [0,0,-mr],
+               [0,-mr,0]])
+        # In the APU implementation, the superior cassette is the one
+        # created by rotation of the inferior cassette around (0,0,1).
+        magnetization_dict = {'cs': -1*magnetizations, 'ci': magnetizations}
+
+        block_names = {'cs':[f'block_{n:02d}' for n in range(4*nr_periods+13)],
+                       'ci':[f'block_{n:02d}' for n in range(4*nr_periods+13)]}
+
+        self.create_radia_object(
+                    magnetization_dict=magnetization_dict,
+                    block_names_dict=block_names)
+
+        self.shift([-1.7, 0, 0])
+
 class HybridAPU(APU):
     """Hybrid APU undulador."""
 
@@ -1679,7 +1809,7 @@ class HybridAPU(APU):
                 (in mm). Defaults to 5.2.
             mr (float, optional): Remanent magnetization (in T).
                 Defaults to 1.34.
-            block_subdivision (str or list, optional): List specifying
+           block_subdivision (str or list, optional): List specifying
                 the number of subdivisions of each subblock in the cartesian
                 directions [x, y, z]. Defaults to 'default'.
             hybrid (bool, optional): If True, creates a hybrid device.

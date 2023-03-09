@@ -137,22 +137,102 @@ class UndulatorShimming():
         if zmax_pe is None:
             zmax_pe = zmax
 
-        self.cassettes = cassettes
-        self.block_type = block_type
-        self.segments_type = segments_type
-        self.zmin = zmin
-        self.zmax = zmax
-        self.znpts = int(znpts)
-        self.energy = energy
-        self.rkstep = rkstep
-        self.xpos = xpos
-        self.ypos = ypos
-        self.zmin_pe = zmin_pe
-        self.zmax_pe = zmax_pe
-        self.include_pe = include_pe
-        self.field_comp = field_comp
-        self.solved_shim = solved_shim
-        self.solved_matrix = solved_matrix
+        self._cassettes = cassettes
+        self._block_type = block_type
+        self._segments_type = segments_type
+        self._zmin = zmin
+        self._zmax = zmax
+        self._znpts = int(znpts)
+        self._energy = energy
+        self._rkstep = rkstep
+        self._xpos = xpos
+        self._ypos = ypos
+        self._zmin_pe = zmin_pe
+        self._zmax_pe = zmax_pe
+        self._include_pe = include_pe
+        self._field_comp = field_comp
+        self._solved_shim = solved_shim
+        self._solved_matrix = solved_matrix
+
+    @property
+    def cassettes(self):
+        """"""
+        return self._cassettes
+    
+    @property
+    def block_type(self):
+        """"""
+        return self._block_type
+    
+    @property
+    def segments_type(self):
+        """"""
+        return self._segments_type
+    
+    @property
+    def zmin(self):
+        """"""
+        return self._zmin
+    
+    @property
+    def zmax(self):
+        """"""
+        return self._zmax
+    
+    @property
+    def znpts(self):
+        """"""
+        return self._znpts
+    
+    @property
+    def energy(self):
+        """"""
+        return self._energy
+    
+    @property
+    def rkstep(self):
+        """"""
+        return self._rkstep
+    
+    @property
+    def xpos(self):
+        """"""
+        return self._xpos
+    
+    @property
+    def ypos(self):
+        """"""
+        return self._ypos
+    
+    @property
+    def zmin_pe(self):
+        """"""
+        return self._zmin_pe
+    
+    @property
+    def zmax_pe(self):
+        """"""
+        return self._zmax_pe
+    
+    @property
+    def include_pe(self):
+        """"""
+        return self._include_pe
+    
+    @property
+    def field_comp(self):
+        """"""
+        return self._field_comp
+    
+    @property
+    def solved_shim(self):
+        """"""
+        return self._solved_shim
+    
+    @property
+    def solved_matrix(self):
+        """"""
+        return self._solved_matrix
 
     @staticmethod
     def get_rounded_shims(shims, possible_shims):

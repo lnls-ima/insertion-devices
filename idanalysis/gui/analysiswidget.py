@@ -57,25 +57,10 @@ class AnalysisWidget(_QWidget):
         self.ui = _uic.loadUi(uifile, self)
 
         self.connect_signal_slots()
-        self.set_pyplot()
-        # self.set_plot_flag = True
+        # self.set_pyplot()
+        self.set_plot_flag = True
 
         self.data = None
-
-    # @property
-    # def database_name(self):
-    #     """Database name."""
-    #     return _QApplication.instance().database_name
-    #
-    # @property
-    # def mongo(self):
-    #     """MongoDB database."""
-    #     return _QApplication.instance().mongo
-    #
-    # @property
-    # def server(self):
-    #     """Server for MongoDB database."""
-    #     return _QApplication.instance().server
 
     @property
     def directory(self):
@@ -179,9 +164,9 @@ class AnalysisWidget(_QWidget):
         """Plots measurement data."""
         try:
 
-            # if self.set_plot_flag:
-            #     self.set_pyplot()
-            #     self.set_plot_flag = False
+            if self.set_plot_flag:
+                self.set_pyplot()
+                self.set_plot_flag = False
 
             self.canvas.axes.cla()
 
@@ -295,73 +280,6 @@ class AnalysisWidget(_QWidget):
 
             self.canvas.figure.tight_layout()
             self.canvas.draw()
-
-        except Exception:
-            _traceback.print_exc(file=_sys.stdout)
-
-
-    def update_cmb_transv_pos(self):
-        """Updates transversal positions combobox in order to plot map data"""
-        try:
-            _map_name = self.ui.cmb_map_name.currentText()
-            _hor_axis = self.ui.cmb_hor.currentText()
-
-            _maps = _pandas_load_db_maps()
-            # _meas_I1, _meas_I2 = _pandas_load_db_measurements()
-            #
-            _map = _maps.loc[_maps['name'] == _map_name]
-            #
-            # _I1_id0 = _map['I1_start_id'].values[0] - 1
-            # _I1_idf = _map['I1_end_id'].values[0]
-            # _I2_id0 = _map['I2_start_id'].values[0] - 1
-            # _I2_idf = _map['I2_end_id'].values[0]
-            #
-            # if _I1_idf != 0:
-            #     _I1 = _meas_I1.iloc[_I1_id0:_I1_idf]
-            #     _I1x = _I1.loc[_I1['motion_axis'] == 'Y']
-            #     if len(_I1x) == 0:
-            #         _I1x = None
-            #     _I1y = _I1.loc[_I1['motion_axis'] == 'X']
-            #     if len(_I1y) == 0:
-            #         _I1y = None
-            # else:
-            #     _I1 = None
-            #     _I1x = None
-            #     _I1y = None
-            #
-            # if _I2_idf != 0:
-            #     _I2 = _meas_I2.iloc[_I2_id0:_I2_idf]
-            #     _I2x = _I2.loc[_I2['motion_axis'] == 'Y']
-            #     if len(_I2x) == 0:
-            #         _I2x = None
-            #     _I2y = _I2.loc[_I2['motion_axis'] == 'X']
-            #     if len(_I2y) == 0:
-            #         _I2y = None
-            # else:
-            #     _I2 = None
-            #     _I2x = None
-            #     _I2y = None
-            #
-            # if _I1 is not None:
-            #     _x_pos_array = _I1['x_pos'].drop_duplicates().values
-            #     _y_pos_array = _I1['y_pos'].drop_duplicates().values
-            # elif _I2 is not None:
-            #     _x_pos_array = _I2['x_pos'].drop_duplicates().values
-            #     _y_pos_array = _I2['y_pos'].drop_duplicates().values
-
-            _x_pos_array = _json_to_array(_map['x_pos_array'].values[0])
-            _y_pos_array = _json_to_array(_map['y_pos_array'].values[0])
-
-            self.ui.cmb_transv_pos.clear()
-
-            if _hor_axis != 'Meas #':
-                if _hor_axis == 'X [mm]':
-                    _pos_array = _y_pos_array
-                if _hor_axis == 'Y [mm]':
-                    _pos_array = _x_pos_array
-                self.ui.cmb_transv_pos.addItems(
-                    [str(pos) for pos in _pos_array])
-                self.ui.cmb_transv_pos.setCurrentIndex(0)
 
         except Exception:
             _traceback.print_exc(file=_sys.stdout)

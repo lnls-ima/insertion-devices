@@ -480,4 +480,6 @@ class Block(_fieldsource.FieldModel):
     def _check_magnetization(self, magnetization):
         """Check if magnetization is acceptable."""
         if len(magnetization) != 3:
-            raise ValueError('Invalid magnetization argument.')
+            raise ValueError(
+                'Invalid magnetization argument. The magnetization ' +
+                'vector size must be equal to 3')

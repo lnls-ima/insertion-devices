@@ -652,7 +652,7 @@ def find_peaks_and_valleys(data, prominence=0.05):
 def find_zeros(pos, data):
     """Find zero positions on data.
 
-    Consecutie data pairs with changing sign data are first determined:
+    Consecutive data pairs with changing sign data are first determined:
         Pair:       (pos[i], data[i]) and (pos[i+1], data[i+1])
         In which:   data[i] x data[i+1] = -1
     Each data pair results in a zero position between pos[i] and pos[i+1]:

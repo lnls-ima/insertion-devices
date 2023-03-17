@@ -270,11 +270,6 @@ class Cassette(
         # Which are deinfed below.
 
     @property
-    def block_shape(self):
-        """Block list of shapes [mm]."""
-        return _deepcopy(self._block_shape)
-
-    @property
     def nr_periods(self):
         """Number of complete periods."""
         return self._nr_periods
@@ -283,36 +278,16 @@ class Cassette(
     def period_length(self):
         """Period length [mm]."""
         return self._period_length
+    
+    @property
+    def block_shape(self):
+        """Block list of shapes [mm]."""
+        return _deepcopy(self._block_shape)
 
     @property
     def mr(self):
         """Remanent magnetization [T]."""
-        return self._mr
-
-    @property
-    def hybrid(self):
-        """True for hybrid cassette, False otherwise."""
-        return self._hybrid
-
-    @property
-    def pole_length(self):
-        """Pole length [mm]."""
-        return self._pole_length
-
-    @property
-    def pole_shape(self):
-        """Pole list of shapes [mm]."""
-        return _deepcopy(self._pole_shape)
-
-    @property
-    def pole_subdivision(self):
-        """Pole shape subdivision."""
-        return _deepcopy(self._pole_subdivision)
-    
-    @property
-    def is_pole_list(self):
-        """List of boolean values, True if object is pole, False otherwise."""
-        return self._is_pole_list
+        return self._mr    
 
     @property
     def upper_cassette(self):
@@ -343,6 +318,26 @@ class Cassette(
     def ksiper(self):
         """Perpendicular magnetic susceptibility."""
         return self._ksiper
+    
+    @property
+    def hybrid(self):
+        """True for hybrid cassette, False otherwise."""
+        return self._hybrid
+    
+    @property
+    def pole_shape(self):
+        """Pole list of shapes [mm]."""
+        return _deepcopy(self._pole_shape)
+    
+    @property
+    def pole_length(self):
+        """Pole length [mm]."""
+        return self._pole_length
+
+    @property
+    def pole_subdivision(self):
+        """Pole shape subdivision."""
+        return _deepcopy(self._pole_subdivision)
 
     @property
     def start_blocks_length(self):
@@ -375,14 +370,19 @@ class Cassette(
         return _deepcopy(self._end_blocks_magnetization)
 
     @property
-    def blocks(self):
-        """List of Block objects."""
-        return self._blocks
-
-    @property
     def position_err(self):
         """Position errors [mm]."""
         return _deepcopy(self._position_err)
+    
+    @property
+    def blocks(self):
+        """List of Block objects."""
+        return self._blocks
+    
+    @property
+    def is_pole_list(self):
+        """List of boolean values, True if object is pole, False otherwise."""
+        return self._is_pole_list
 
     @property
     def nr_start_blocks(self):

@@ -1,4 +1,5 @@
 
+from copy import deepcopy as _deepcopy
 import json as _json
 import numpy as _np
 import matplotlib.pyplot as _plt
@@ -137,22 +138,112 @@ class UndulatorShimming():
         if zmax_pe is None:
             zmax_pe = zmax
 
-        self.cassettes = cassettes
-        self.block_type = block_type
-        self.segments_type = segments_type
-        self.zmin = zmin
-        self.zmax = zmax
-        self.znpts = int(znpts)
-        self.energy = energy
-        self.rkstep = rkstep
-        self.xpos = xpos
-        self.ypos = ypos
-        self.zmin_pe = zmin_pe
-        self.zmax_pe = zmax_pe
-        self.include_pe = include_pe
-        self.field_comp = field_comp
-        self.solved_shim = solved_shim
-        self.solved_matrix = solved_matrix
+        self._zmin = zmin
+        self._zmax = zmax
+        self._znpts = int(znpts)
+        self._cassettes = cassettes
+        self._block_type = block_type
+        self._segments_type = segments_type
+        self._energy = energy
+        self._rkstep = rkstep
+        self._xpos = xpos
+        self._ypos = ypos
+        self._zmin_pe = zmin_pe
+        self._zmax_pe = zmax_pe
+        self._include_pe = include_pe
+        self._field_comp = field_comp
+        self._solved_shim = solved_shim
+        self._solved_matrix = solved_matrix
+
+    @property
+    def zmin(self):
+        """Initial longitudinal position [mm]."""
+        return self._zmin
+    
+    @property
+    def zmax(self):
+        """Final longitudinal position [mm]."""
+        return self._zmax
+    
+    @property
+    def znpts(self):
+        """Number of sampling points for field integrals."""
+        return self._znpts
+    
+    @property
+    def cassettes(self):
+        """List of strings specifying which cassettes will be used in shimming.
+        """
+        return _deepcopy(self._cassettes)
+    
+    @property
+    def block_type(self):
+        """String specifying which types of blocks will be used for shimming."""
+        return self._block_type
+    
+    @property
+    def segments_type(self):
+        """Defines how field zeros are used to obtain segments limits."""
+        return self._segments_type
+    
+    @property
+    def energy(self):
+        """Electron energy at the beam [KeV]."""
+        return self._energy
+    
+    @property
+    def rkstep(self):
+        """Step to solve the trajectories equations of motion [mm]."""
+        return self._rkstep
+    
+    @property
+    def xpos(self):
+        """Initial x transversal trajectory position [mm]."""
+        return self._xpos
+    
+    @property
+    def ypos(self):
+        """Initial y transversal trajectory position [mm]."""
+        return self._ypos
+    
+    @property
+    def zmin_pe(self):
+        """Lower z bound for list of poles in phase error calculations [mm]."""
+        return self._zmin_pe
+    
+    @property
+    def zmax_pe(self):
+        """Upper z bound for list of poles in phase error calculations [mm]."""
+        return self._zmax_pe
+    
+    @property
+    def include_pe(self):
+        """If True, the calculation for segment slopes also writes the phase
+        errors to output file.
+        """
+        return self._include_pe
+    
+    @property
+    def field_comp(self):
+        """Force the use of x or y field components.
+        > field_comp==0 -> Bx
+        > field_comp==1 -> By
+        """
+        return self._field_comp
+    
+    @property
+    def solved_shim(self):
+        """Boolean. If True, magnetostatic problem is solved before calculating
+        shimming signature field. Otherwise, solve method is not run.
+        """
+        return self._solved_shim
+    
+    @property
+    def solved_matrix(self):
+        """Boolean. If True, magnetostatic problem is solved before calculating
+        each shim. Otherwise, solve method is not run.
+        """
+        return self._solved_matrix
 
     @staticmethod
     def get_rounded_shims(shims, possible_shims):

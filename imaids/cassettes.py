@@ -88,7 +88,7 @@ class Cassette(
             hybrid (bool, optional): If True, hybrid undulator cassette is
                 created with alternating blocks and poles. If False, cassette
                 is created with only blocks. Defaults to False.                
-            pole_shape (list, Mx2 or NxMx2,  optiona): Pole shape in the same
+            pole_shape (list, Mx2 or NxMx2, optional): Pole shape in the same
                 format as block_shape, in mm. If None pole shape will be the
                 same as block shape. Defaults to None. 
             pole_length (float, optional): Pole length in mm.
@@ -132,8 +132,8 @@ class Cassette(
             init_radia_object (bool, optional): If True, Radia object is
                 created at object initialization. Defaults to True.
             
-        Note1: length of core blocks is not given by an initialization argumnt,
-        but determind by the number of periods, period length, longitudinal
+        Note1: length of core blocks is not given by an initialization argument,
+        but determined by the number of periods, period length, longitudinal
         distance and (possibly, if hybrid==True) pole length. Such length
         determination is performed by the create_radia_object method.
         
@@ -213,7 +213,7 @@ class Cassette(
                 end_check = (len(end_blocks_length)
                                 == len(end_blocks_distance)
                                 == len(end_blocks_magnetization))
-                msg += f'\nmagnetizatins: {len(end_blocks_magnetization)}'
+                msg += f'\nmagnetizations: {len(end_blocks_magnetization)}'
             else:
                 end_check = (len(end_blocks_length)
                                 == len(end_blocks_distance))
@@ -256,7 +256,7 @@ class Cassette(
             self.create_radia_object()
         
         # Also, there are the following @property methods which are not
-        # directnly obtained from the __init__ arguments:
+        # directly obtained from the __init__ arguments:
         # > nr_start_blocks
         # > nr_core_blocks
         # > nr_end_blocks
@@ -270,12 +270,7 @@ class Cassette(
         # Which are deinfed below.
 
     @property
-    def block_shape(self):
-        """Block list of shapes [mm]."""
-        return _deepcopy(self._block_shape)
-
-    @property
-    def nr_period(self):
+    def nr_periods(self):
         """Number of complete periods."""
         return self._nr_periods
 
@@ -283,36 +278,16 @@ class Cassette(
     def period_length(self):
         """Period length [mm]."""
         return self._period_length
+    
+    @property
+    def block_shape(self):
+        """Block list of shapes [mm]."""
+        return _deepcopy(self._block_shape)
 
     @property
     def mr(self):
         """Remanent magnetization [T]."""
-        return self._mr
-
-    @property
-    def hybrid(self):
-        """True for hybrid cassette, False otherwise."""
-        return self._hybrid
-
-    @property
-    def pole_length(self):
-        """Pole length [mm]."""
-        return self._pole_length
-
-    @property
-    def pole_shape(self):
-        """Pole list of shapes [mm]."""
-        return _deepcopy(self._pole_shape)
-
-    @property
-    def pole_subdivision(self):
-        """Pole shape subdivision."""
-        return _deepcopy(self._pole_subdivision)
-    
-    @property
-    def is_pole_list(self):
-        """List of boolean values, True if object is pole, False otherwise."""
-        return self._is_pole_list
+        return self._mr    
 
     @property
     def upper_cassette(self):
@@ -343,6 +318,26 @@ class Cassette(
     def ksiper(self):
         """Perpendicular magnetic susceptibility."""
         return self._ksiper
+    
+    @property
+    def hybrid(self):
+        """True for hybrid cassette, False otherwise."""
+        return self._hybrid
+    
+    @property
+    def pole_shape(self):
+        """Pole list of shapes [mm]."""
+        return _deepcopy(self._pole_shape)
+    
+    @property
+    def pole_length(self):
+        """Pole length [mm]."""
+        return self._pole_length
+
+    @property
+    def pole_subdivision(self):
+        """Pole shape subdivision."""
+        return _deepcopy(self._pole_subdivision)
 
     @property
     def start_blocks_length(self):
@@ -375,14 +370,19 @@ class Cassette(
         return _deepcopy(self._end_blocks_magnetization)
 
     @property
-    def blocks(self):
-        """List of Block objects."""
-        return self._blocks
-
-    @property
     def position_err(self):
         """Position errors [mm]."""
         return _deepcopy(self._position_err)
+    
+    @property
+    def blocks(self):
+        """List of Block objects."""
+        return self._blocks
+    
+    @property
+    def is_pole_list(self):
+        """List of boolean values, True if object is pole, False otherwise."""
+        return self._is_pole_list
 
     @property
     def nr_start_blocks(self):
@@ -665,7 +665,7 @@ class Cassette(
         # Positions initialy start at 0 and are defined by adding the
         # longitudinal distances (gaps) and half lengths of their two adjacent
         # blocks or poles. Blocks/poles centers are then shifted so that they
-        # are centered around the lontitudinal z=0.
+        # are centered around the longitudinal z=0.
         position_list = [0]
         for i in range(1, self.nr_blocks):
             position_list.append((
@@ -689,7 +689,7 @@ class Cassette(
                     rectangular=self._rectangular,
                     material=self._pole_material)
             else:
-                #BLOCK: magnetizationn vector (direction and modulus) is passed
+                #BLOCK: magnetization vector (direction and modulus) is passed
                 #       to blocks.Block object, defining magnetization modulus
                 #       and direction of a new linear material.
                 #       (if magnetization_list is not passed, this vector
@@ -721,7 +721,7 @@ class Cassette(
         """List of magnetization vector without amplitude and
         angular errors.
 
-        Strength/modulus of returned matnetizations is given by mr.
+        Strength/modulus of returned magnetizations is given by mr.
 
         Magnetization directions are based on a Halbach indexed as follows:
 
@@ -793,11 +793,11 @@ class Cassette(
                 magnetization modulus.
                 Example:
                     max_amplitude_error=0.02 represents 2% maximum modulus
-                    error, meaning magnetization modulus beteen 98% and 102% of
+                    error, meaning magnetization modulus between 98% and 102% of
                     the ideal value returned by get_ideal_magnetization_list().
                 Defaults to 0.                 
             max_angular_error (float, optional): Maximum angular error, which
-                is the angle by wich the magnetization vector will be rotated
+                is the angle by which the magnetization vector will be rotated
                 around a random axis. In radians. Defaults to 0.
             termination_errors (bool, optional): If True, errors are applied
                 to termination (start and end) blocks. If False, ideal vectors

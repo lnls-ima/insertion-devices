@@ -1007,7 +1007,7 @@ class SinusoidalFieldSource(FieldSource):
         return avgtraj
 
     def calc_trajectory_length(self, trajectory):
-        """Caculate trajectory length.
+        """Calculate trajectory length in mm.
 
         Args:
             trajectory (list): Electron trajectory [x,y,z,x',y',z'],
@@ -1023,7 +1023,7 @@ class SinusoidalFieldSource(FieldSource):
         return traj_len
 
     def calc_radiation_phase(self, energy, trajectory, wavelength):
-        """Calculate radiation phase.
+        """Calculate radiation phase in rad.
 
         Args:
             energy (float): Electron energy at the beam (in KeV).
@@ -1041,7 +1041,7 @@ class SinusoidalFieldSource(FieldSource):
 
     def calc_radiation_wavelength(
             self, energy, bx_amp, by_amp, harmonic=1):
-        """Calculate radiation wavelength.
+        """Calculate radiation wavelength in mm.
 
         Args:
             energy (float): Electron energy at the beam (in KeV).

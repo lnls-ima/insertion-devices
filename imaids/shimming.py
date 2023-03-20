@@ -1,5 +1,4 @@
 
-from copy import deepcopy as _deepcopy
 import json as _json
 import numpy as _np
 import matplotlib.pyplot as _plt
@@ -174,7 +173,7 @@ class UndulatorShimming():
     def cassettes(self):
         """List of strings specifying which cassettes will be used in shimming.
         """
-        return _deepcopy(self._cassettes)
+        return self._cassettes
     
     @property
     def block_type(self):

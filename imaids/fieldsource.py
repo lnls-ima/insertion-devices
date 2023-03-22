@@ -1198,6 +1198,11 @@ class FieldModel(FieldSource):
     def radia_object(self):
         """Number of the radia object."""
         return self._radia_object
+    
+    @property
+    def child_radia_objects(self):
+        """List of radia objects inside the container radia_object"""
+        return _rad.ObjCntStuf(self.radia_object)
 
     @property
     def center_point(self):

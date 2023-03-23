@@ -1,8 +1,10 @@
 
+import json as _json
 import numpy as _np
 from scipy import signal as _signal
 from scipy import optimize as _optimize
 import radia as _rad
+
 
 
 # NOTE: package lnls-sirius/mathphys could be used to defined these consts
@@ -98,6 +100,94 @@ def get_info_all(max_ref=100000):
         except RuntimeError:
             pass    
     return info_dict
+
+
+def get_info_recursive(ref):
+    """get the geometry and magnetization data of the radia object ref.
+
+    Arg:
+        ref (int): Radia object reference whose information will be returned.
+    
+    Returns:
+        total_info (list): list with information about the geometry type,
+        position, dimensions, magnetization and vertices defining the last
+        division of blocks that construct the radia object ref.
+
+    Output format:
+        The return is structured in the following way. For example, for ref
+        being the device radia_object:
+
+        total_info = [undulator], where
+        undulator = [block1],[block2],...,[blockN], where
+        block1 = [subblock11],[subblock12],...,[subblock1N], where
+        subblock11 = [division111],[division112],...,[division11N], where
+        division111 = {'geometry_type': 'RecMag',
+                       'radia_position:': [x,y,z],
+                       'radia_dimension': [wx,wy,wz],
+                       'radia_magnetization': [mx,my,mz]} or
+                    = {'geometry_type': 'Polyhedron',
+                       'radia_position:': [x,y,z],
+                       'radia_magnetization': [mx,my,mz],
+                       'radia_polyhedron': PL}
+        
+        PL is the list of faces of the respective polyhedron. Each face is
+        a list of vertices given in a counter-clockwise manner
+    """
+
+    # Recursively getting the informations
+    total_info = []
+    if _rad.ObjCntSize(ref) > 0:
+        for ref in _rad.ObjCntStuf(ref):
+            total_info.append(get_info_recursive(ref))
+            return total_info
+    
+    #information of each radia object inside ref
+
+    single_ref_info = {}
+
+    header, *ref_dump = _rad.UtiDmp(ref).split('\n')
+
+    if 'RecMag' in header:
+        single_ref_info['geometry_type'] = 'RecMag'    
+    elif 'Polyhedron' in header:
+        single_ref_info['geometry_type'] = 'Polyhedron'
+    else:
+        raise ValueError('Radia object is not RecMag nor Polyhedron')
+    
+    polyhedron_faces = []
+    reading_faces = False
+    keys_mapping = {'{x,y,z}': 'position',
+                    '{wx,wy,wz}': 'dimensions',
+                    '{mx,my,mz}': 'magnetization'}
+    
+    for line in ref_dump:
+
+        if 'Face Vertices' in line:
+            reading_faces = True
+            continue
+
+        if reading_faces:
+            if line=='':
+                reading_faces = False
+                polyhedron = \
+                    [_json.loads(face.replace('{','[').replace('}',']')[3:-1])
+                    for face in polyhedron_faces]
+                single_ref_info['polyhedron'] = polyhedron
+            else:
+                polyhedron_faces.append(line)
+
+        else:
+            if ('{x,y,z}' in line) or \
+            ('{mx,my,mz}' in line) or \
+            ('{wx,wy,wz}' in line):
+                parameter, value = line.split('=')
+                single_ref_info[keys_mapping[parameter.strip()]] = \
+                    [float(i) for i in value.lstrip().strip('{}').split(',')]
+        
+        if len(single_ref_info) == 4:
+            break
+    
+    return single_ref_info
 
 
 def get_info_all_str(max_ref=100000):

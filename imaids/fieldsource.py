@@ -1269,6 +1269,9 @@ class FieldModel(FieldSource):
         with open(filename, 'w') as f:
             _json.dump(self.state, f)
         return True
+    
+    def radia_state(self):
+        return _utils.get_info_recursive(self.radia_object)
 
     def solve(self, prec=0.00001, max_iter=1000):
         """Executes an automatic relaxation procedure.

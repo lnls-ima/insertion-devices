@@ -1271,6 +1271,13 @@ class FieldModel(FieldSource):
         return True
     
     def radia_state(self):
+        """get the geometry and magnetization information.
+
+        Returns:
+            list: Information about the geometry type, position, dimensions,
+                  magnetization and vertices defining the last division of
+                  blocks that construct the object self in Radia module.
+        """
         return _utils.get_info_recursive(self.radia_object)
 
     def solve(self, prec=0.00001, max_iter=1000):

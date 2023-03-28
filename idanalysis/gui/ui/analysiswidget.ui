@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>923</width>
+    <width>926</width>
     <height>661</height>
    </rect>
   </property>
@@ -111,7 +111,7 @@
             <string>Correct Angle</string>
            </property>
            <property name="checked">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
           </widget>
          </item>
@@ -154,6 +154,11 @@
          <item>
           <property name="text">
            <string>Phase Error</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Phase Error vs z</string>
           </property>
          </item>
          <item>
@@ -422,7 +427,7 @@
          <item>
           <widget class="QPushButton" name="pbt_spectra_fieldmap">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="text">
             <string>Save Spectra Fieldmap</string>

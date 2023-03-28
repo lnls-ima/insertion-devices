@@ -74,6 +74,23 @@ class AnalysisWidget(_QWidget):
         self.ui.pbt_spectra_fieldmap.clicked.connect(self.save_spectra)
         self.ui.pbt_multipoles.clicked.connect(self.multipoles)
         self.ui.tbt_filedialog.clicked.connect(self.file_dialog)
+        self.ui.cmb_id.currentIndexChanged.connect(self.change_id)
+    
+    def change_id(self):
+        if self.ui.cmb_id.currentText() == 'PAPU24':
+            self.ui.sb_periods.setValue(18)
+            self.ui.dsb_period_length.setValue(50)
+            self.ui.dsb_gap.setValue(24)
+            self.ui.chb_angle.setChecked(False)
+            self.ui.chb_crosstalk.setChecked(False)
+        
+        elif self.ui.cmb_id.currentText() == 'Delta525':
+            self.ui.sb_periods.setValue(21)
+            self.ui.dsb_period_length.setValue(52.5)
+            self.ui.dsb_gap.setValue(13.6)
+            self.ui.chb_angle.setChecked(True)
+            self.ui.chb_crosstalk.setChecked(True)
+            
 
     def set_pyplot(self):
         """Configures plot widget"""

@@ -61,6 +61,20 @@
        <item row="1" column="0">
         <layout class="QHBoxLayout" name="horizontalLayout">
          <item>
+          <widget class="QComboBox" name="cmb_id">
+           <item>
+            <property name="text">
+             <string>PAPU24</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Delta525</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
           <widget class="QLabel" name="label_2">
            <property name="text">
             <string>N Periods:</string>

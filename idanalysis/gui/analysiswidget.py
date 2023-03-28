@@ -77,7 +77,7 @@ class AnalysisWidget(_QWidget):
         self.ui.cmb_id.currentIndexChanged.connect(self.change_id)
     
     def change_id(self):
-        if self.ui.cmb_id.currentText() == 'PAPU24':
+        if self.ui.cmb_id.currentText() == 'PAPU50':
             self.ui.sb_periods.setValue(18)
             self.ui.dsb_period_length.setValue(50)
             self.ui.dsb_gap.setValue(24)

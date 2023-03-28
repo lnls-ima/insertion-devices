@@ -128,7 +128,7 @@ class AnalysisWidget(_QWidget):
             if self.ui.chb_angle.isChecked():
                 self.data.correct_angles()
             if self.ui.chb_crosstalk.isChecked():
-                self.data.correct_crosstalk()
+                self.data.correct_cross_talk()
 
             # Parameters for calculus:
             

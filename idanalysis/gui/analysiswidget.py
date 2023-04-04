@@ -74,6 +74,23 @@ class AnalysisWidget(_QWidget):
         self.ui.pbt_spectra_fieldmap.clicked.connect(self.save_spectra)
         self.ui.pbt_multipoles.clicked.connect(self.multipoles)
         self.ui.tbt_filedialog.clicked.connect(self.file_dialog)
+        self.ui.cmb_id.currentIndexChanged.connect(self.change_id)
+    
+    def change_id(self):
+        if self.ui.cmb_id.currentText() == 'PAPU50':
+            self.ui.sb_periods.setValue(18)
+            self.ui.dsb_period_length.setValue(50)
+            self.ui.dsb_gap.setValue(24)
+            self.ui.chb_angle.setChecked(False)
+            self.ui.chb_crosstalk.setChecked(False)
+        
+        elif self.ui.cmb_id.currentText() == 'Delta525':
+            self.ui.sb_periods.setValue(21)
+            self.ui.dsb_period_length.setValue(52.5)
+            self.ui.dsb_gap.setValue(13.6)
+            self.ui.chb_angle.setChecked(True)
+            self.ui.chb_crosstalk.setChecked(True)
+            
 
     def set_pyplot(self):
         """Configures plot widget"""
@@ -89,9 +106,9 @@ class AnalysisWidget(_QWidget):
     def file_dialog(self):
         """Opens file dialog to select the fieldmap."""
         try:
-            filename, _ = _QFileDialog.getOpenFileName(self,"Fieldmap file",
+            self.filename, _ = _QFileDialog.getOpenFileName(self,"Fieldmap file",
                 "","All Files (*);;Python Files (*.py)")
-            self.ui.cmb_filename.setCurrentText(filename)
+            self.ui.cmb_filename.setCurrentText(self.filename)
         except Exception:
             _traceback.print_exc(file=_sys.stdout)
 
@@ -111,7 +128,7 @@ class AnalysisWidget(_QWidget):
             if self.ui.chb_angle.isChecked():
                 self.data.correct_angles()
             if self.ui.chb_crosstalk.isChecked():
-                self.data.correct_crosstalk()
+                self.data.correct_cross_talk()
 
             # Parameters for calculus:
             
@@ -143,6 +160,7 @@ class AnalysisWidget(_QWidget):
                 skip_poles=skip_poles)
             self.data.pe = pe*180/_np.pi
             self.data.perms = perms*180/_np.pi
+            self.data.zpe = zpe
 
             self.ui.le_I1x.setText('{:.2f}'.format(self.data.ib[:, 0][-1]))
             self.ui.le_I1y.setText('{:.2f}'.format(self.data.ib[:, 1][-1]))
@@ -241,6 +259,15 @@ class AnalysisWidget(_QWidget):
                 self.canvas.axes.set_xlabel('Pole Number')
                 self.canvas.axes.set_ylabel(r'Phase Error ($\mathbf{\phi)}$ [°]')
                 self.canvas.axes.axhline(0, color='k', linestyle='--')
+
+            elif self.ui.cmb_plot.currentText() == 'Phase Error vs z':
+                poles = list(range(1, len(self.data.pe)+1))
+                self.canvas.axes.plot(self.data.zpe, self.data.pe, '-o')
+                    
+                self.canvas.axes.grid(1)
+                self.canvas.axes.set_xlabel('z [mm]')
+                self.canvas.axes.set_ylabel(r'Phase Error ($\mathbf{\phi)}$ [°]')
+                self.canvas.axes.axhline(0, color='k', linestyle='--')
             
             elif self.ui.cmb_plot.currentText() == 'I1x vs x':
                 x = self.data.px
@@ -298,4 +325,14 @@ class AnalysisWidget(_QWidget):
             return False
 
     def save_spectra(self):
-        pass
+        try:
+            filename = self.filename.replace('.dat', '.txt')
+            self.data.save_fieldmap_spectra(filename, self.data.px,
+                                            self.data.py, self.data.pz)
+            _msg = "Spectra fieldmap saved sucessfully."
+            _QMessageBox.information(self, 'Save Spectra', _msg,
+                                     _QMessageBox.Ok)
+        except Exception:
+            _msg = "Spectra fieldmap could not be saved."
+            _QMessageBox.warning(self, 'Save Spectra', _msg,
+                                     _QMessageBox.Ok)

@@ -160,70 +160,70 @@ class UndulatorShimming():
     def zmin(self):
         """Initial longitudinal position [mm]."""
         return self._zmin
-    
+
     @property
     def zmax(self):
         """Final longitudinal position [mm]."""
         return self._zmax
-    
+
     @property
     def znpts(self):
         """Number of sampling points for field integrals."""
         return self._znpts
-    
+
     @property
     def cassettes(self):
         """List of strings specifying which cassettes will be used in shimming.
         """
         return self._cassettes
-    
+
     @property
     def block_type(self):
         """String specifying which types of blocks will be used for shimming."""
         return self._block_type
-    
+
     @property
     def segments_type(self):
         """Defines how field zeros are used to obtain segments limits."""
         return self._segments_type
-    
+
     @property
     def energy(self):
         """Electron energy at the beam [KeV]."""
         return self._energy
-    
+
     @property
     def rkstep(self):
         """Step to solve the trajectories equations of motion [mm]."""
         return self._rkstep
-    
+
     @property
     def xpos(self):
         """Initial x transversal trajectory position [mm]."""
         return self._xpos
-    
+
     @property
     def ypos(self):
         """Initial y transversal trajectory position [mm]."""
         return self._ypos
-    
+
     @property
     def zmin_pe(self):
         """Lower z bound for list of poles in phase error calculations [mm]."""
         return self._zmin_pe
-    
+
     @property
     def zmax_pe(self):
         """Upper z bound for list of poles in phase error calculations [mm]."""
         return self._zmax_pe
-    
+
     @property
     def include_pe(self):
         """If True, the calculation for segment slopes also writes the phase
         errors to output file.
         """
         return self._include_pe
-    
+
     @property
     def field_comp(self):
         """Force the use of x or y field components.
@@ -231,14 +231,14 @@ class UndulatorShimming():
         > field_comp==1 -> By
         """
         return self._field_comp
-    
+
     @property
     def solved_shim(self):
         """Boolean. If True, magnetostatic problem is solved before calculating
         shimming signature field. Otherwise, solve method is not run.
         """
         return self._solved_shim
-    
+
     @property
     def solved_matrix(self):
         """Boolean. If True, magnetostatic problem is solved before calculating

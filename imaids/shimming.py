@@ -46,6 +46,8 @@ class UndulatorShimming():
                 'vneg'  : Vertical negative, blocks whose magnetization points
                           mostly to the negative y direction ("vertical" down
                           transversal)
+                'lon'     : Longitudinal, blocks whose magnetization points
+                          mostly perpendicular to the y direction.
                 'vlf'   : Vertical and longitudinal foward, the same as 'v'
                           plus the blocks whose magnetization points mostly
                           to the positive z direction ("foward" longitudinal).
@@ -120,9 +122,9 @@ class UndulatorShimming():
         if type(block_type) is str:
             block_type = {cassette:block_type for cassette in cassettes}
         for bt in block_type.values():
-            if bt not in ('v', 'vpos', 'vneg', 'vlpair', 'vlf', 'all'):
+            if bt not in ('v', 'vpos', 'vneg', 'lon', 'vlpair', 'vlf', 'all'):
                 msg = 'Invalid block_type value. Valid options: '
-                msg += '"v", "vpos", "vneg", "vlpair", "vlf", "all"'
+                msg += '"v", "vpos", "vneg", "lon", "vlpair", "vlf", "all"'
                 raise ValueError(msg)
         if set(block_type.keys()) != set(cassettes):
             raise ValueError('Block type dict does not match cassettes list')
@@ -920,10 +922,12 @@ class UndulatorShimming():
                 grouped according to the block_type. Only non-termination
                 blocks are included.
                 The array shape represents N shimming elements, each one
-                conssisting of M blocks. In the 'v', 'vpos' and 'vneg' cases,
-                each element is a single block (Nx1). For the 'vlpair' case,
-                each element is an array of two blocks (Nx2), and each block
-                is displaced as a single unit during the shimming procedure.
+                conssisting of M blocks.
+                In the the 'vlpair' case, each element is an array of two
+                blocks (Nx2), and each block is displaced as a single unit
+                during the shimming procedure.
+                In the all the other cases, each element represents a single
+                block, but the shape keeps 2-dimensional (Nx1).
         """
         if cassette == 'all':
 
@@ -960,6 +964,9 @@ class UndulatorShimming():
             elif cas_block_type == 'vneg':
                 # negative y component (with sing) is predominant over mres_zx.
                 filt = regular_mag[:, 1]*(-1) > mres_zx
+            if cas_block_type == 'lon':
+                # absolute y component value is NOT predominant over mres_zx.
+                filt = _np.abs(regular_mag[:, 1]) < mres_zx
             elif cas_block_type == 'vlf':
                 # absolute value of y component is predominant over mres.
                 filt_v = _np.abs(regular_mag[:, 1]) > mres_zx
@@ -988,7 +995,7 @@ class UndulatorShimming():
             # Shim elements are the  items which are going to be moved.
             # They mey be a single block (array with one block) or more
             # than one block (array of blocks).
-            if cas_block_type in ['v', 'vpos', 'vneg', 'vlf', 'all']:
+            if cas_block_type in ['v', 'vpos', 'vneg', 'lon', 'vlf', 'all']:
                 # In these cases, blocks are shimmed individually.
                 shim_elements = [[x] for x in shim_regular_blocks]
             elif cas_block_type == 'vlpair':

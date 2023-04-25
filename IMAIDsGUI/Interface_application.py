@@ -20,6 +20,7 @@ from  PyQt6.QtWidgets import    (QApplication,
                                 QPushButton,
                                 QLabel,
                                 QLineEdit,
+                                QComboBox,
                                 QMenu)
 from   PyQt6.QtGui    import   (QAction,
                                 QIcon,
@@ -169,8 +170,8 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(button_actionA)
         self.toolbar.addSeparator()
 
-        # button analysis as a CustomButton
-        toolbar_buttonAnalysis = CustomButton("Analysis")
+        # button analysis as a combo box
+        toolbar_comboboxAnalysis = QComboBox()
         actionPhaseError = QAction("Phase Error", self)
         actionRollOff = QAction("Roll Off", self)
         actionKickmap = QAction("Kickmap", self)
@@ -179,15 +180,23 @@ class MainWindow(QMainWindow):
         actionShimming = QAction("Shimming", self)
         actionCrossTalk = QAction("Cross Talk", self)
         actionFieldIntegral = QAction("Field Integral", self)
-        toolbar_buttonAnalysis.custom_buttonMenu.addActions(([actionPhaseError,
-                                                              actionRollOff,
-                                                              actionKickmap,
-                                                              actionTrajectory,
-                                                              actionMagneticField,
-                                                              actionShimming,
-                                                              actionCrossTalk,
-                                                              actionFieldIntegral]))
-        self.toolbar.addWidget(toolbar_buttonAnalysis)
+        # toolbar_buttonAnalysis.custom_buttonMenu.addActions(([actionPhaseError,
+        #                                                       actionRollOff,
+        #                                                       actionKickmap,
+        #                                                       actionTrajectory,
+        #                                                       actionMagneticField,
+        #                                                       actionShimming,
+        #                                                       actionCrossTalk,
+        #                                                       actionFieldIntegral]))
+        toolbar_comboboxAnalysis.addItems((["Phase Error",
+                                              "Roll Off",
+                                              "Kickmap",
+                                              "Trajectory",
+                                              "Magnetic Field",
+                                              "Shimming",
+                                              "Cross Talk",
+                                              "Field Integral"]))
+        self.toolbar.addWidget(toolbar_comboboxAnalysis)
         self.toolbar.addSeparator()
 
         toolbar_buttonPlot = CustomButton("Plot")

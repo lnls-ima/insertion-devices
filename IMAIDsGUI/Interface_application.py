@@ -10,6 +10,7 @@ import sys
 
 from  PyQt6.QtWidgets import   (QApplication,
                                 QWidget,
+                                QFrame,
                                 QMainWindow,
                                 QTabWidget,
                                 QStatusBar,
@@ -31,7 +32,8 @@ from  PyQt6.QtWidgets import   (QApplication,
                                 QTreeWidgetItem,
                                 QListWidget,
                                 QListWidgetItem,
-                                QCheckBox)
+                                QCheckBox,
+                                QMessageBox)
 from   PyQt6.QtGui    import   (QAction,
                                 QIcon,
                                 QKeySequence,
@@ -46,9 +48,71 @@ from   PyQt6.QtCore   import   (Qt,
                                 pyqtSignal,
                                 QAbstractTableModel,
                                 QTimer,
-                                QEvent)
+                                QEvent,
+                                QRect,
+                                pyqtSlot)
 
 from widgets import model_dialog, project, table_model
+
+
+class CheckableListWidget(QListWidget):
+
+    def __init__(self, items,*args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.items_checked = []
+
+        self.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
+        self.itemChanged.connect(self.handle_item_changed)
+
+        # Create the list items and add them to the list widget
+        items_list = []
+
+        for list_item in items:
+            itemn = QListWidgetItem(list_item, self)
+            itemn.setFlags(itemn.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            itemn.setCheckState(Qt.CheckState.Unchecked)
+            items_list.append(itemn)
+        
+
+    def handle_item_changed(self, item):
+
+        if item.checkState() == Qt.CheckState.Checked:
+            if item not in self.items_checked:
+                self.items_checked.append(item.text())
+        else:
+            if item.text() in self.items_checked:
+                self.items_checked.remove(item.text())
+    
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+            print(self.items_checked)   
+        else:
+            super().keyPressEvent(event)
+
+
+class DoublePushButton(QPushButton):
+    doubleClicked = pyqtSignal()
+    clicked = pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        QPushButton.__init__(self, *args, **kwargs)
+        self.timer = QTimer()
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(self.clicked.emit)
+        super().clicked.connect(self.checkDoubleClick)
+
+    # melhorar essa implementacao, o intervalo de tempo esta sendo usado para
+    # executar a acao de um clique tambem
+
+    # na verdade nao ha como, e' preciso esperar para saber se e' clique duplo ou nao
+    @pyqtSlot()
+    def checkDoubleClick(self):
+        if self.timer.isActive():
+            self.doubleClicked.emit()
+            self.timer.stop()
+        else:
+            self.timer.start(250)
 
 
 class ButtonMenu(QPushButton):
@@ -185,7 +249,7 @@ class MainWindow(QMainWindow):
         self.menuView = self.menubar.addMenu("&View")
         ## Settings
         self.menuSettings = self.menubar.addMenu("&Settings")
-        ## Help
+        ## Help: documentacao da interface
         self.menuHelp = self.menubar.addMenu("&Help")
 
 
@@ -193,18 +257,54 @@ class MainWindow(QMainWindow):
         self.toolbar = QToolBar("Barra de Ferramentas")
         self.addToolBar(self.toolbar)
 
-        # button analysis as a ButtonMenu
-        toolbar_buttonAnalysis = ButtonMenu("Analysis")
-        self.toolbar.addWidget(toolbar_buttonAnalysis)
-        toolbar_buttonAnalysis.custom_buttonMenu.addActions(([actionPhaseError,
-                                                              actionRollOff,
-                                                              actionKickmap,
-                                                              actionTrajectory,
-                                                              actionMagneticField,
-                                                              actionShimming,
-                                                              actionCrossTalk,
-                                                              actionFieldIntegral]))
+        # button analysis
+        self.buttonAnalysis = QPushButton("Analysis",parent=self.toolbar)
+        self.buttonAnalysis.clicked.connect(self.toggle_list_visibility)
+        #self.buttonAnalysis.doubleClicked.connect(self.clique_duplo)
+        self.toolbar.addWidget(self.buttonAnalysis)
         self.toolbar.addSeparator()
+
+        self.menuAnalysis = QFrame(parent=self)
+        self.menuAnalysis.setObjectName("frame")
+
+        self.menuAnalysis.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Sunken)
+        self.menuAnalysis.setLineWidth(1)
+        #self.menuAnalysis.setStyleSheet("QFrame#frame{background-color: orange}")
+        self.menuAnalysis.setStyleSheet("QFrame#frame{background-color: white}")
+        #self.menuAnalysis.setStyleSheet(u"border: 1px solid rgb(0, 255, 0)")
+        # self.menuAnalysis.setStyleSheet(u"border-top: 1px solid;\n"
+        #                                 "border-left: 1px solid;\n"
+        #                                 "border-right: 1px solid;\n"
+        #                                 "border-bottom: 1px solid; \n"
+        #                                 "background-color: white;\n"
+        #                                 "border: 1px")
+
+        menuAnalysis_layout = QVBoxLayout(self.menuAnalysis)
+
+        itens = ["Phase Error",
+                 "Roll Off",
+                 "Kickmap",
+                 "Trajectory",
+                 "Magnetic Field",
+                 "Shimming",
+                 "Cross Talk",
+                 "Field Integral"]
+        self.list = CheckableListWidget(items=itens,parent=self.menuAnalysis)
+        checkBoxSelectAll = QCheckBox("Select All",self.menuAnalysis)
+        checkBoxSelectAll.stateChanged.connect(self.check)
+
+        # todo: quando selecionar todos, mudar icone de apply para varinha ou chapeu
+        self.apply = QPushButton("Apply")
+        
+        #analysisWizard = QPushButton("Apply All",parent=self.menuAnalysis)
+
+        menuAnalysis_layout.addWidget(self.list)
+        menuAnalysis_layout.addWidget(checkBoxSelectAll)
+        menuAnalysis_layout.addWidget(self.apply)
+        #menuAnalysis_layout.addWidget(analysisWizard)
+
+        self.menuAnalysis.setHidden(True)
+
 
         # nos painted buttons deve-se passar action para ele ser exibido como padrao
         # testar com exemplo do penguin
@@ -292,12 +392,45 @@ class MainWindow(QMainWindow):
         dialog.exec()
     
     def quit_app(self):
-        self.app.quit()
+        answer = QMessageBox.question(self,
+                                      "Quit Question",
+                                      "Are you sure you want to quit the application?",
+                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                      QMessageBox.StandardButton.No)
+
+        if answer == QMessageBox.StandardButton.Yes:
+            self.app.quit()
 
     
     # tool bar slots
 
+    # event filter for check the enter press when menu analysis open
+    #def eventFilter(self, a0: 'QObject', a1: 'QEvent') -> bool:
+    #    return super().eventFilter(a0, a1)
 
+    def toggle_list_visibility(self):
+
+        topleft_corner = self.toolbar.mapToParent(self.buttonAnalysis.geometry().bottomLeft())
+        self.menuAnalysis.raise_()
+        self.menuAnalysis.setGeometry(QRect(topleft_corner.x()+1, topleft_corner.y(), 150, 300))
+
+        if self.menuAnalysis.isVisible():
+            self.menuAnalysis.setHidden(True)
+        else:
+            self.menuAnalysis.setHidden(False)
+    
+    def check(self,checked):
+        #self.list.selectAll()
+        if checked:
+            self.apply.setIcon(QIcon('icons/icons/wand.png'))
+            for i in range(self.list.count()):
+                self.list.item(i).setCheckState(Qt.CheckState.Checked)
+        else:
+            self.apply.setIcon(QIcon(None))
+            for i in range(self.list.count()):
+                self.list.item(i).setCheckState(Qt.CheckState.Unchecked)
+    
+    
     # tab bar slots
         
     def close_current_tab(self, i):
@@ -353,13 +486,16 @@ class MainWindow(QMainWindow):
     # outros metodos
 
     def mousePressEvent(self, event):
-        
         #posicao do cursor do mouse nas coordenadas da window
         cursor_pos = QCursor.pos()
         widget_pos = self.mapFromGlobal(cursor_pos)
         print("Current cursor position at widget: x = %d, y = %d" % (widget_pos.x(), widget_pos.y()))
 
         return
+    
+    def mouseDoubleClickEvent(self, a0) -> None:
+        print('duplo')
+        return super().mouseDoubleClickEvent(a0)
 
 
 

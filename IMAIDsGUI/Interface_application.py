@@ -41,7 +41,8 @@ from   PyQt6.QtGui    import   (QAction,
                                 QPainter,
                                 QPolygon,
                                 QCursor,
-                                QColor)
+                                QColor,
+                                QPalette)
 from   PyQt6.QtCore   import   (Qt,
                                 QPoint,
                                 QSize,
@@ -53,6 +54,9 @@ from   PyQt6.QtCore   import   (Qt,
                                 pyqtSlot)
 
 from widgets import model_dialog, project, table_model
+
+from imaids import fieldsource, insertiondevice
+
 
 
 class CheckableListWidget(QListWidget):
@@ -95,32 +99,29 @@ class AnalysisMenu(QFrame):
     def __init__(self, items, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        
+        menu = QMenu()
+        estilo = menu.style()
+
         self.setObjectName("frame")
 
         self.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Sunken)
         self.setLineWidth(1)
-        #self.menuAnalysis.setStyleSheet("QFrame#frame{background-color: orange}")
-        self.setStyleSheet("QFrame#frame{background-color: white}")
-        #self.menuAnalysis.setStyleSheet(u"border: 1px solid rgb(0, 255, 0)")
-        # self.menuAnalysis.setStyleSheet(u"border-top: 1px solid;\n"
-        #                                 "border-left: 1px solid;\n"
-        #                                 "border-right: 1px solid;\n"
-        #                                 "border-bottom: 1px solid; \n"
-        #                                 "background-color: white;\n"
-        #                                 "border: 1px")
+        
+        #palette = self.palette()
+        #background_color = palette.color(QPalette.ColorRole.Menu)
+
+        # change the background color without affect the other widgets in the container:
+        # https://stackoverflow.com/questions/62046679/qframe-background-color-overlapped-with-other-widgets-like-qlineedit-qlistboxwi
+        self.setStyleSheet("QFrame#frame{background-color: #f0f0f0}")
+        
+        #self.setStyle(estilo)
         
         self.list = CheckableListWidget(items=items,parent=self)
+        self.list.setStyleSheet("background-color: #f0f0f0")
         checkBoxSelectAll = QCheckBox("Select All",self)
         checkBoxSelectAll.stateChanged.connect(self.check)
         # todo: quando selecionar todos, mudar icone de apply para varinha ou chapeu
         self.apply = QPushButton("Apply")
-        
-        #analysisWizard = QPushButton("Apply All",parent=self.menuAnalysis)
-
-        
-        #menuAnalysis_layout.addWidget(analysisWizard)
-
 
         menuAnalysis_layout = QVBoxLayout(self)
 
@@ -128,7 +129,11 @@ class AnalysisMenu(QFrame):
         menuAnalysis_layout.addWidget(checkBoxSelectAll)
         menuAnalysis_layout.addWidget(self.apply)
 
-        #self.installEventFilter(self)
+    
+    # todo: criar metodo para retornar lista de items checked e unchecked
+
+    def checkedItems(self):
+        return [item for item in self.list.items()]
     
     def check(self,checked):
         #self.list.selectAll()
@@ -189,12 +194,8 @@ class ButtonMenu(QPushButton):
 
 class PaintedButton(ButtonMenu):
 
-    # manager = pyqtSignal()
-    
     def __init__(self, parent=None):
         super().__init__(parent)
-        #self.setFixedSize(32,32)
-    
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -230,15 +231,10 @@ class PaintedButton(ButtonMenu):
             print('dentro')
             self.show_menu()
         else:
-            #self.setChecked(True)
-            #self._manager()
             print('fora')
 
     def show_menu(self):
         self.custom_buttonMenu.popup(self.mapToGlobal(self.rect().bottomLeft()))
-    
-    # def _manager(self):
-    #     self.manager.emit()
 
 
 class MainWindow(QMainWindow):
@@ -322,11 +318,11 @@ class MainWindow(QMainWindow):
         actionToolbar.setChecked(True)
         actionToolbar.triggered.connect(self.toolbar.setVisible)
         self.menuView.addAction(actionToolbar)
-        #print('nome',self.toolbar.objectName())
         self.addToolBar(self.toolbar)
 
         # button analysis
         self.buttonAnalysis = QPushButton("Analysis",parent=self.toolbar)
+        print('button analysis parent:',self.buttonAnalysis.parent())
         self.buttonAnalysis.clicked.connect(self.toggle_list_visibility)
         #self.buttonAnalysis.doubleClicked.connect(self.clique_duplo)
         self.toolbar.addWidget(self.buttonAnalysis)
@@ -342,11 +338,10 @@ class MainWindow(QMainWindow):
                  "Field Integral"]
         
         self.menuAnalysis = AnalysisMenu(items=itens,parent=self)
+        #print(self.menuAnalysis.checkedItems())
+        self.menuAnalysis.apply.clicked.connect(self.manage_analysis)
         self.menuAnalysis.setHidden(True)
 
-
-        # nos painted buttons deve-se passar action para ele ser exibido como padrao
-        # testar com exemplo do penguin
 
         grafico = QIcon("icons/icons/guide.png")
         self.tabela = QIcon("icons/icons/table.png")
@@ -371,7 +366,6 @@ class MainWindow(QMainWindow):
         self.toolbar.addSeparator()
 
         self.toolbar_buttonTable = PaintedButton("Table")
-        self.toolbar_buttonTable.clicked.connect(self.cique)
         self.toolbar_buttonTable.setIcon(self.tabela)
         self.tabela = self.toolbar_buttonTable.icon()
         self.toolbar_buttonTable.setCheckable(True)
@@ -405,54 +399,8 @@ class MainWindow(QMainWindow):
 
     # window slots
     
-    # def eventFilter(self, obj, event) -> bool:
-    #     if event.type() ==QEvent.Type.FocusOut:
-    #         self.setHidden(True)
-    #     return super().eventFilter(obj, event)
-
 
     # menu slots
-
-    # descobrindo origem do bug do botao de tabela
-    def cique(self):
-        #quando icone do botao tabela e' uma tabela
-
-        # if self.toolbar_buttonTable.icon()==self.actiontabela.icon():
-        #     print('igual')
-        # else:
-        #     -> print('desigual')
-
-        # if id(self.toolbar_buttonTable.icon())==id(self.actiontabela.icon()):
-        #     -> print('igual')
-        # else:
-        #     print('desigual')
-
-        # if id(self.toolbar_buttonTable.icon())==id(self.actiondog.icon()):
-        #     -> print('igual')
-        # else:
-        #     print('desigual')
-
-        # if self.toolbar_buttonTable.icon().pixmap(16,16)==self.actiondog.icon().pixmap(16,16):
-        #     print('igual')
-        # else:
-        #     -> print('desigual')
-
-        # if self.toolbar_buttonTable.icon().pixmap(16,16)==self.actiontabela.icon().pixmap(16,16):
-        #     print('igual')
-        # else:
-        #     -> print('desigual')
-
-        # if id(self.toolbar_buttonTable.icon().pixmap(16,16))==id(self.actiontabela.icon().pixmap(16,16)):
-        #     -> print('igual')
-        # else:
-        #     print('desigual')
-
-        # if id(self.toolbar_buttonTable.icon().pixmap(16,16))==id(self.actiondog.icon().pixmap(16,16)):
-        #     -> print('igual')
-        # else:
-        #     print('desigual')
-        
-        return
 
     def add_project(self, i):
 
@@ -505,6 +453,7 @@ class MainWindow(QMainWindow):
     def toggle_list_visibility(self):
 
         topleft_corner = self.toolbar.mapToParent(self.buttonAnalysis.geometry().bottomLeft())
+        print(topleft_corner)
         self.menuAnalysis.raise_()
         self.menuAnalysis.setGeometry(QRect(topleft_corner.x()+1, topleft_corner.y(), 150, 300))
 
@@ -513,19 +462,16 @@ class MainWindow(QMainWindow):
         else:
             self.menuAnalysis.setHidden(False)
     
+    def manage_analysis(self):
+        # obter lista dos items checked
+        #self.menuAnalysis.list.
+        return
+    
     def action_swap(self):
         action = self.sender()
         self.toolbar_buttonTable.setIcon(action.icon())
         self.toolbar_buttonTable.setChecked(True)
         self.toolbar_buttonTable.setObjectName(action.objectName())
-        #print(action.text())
-        #print(self.toolbar_buttonTable.objectName())
-    
-    # def table_manager(self):
-    #     icon = self.toolbar_buttonTable.icon()
-    #     if icon==self.tabela:
-    #         self.table_data()
-    #     #elif icon==dog...
 
     def table_data(self):
         
@@ -566,7 +512,6 @@ class MainWindow(QMainWindow):
     def start_rename(self, tab_index):
         self.editting_tab = tab_index
         rect = self.projects.tabBar().tabRect(tab_index)
-        #print(rect)
         pos = rect.bottomRight()   # map to parent aqui como foi feito em entrou_action
         w = rect.width()
     
@@ -593,23 +538,33 @@ class MainWindow(QMainWindow):
     # tree slots
 
     def on_item_clicked(self, item, column):
-        #self.tree_item = item.text()
-        #print(self.toolbar_buttonTable.isChecked())
-        #print(self.toolbar_buttonTable.icon() is self.actiontabela.icon())
-        #rint(self.toolbar_buttonTable.icon())
-        print(self.actiontabela.icon())
-        print(self.actiondog.icon())
-        #print(id())
-        #if id(self.toolbar_buttonTable.icon()) == id(self.actiontabela.icon()):
-        #    print('igual')
+        #print(item.text(0))
 
         # por algum motivo muito obscuro, quando o icone e' tabela no botao,
-        # self.toolbar_buttonTable.icon()==self.actiontabela.icon() ainda e' False
-        if self.toolbar_buttonTable.isChecked() and self.toolbar_buttonTable.objectName()==self.actiontabela.objectName():
-            #print(item.text(0))
+        # self.toolbar_buttonTable.icon()==self.actiontabela.icon() aind e' False
+        # Alem disso, as ids de actiontabela.icon() e actiondog.icon() sao as mesmas
+        # solucao encontrada: em vez de comparar os icones, trocar tambem os nomes dos
+        # objetos e comparar os nomes
+        
+        # plotar tabela
+        if self.toolbar_buttonTable.isChecked() and \
+            self.toolbar_buttonTable.objectName()==self.actiontabela.objectName():
+            
             if item.text(0)=='Dados 1':
                 self.table_data()
     
+    def magnetic_field(self):
+        print('entrou magnetic_field method')
+        return
+    
+    def trajectory(self):
+        print('entrou trajectory method')
+        return
+    
+    def phase_error(self):
+        print('entrou phase_error method')
+        return
+
 
     # outros metodos
 

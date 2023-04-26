@@ -91,6 +91,62 @@ class CheckableListWidget(QListWidget):
             super().keyPressEvent(event)
 
 
+class AnalysisMenu(QFrame):
+    def __init__(self, items, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        
+        self.setObjectName("frame")
+
+        self.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Sunken)
+        self.setLineWidth(1)
+        #self.menuAnalysis.setStyleSheet("QFrame#frame{background-color: orange}")
+        self.setStyleSheet("QFrame#frame{background-color: white}")
+        #self.menuAnalysis.setStyleSheet(u"border: 1px solid rgb(0, 255, 0)")
+        # self.menuAnalysis.setStyleSheet(u"border-top: 1px solid;\n"
+        #                                 "border-left: 1px solid;\n"
+        #                                 "border-right: 1px solid;\n"
+        #                                 "border-bottom: 1px solid; \n"
+        #                                 "background-color: white;\n"
+        #                                 "border: 1px")
+        
+        self.list = CheckableListWidget(items=items,parent=self)
+        checkBoxSelectAll = QCheckBox("Select All",self)
+        checkBoxSelectAll.stateChanged.connect(self.check)
+        # todo: quando selecionar todos, mudar icone de apply para varinha ou chapeu
+        self.apply = QPushButton("Apply")
+        
+        #analysisWizard = QPushButton("Apply All",parent=self.menuAnalysis)
+
+        
+        #menuAnalysis_layout.addWidget(analysisWizard)
+
+
+        menuAnalysis_layout = QVBoxLayout(self)
+
+        menuAnalysis_layout.addWidget(self.list)
+        menuAnalysis_layout.addWidget(checkBoxSelectAll)
+        menuAnalysis_layout.addWidget(self.apply)
+
+        #self.installEventFilter(self)
+    
+    def check(self,checked):
+        #self.list.selectAll()
+        if checked:
+            self.apply.setIcon(QIcon('icons/icons/wand.png'))
+            for i in range(self.list.count()):
+                self.list.item(i).setCheckState(Qt.CheckState.Checked)
+        else:
+            self.apply.setIcon(QIcon(None))
+            for i in range(self.list.count()):
+                self.list.item(i).setCheckState(Qt.CheckState.Unchecked)
+    
+    # def eventFilter(self, obj, event) -> bool:
+    #     if event.type() ==QEvent.Type.FocusOut:
+    #         self.setHidden(True)
+    #     return super().eventFilter(obj, event)
+
+
 class DoublePushButton(QPushButton):
     doubleClicked = pyqtSignal()
     clicked = pyqtSignal()
@@ -132,6 +188,9 @@ class ButtonMenu(QPushButton):
 
 
 class PaintedButton(ButtonMenu):
+
+    # manager = pyqtSignal()
+    
     def __init__(self, parent=None):
         super().__init__(parent)
         #self.setFixedSize(32,32)
@@ -167,11 +226,19 @@ class PaintedButton(ButtonMenu):
         len = min(self.width(),self.height())/2
 
         if (width-len <= x <= width) and (height-len <= y <= height):
+            self.setChecked(False)
             print('dentro')
             self.show_menu()
         else:
+            #self.setChecked(True)
+            #self._manager()
             print('fora')
 
+    def show_menu(self):
+        self.custom_buttonMenu.popup(self.mapToGlobal(self.rect().bottomLeft()))
+    
+    # def _manager(self):
+    #     self.manager.emit()
 
 
 class MainWindow(QMainWindow):
@@ -216,15 +283,10 @@ class MainWindow(QMainWindow):
         ## Edit menu actions
         self.actionUndo = QAction("Undo", self)
         self.actionRedo = QAction("Redo", self)
+        ## View menu action
+        # mais pra frente
         ## Analysis toolbar menu actions
-        actionPhaseError = QAction("Phase Error", self)
-        actionRollOff = QAction("Roll Off", self)
-        actionKickmap = QAction("Kickmap", self)
-        actionTrajectory = QAction("Trajectory", self)
-        actionMagneticField = QAction("Magnetic  Field", self)
-        actionShimming = QAction("Shimming", self)
-        actionCrossTalk = QAction("Cross Talk", self)
-        actionFieldIntegral = QAction("Field Integral", self)
+        # de outra maneira agora
 
 
         # menubar
@@ -255,6 +317,12 @@ class MainWindow(QMainWindow):
 
         # tool bar
         self.toolbar = QToolBar("Barra de Ferramentas")
+        self.toolbar.setObjectName("Barra de Ferramentas")
+        actionToolbar = QAction(self.toolbar.objectName(), self, checkable=True)
+        actionToolbar.setChecked(True)
+        actionToolbar.triggered.connect(self.toolbar.setVisible)
+        self.menuView.addAction(actionToolbar)
+        #print('nome',self.toolbar.objectName())
         self.addToolBar(self.toolbar)
 
         # button analysis
@@ -264,23 +332,6 @@ class MainWindow(QMainWindow):
         self.toolbar.addWidget(self.buttonAnalysis)
         self.toolbar.addSeparator()
 
-        self.menuAnalysis = QFrame(parent=self)
-        self.menuAnalysis.setObjectName("frame")
-
-        self.menuAnalysis.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Sunken)
-        self.menuAnalysis.setLineWidth(1)
-        #self.menuAnalysis.setStyleSheet("QFrame#frame{background-color: orange}")
-        self.menuAnalysis.setStyleSheet("QFrame#frame{background-color: white}")
-        #self.menuAnalysis.setStyleSheet(u"border: 1px solid rgb(0, 255, 0)")
-        # self.menuAnalysis.setStyleSheet(u"border-top: 1px solid;\n"
-        #                                 "border-left: 1px solid;\n"
-        #                                 "border-right: 1px solid;\n"
-        #                                 "border-bottom: 1px solid; \n"
-        #                                 "background-color: white;\n"
-        #                                 "border: 1px")
-
-        menuAnalysis_layout = QVBoxLayout(self.menuAnalysis)
-
         itens = ["Phase Error",
                  "Roll Off",
                  "Kickmap",
@@ -289,32 +340,53 @@ class MainWindow(QMainWindow):
                  "Shimming",
                  "Cross Talk",
                  "Field Integral"]
-        self.list = CheckableListWidget(items=itens,parent=self.menuAnalysis)
-        checkBoxSelectAll = QCheckBox("Select All",self.menuAnalysis)
-        checkBoxSelectAll.stateChanged.connect(self.check)
-
-        # todo: quando selecionar todos, mudar icone de apply para varinha ou chapeu
-        self.apply = QPushButton("Apply")
         
-        #analysisWizard = QPushButton("Apply All",parent=self.menuAnalysis)
-
-        menuAnalysis_layout.addWidget(self.list)
-        menuAnalysis_layout.addWidget(checkBoxSelectAll)
-        menuAnalysis_layout.addWidget(self.apply)
-        #menuAnalysis_layout.addWidget(analysisWizard)
-
+        self.menuAnalysis = AnalysisMenu(items=itens,parent=self)
         self.menuAnalysis.setHidden(True)
 
 
         # nos painted buttons deve-se passar action para ele ser exibido como padrao
         # testar com exemplo do penguin
 
-        toolbar_buttonPlot = PaintedButton("Plot")
-        self.toolbar.addWidget(toolbar_buttonPlot)
+        grafico = QIcon("icons/icons/guide.png")
+        self.tabela = QIcon("icons/icons/table.png")
+        self.dog = QIcon("icons/icons/animal-dog.png")
+        self.cat = QIcon("icons/icons/animal.png")
+        self.bug = QIcon("icons/icons/bug.png")
+        
+        self.actiontabela = QAction(self.tabela,"tabela",self)
+        self.actiontabela.setObjectName("tabela")
+        self.actiondog = QAction(self.dog,"cachorro",self)
+        self.actiondog.setObjectName("dog")
+        self.actioncat = QAction(self.cat,"gato",self)
+        self.actioncat.setObjectName("cat")
+        self.actionbug = QAction(self.bug,"inseto",self)
+        self.actionbug.setObjectName("bug")
+
+
+        self.toolbar_buttonPlot = PaintedButton("Plot")
+        self.toolbar_buttonPlot.setIcon(grafico)
+        self.toolbar_buttonPlot.setCheckable(True)
+        self.toolbar.addWidget(self.toolbar_buttonPlot)
         self.toolbar.addSeparator()
+
         self.toolbar_buttonTable = PaintedButton("Table")
+        self.toolbar_buttonTable.clicked.connect(self.cique)
+        self.toolbar_buttonTable.setIcon(self.tabela)
+        self.tabela = self.toolbar_buttonTable.icon()
         self.toolbar_buttonTable.setCheckable(True)
-        #self.toolbar_buttonTable.clicked.connect(self.table_data)
+
+        self.actiontabela.triggered.connect(self.action_swap)
+        self.actiondog.triggered.connect(self.action_swap)
+        self.actioncat.triggered.connect(self.action_swap)
+        self.actionbug.triggered.connect(self.action_swap)
+
+        self.toolbar_buttonTable.custom_buttonMenu.addActions([self.actiontabela,
+                                                               self.actioncat,
+                                                               self.actiondog,
+                                                               self.actionbug])
+
+        # self.toolbar_buttonTable.manager.connect(self.table_manager)
         self.toolbar.addWidget(self.toolbar_buttonTable)
         
 
@@ -332,9 +404,55 @@ class MainWindow(QMainWindow):
 
 
     # window slots
+    
+    # def eventFilter(self, obj, event) -> bool:
+    #     if event.type() ==QEvent.Type.FocusOut:
+    #         self.setHidden(True)
+    #     return super().eventFilter(obj, event)
 
 
     # menu slots
+
+    # descobrindo origem do bug do botao de tabela
+    def cique(self):
+        #quando icone do botao tabela e' uma tabela
+
+        # if self.toolbar_buttonTable.icon()==self.actiontabela.icon():
+        #     print('igual')
+        # else:
+        #     -> print('desigual')
+
+        # if id(self.toolbar_buttonTable.icon())==id(self.actiontabela.icon()):
+        #     -> print('igual')
+        # else:
+        #     print('desigual')
+
+        # if id(self.toolbar_buttonTable.icon())==id(self.actiondog.icon()):
+        #     -> print('igual')
+        # else:
+        #     print('desigual')
+
+        # if self.toolbar_buttonTable.icon().pixmap(16,16)==self.actiondog.icon().pixmap(16,16):
+        #     print('igual')
+        # else:
+        #     -> print('desigual')
+
+        # if self.toolbar_buttonTable.icon().pixmap(16,16)==self.actiontabela.icon().pixmap(16,16):
+        #     print('igual')
+        # else:
+        #     -> print('desigual')
+
+        # if id(self.toolbar_buttonTable.icon().pixmap(16,16))==id(self.actiontabela.icon().pixmap(16,16)):
+        #     -> print('igual')
+        # else:
+        #     print('desigual')
+
+        # if id(self.toolbar_buttonTable.icon().pixmap(16,16))==id(self.actiondog.icon().pixmap(16,16)):
+        #     -> print('igual')
+        # else:
+        #     print('desigual')
+        
+        return
 
     def add_project(self, i):
 
@@ -367,6 +485,48 @@ class MainWindow(QMainWindow):
             self.project.Datas = self.project.tree.insertTopLevelItem(0,self.dados)
         self.dados.addChild(QTreeWidgetItem([f'Dados {self.dados.childCount()+1}']))
 
+    def model_generation(self):
+        dialog = model_dialog.ModelDialog(parent=self)
+        dialog.exec()
+    
+    def quit_app(self):
+        answer = QMessageBox.question(self,
+                                      "Quit Question",
+                                      "Are you sure you want to quit the application?",
+                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                      QMessageBox.StandardButton.No)
+
+        if answer == QMessageBox.StandardButton.Yes:
+            self.app.quit()
+
+    
+    # tool bar slots
+
+    def toggle_list_visibility(self):
+
+        topleft_corner = self.toolbar.mapToParent(self.buttonAnalysis.geometry().bottomLeft())
+        self.menuAnalysis.raise_()
+        self.menuAnalysis.setGeometry(QRect(topleft_corner.x()+1, topleft_corner.y(), 150, 300))
+
+        if self.menuAnalysis.isVisible():
+            self.menuAnalysis.setHidden(True)
+        else:
+            self.menuAnalysis.setHidden(False)
+    
+    def action_swap(self):
+        action = self.sender()
+        self.toolbar_buttonTable.setIcon(action.icon())
+        self.toolbar_buttonTable.setChecked(True)
+        self.toolbar_buttonTable.setObjectName(action.objectName())
+        #print(action.text())
+        #print(self.toolbar_buttonTable.objectName())
+    
+    # def table_manager(self):
+    #     icon = self.toolbar_buttonTable.icon()
+    #     if icon==self.tabela:
+    #         self.table_data()
+    #     #elif icon==dog...
+
     def table_data(self):
         
         # todo: passar essa condicao para outro lugar e torna-la mais geral
@@ -386,51 +546,8 @@ class MainWindow(QMainWindow):
 
         i = self.project.visuals.addTab(tabela, "tabela")
         self.project.visuals.setCurrentIndex(i)
-
-    def model_generation(self):
-        dialog = model_dialog.ModelDialog(parent=self)
-        dialog.exec()
     
-    def quit_app(self):
-        answer = QMessageBox.question(self,
-                                      "Quit Question",
-                                      "Are you sure you want to quit the application?",
-                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                      QMessageBox.StandardButton.No)
 
-        if answer == QMessageBox.StandardButton.Yes:
-            self.app.quit()
-
-    
-    # tool bar slots
-
-    # event filter for check the enter press when menu analysis open
-    #def eventFilter(self, a0: 'QObject', a1: 'QEvent') -> bool:
-    #    return super().eventFilter(a0, a1)
-
-    def toggle_list_visibility(self):
-
-        topleft_corner = self.toolbar.mapToParent(self.buttonAnalysis.geometry().bottomLeft())
-        self.menuAnalysis.raise_()
-        self.menuAnalysis.setGeometry(QRect(topleft_corner.x()+1, topleft_corner.y(), 150, 300))
-
-        if self.menuAnalysis.isVisible():
-            self.menuAnalysis.setHidden(True)
-        else:
-            self.menuAnalysis.setHidden(False)
-    
-    def check(self,checked):
-        #self.list.selectAll()
-        if checked:
-            self.apply.setIcon(QIcon('icons/icons/wand.png'))
-            for i in range(self.list.count()):
-                self.list.item(i).setCheckState(Qt.CheckState.Checked)
-        else:
-            self.apply.setIcon(QIcon(None))
-            for i in range(self.list.count()):
-                self.list.item(i).setCheckState(Qt.CheckState.Unchecked)
-    
-    
     # tab bar slots
         
     def close_current_tab(self, i):
@@ -477,7 +594,18 @@ class MainWindow(QMainWindow):
 
     def on_item_clicked(self, item, column):
         #self.tree_item = item.text()
-        if self.toolbar_buttonTable.isChecked():
+        #print(self.toolbar_buttonTable.isChecked())
+        #print(self.toolbar_buttonTable.icon() is self.actiontabela.icon())
+        #rint(self.toolbar_buttonTable.icon())
+        print(self.actiontabela.icon())
+        print(self.actiondog.icon())
+        #print(id())
+        #if id(self.toolbar_buttonTable.icon()) == id(self.actiontabela.icon()):
+        #    print('igual')
+
+        # por algum motivo muito obscuro, quando o icone e' tabela no botao,
+        # self.toolbar_buttonTable.icon()==self.actiontabela.icon() ainda e' False
+        if self.toolbar_buttonTable.isChecked() and self.toolbar_buttonTable.objectName()==self.actiontabela.objectName():
             #print(item.text(0))
             if item.text(0)=='Dados 1':
                 self.table_data()

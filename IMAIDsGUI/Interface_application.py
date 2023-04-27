@@ -22,6 +22,7 @@ from  PyQt6.QtWidgets import   (QApplication,
                                 QComboBox,
                                 QFileDialog,
                                 QMenu,
+                                QMenuBar,
                                 QTableView,
                                 QHBoxLayout,
                                 QVBoxLayout,
@@ -53,105 +54,12 @@ from   PyQt6.QtCore   import   (Qt,
                                 QRect,
                                 pyqtSlot)
 
-from widgets import model_dialog, project, table_model
+from widgets import model_dialog, project, table_model, analysis_button, painted_button
 
 from imaids import fieldsource, insertiondevice
 
 
-
-class CheckableListWidget(QListWidget):
-
-    def __init__(self, items,*args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.items_checked = []
-
-        self.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
-        self.itemChanged.connect(self.handle_item_changed)
-
-        # Create the list items and add them to the list widget
-        items_list = []
-
-        for list_item in items:
-            itemn = QListWidgetItem(list_item, self)
-            itemn.setFlags(itemn.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-            itemn.setCheckState(Qt.CheckState.Unchecked)
-            items_list.append(itemn)
-        
-
-    def handle_item_changed(self, item):
-
-        if item.checkState() == Qt.CheckState.Checked:
-            if item not in self.items_checked:
-                self.items_checked.append(item.text())
-        else:
-            if item.text() in self.items_checked:
-                self.items_checked.remove(item.text())
-    
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
-            print(self.items_checked)   
-        else:
-            super().keyPressEvent(event)
-
-
-class AnalysisMenu(QFrame):
-    def __init__(self, items, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        menu = QMenu()
-        estilo = menu.style()
-
-        self.setObjectName("frame")
-
-        self.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Sunken)
-        self.setLineWidth(1)
-        
-        #palette = self.palette()
-        #background_color = palette.color(QPalette.ColorRole.Menu)
-
-        # change the background color without affect the other widgets in the container:
-        # https://stackoverflow.com/questions/62046679/qframe-background-color-overlapped-with-other-widgets-like-qlineedit-qlistboxwi
-        self.setStyleSheet("QFrame#frame{background-color: #f0f0f0}")
-        
-        #self.setStyle(estilo)
-        
-        self.list = CheckableListWidget(items=items,parent=self)
-        self.list.setStyleSheet("background-color: #f0f0f0")
-        checkBoxSelectAll = QCheckBox("Select All",self)
-        checkBoxSelectAll.stateChanged.connect(self.check)
-        # todo: quando selecionar todos, mudar icone de apply para varinha ou chapeu
-        self.apply = QPushButton("Apply")
-
-        menuAnalysis_layout = QVBoxLayout(self)
-
-        menuAnalysis_layout.addWidget(self.list)
-        menuAnalysis_layout.addWidget(checkBoxSelectAll)
-        menuAnalysis_layout.addWidget(self.apply)
-
-    
-    # todo: criar metodo para retornar lista de items checked e unchecked
-
-    def checkedItems(self):
-        return [item for item in self.list.items()]
-    
-    def check(self,checked):
-        #self.list.selectAll()
-        if checked:
-            self.apply.setIcon(QIcon('icons/icons/wand.png'))
-            for i in range(self.list.count()):
-                self.list.item(i).setCheckState(Qt.CheckState.Checked)
-        else:
-            self.apply.setIcon(QIcon(None))
-            for i in range(self.list.count()):
-                self.list.item(i).setCheckState(Qt.CheckState.Unchecked)
-    
-    # def eventFilter(self, obj, event) -> bool:
-    #     if event.type() ==QEvent.Type.FocusOut:
-    #         self.setHidden(True)
-    #     return super().eventFilter(obj, event)
-
-
+'''
 class DoublePushButton(QPushButton):
     doubleClicked = pyqtSignal()
     clicked = pyqtSignal()
@@ -174,8 +82,9 @@ class DoublePushButton(QPushButton):
             self.timer.stop()
         else:
             self.timer.start(250)
+'''
 
-
+'''
 class ButtonMenu(QPushButton):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -190,51 +99,7 @@ class ButtonMenu(QPushButton):
 
     def show_menu(self):
         self.custom_buttonMenu.popup(self.mapToGlobal(self.rect().bottomLeft()))
-
-
-class PaintedButton(ButtonMenu):
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-    def paintEvent(self, event):
-        super().paintEvent(event)
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        width = self.width()
-        height = self.height()
-        len = int(min(self.width(),self.height())/2)
-        
-        # coordinates of the polygon points must be integers
-        square = QPolygon([QPoint(width,height),
-                           QPoint(width,height-len),
-                           QPoint(width-len,height-len),
-                           QPoint(width-len, height)])
-        painter.setBrush(Qt.GlobalColor.blue)
-        painter.drawPolygon(square)
-        painter.end()
-    
-    def button_clicked(self,s):
-
-        cursor_pos = QCursor.pos()
-        widget_pos = self.mapFromGlobal(cursor_pos)
-
-        x, y = widget_pos.x(), widget_pos.y()
-
-        width = self.width()
-        height = self.height()
-        len = min(self.width(),self.height())/2
-
-        if (width-len <= x <= width) and (height-len <= y <= height):
-            self.setChecked(False)
-            print('dentro')
-            self.show_menu()
-        else:
-            print('fora')
-
-    def show_menu(self):
-        self.custom_buttonMenu.popup(self.mapToGlobal(self.rect().bottomLeft()))
+'''
 
 
 class MainWindow(QMainWindow):
@@ -242,106 +107,54 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.filename = None
-        self.dados = None
+        # atributo filename
+        # atributo que vai guardar filename quando carregarmos os dados e
+        # sera chamado quando for criar a tabela de dados
+        self.filename = {}
+        self.dados = {}
 
-        # botao
-        self.PlusButton = QToolButton()
-        self.PlusButton.setText("+")
-        ## signals
-        self.PlusButton.clicked.connect(self.add_project)
-        
-        # tab widget
+
+        # -------------- construcao de tab widgets de projetos -------------- #
+
+        # projects tab widget
         self.projects = QTabWidget()
-        ## tabs features
+        ## projects tab widget - features
         self.projects.setDocumentMode(True) # talvez possa ser desabilitado
         self.projects.setMovable(True)
-        ## signals
+        ## projects tab widget - signals
         self.projects.tabCloseRequested.connect(self.close_current_tab)
         self.projects.tabBarDoubleClicked.connect(self.start_rename)
-        ## adicionando tab inicial
-        self.project = project.ProjectWidget()
-        self.project.tree.itemClicked.connect(self.on_item_clicked)
-        self.projects.addTab(self.project,'Project')
-        ## adicionando botao
+        ## projects tab widget - tab inicial
+        self.projects.addTab(project.ProjectWidget(),'Project')
+        self.projects.widget(0).tree.itemClicked.connect(self.on_item_clicked)
+        #print(self.projects.currentWidget().tree)
+        ## projects tab widget - plus button: abrir mais uma aba de projeto
+        self.PlusButton = QToolButton()
+        self.PlusButton.setText("+")
+        self.PlusButton.clicked.connect(self.add_project)
         self.projects.setCornerWidget(self.PlusButton,corner=Qt.Corner.TopLeftCorner)
 
 
-        # actions
-        ## File menu actions
-        self.actionNew_Project = QAction("New Project", self)
-        self.actionNew_Project.triggered.connect(self.add_project)
-        self.actionOpen_Data = QAction("Open Data ...", self)
-        self.actionOpen_Data.triggered.connect(self.browse_for_data)
-        self.actionGenerate_Model = QAction("Generate Model", self)
-        self.actionGenerate_Model.triggered.connect(self.model_generation)
-        self.actionClose = QAction("Close", self)
-        ## Edit menu actions
-        self.actionUndo = QAction("Undo", self)
-        self.actionRedo = QAction("Redo", self)
-        ## View menu action
-        # mais pra frente
-        ## Analysis toolbar menu actions
-        # de outra maneira agora
+        # --------------------- construcao da status bar --------------------- #
+
+        self.statusbar = QStatusBar()
+        self.statusbar.setObjectName("Barra de Status")
 
 
-        # menubar
-        self.menubar = self.menuBar()
-        ## File
-        self.menuFile = self.menubar.addMenu("&File")
-        self.menuFile.addAction(self.actionNew_Project)
-        self.menuFile.addSeparator()
-        self.menuFile.addAction(self.actionOpen_Data)
-        self.menuFile.addSeparator()
-        self.menuFile.addAction(self.actionGenerate_Model)
-        self.menuFile.addSeparator()
-        self.menuFile.addAction(self.actionClose)
-        self.actionQuit = self.menuFile.addAction("Quit")
-        self.actionQuit.triggered.connect(self.quit_app)
-        ## Edit
-        self.menuEdit = self.menubar.addMenu("&Edit")
-        self.menuEdit.addAction(self.actionUndo)
-        self.menuEdit.addSeparator()
-        self.menuEdit.addAction(self.actionRedo)
-        ## View: contem opcoes de esconder widgets, tais como toolbar
-        self.menuView = self.menubar.addMenu("&View")
-        ## Settings
-        self.menuSettings = self.menubar.addMenu("&Settings")
-        ## Help: documentacao da interface
-        self.menuHelp = self.menubar.addMenu("&Help")
-
+        # ---------------------- contrucao da tool bar ---------------------- #
 
         # tool bar
         self.toolbar = QToolBar("Barra de Ferramentas")
         self.toolbar.setObjectName("Barra de Ferramentas")
-        actionToolbar = QAction(self.toolbar.objectName(), self, checkable=True)
-        actionToolbar.setChecked(True)
-        actionToolbar.triggered.connect(self.toolbar.setVisible)
-        self.menuView.addAction(actionToolbar)
-        self.addToolBar(self.toolbar)
-
-        # button analysis
-        self.buttonAnalysis = QPushButton("Analysis",parent=self.toolbar)
-        print('button analysis parent:',self.buttonAnalysis.parent())
-        self.buttonAnalysis.clicked.connect(self.toggle_list_visibility)
-        #self.buttonAnalysis.doubleClicked.connect(self.clique_duplo)
+    
+        ## button analysis
+        self.buttonAnalysis = analysis_button.AnalysisPushButton(menu_parent=self,
+                                                                 button_text="Analysis",
+                                                                 button_parent=self.toolbar)
+        #self.buttonAnalysis.apply.clicked.connect(self.manage_analysis)
+        self.buttonAnalysis.signalTrajectory.connect(self.calc_traj)
         self.toolbar.addWidget(self.buttonAnalysis)
         self.toolbar.addSeparator()
-
-        itens = ["Phase Error",
-                 "Roll Off",
-                 "Kickmap",
-                 "Trajectory",
-                 "Magnetic Field",
-                 "Shimming",
-                 "Cross Talk",
-                 "Field Integral"]
-        
-        self.menuAnalysis = AnalysisMenu(items=itens,parent=self)
-        #print(self.menuAnalysis.checkedItems())
-        self.menuAnalysis.apply.clicked.connect(self.manage_analysis)
-        self.menuAnalysis.setHidden(True)
-
 
         grafico = QIcon("icons/icons/guide.png")
         self.tabela = QIcon("icons/icons/table.png")
@@ -358,15 +171,15 @@ class MainWindow(QMainWindow):
         self.actionbug = QAction(self.bug,"inseto",self)
         self.actionbug.setObjectName("bug")
 
-
-        self.toolbar_buttonPlot = PaintedButton("Plot")
+        self.toolbar_buttonPlot = painted_button.PaintedButton("Plot")
         self.toolbar_buttonPlot.setIcon(grafico)
         self.toolbar_buttonPlot.setCheckable(True)
         self.toolbar.addWidget(self.toolbar_buttonPlot)
         self.toolbar.addSeparator()
 
-        self.toolbar_buttonTable = PaintedButton("Table")
+        self.toolbar_buttonTable = painted_button.PaintedButton("Table")
         self.toolbar_buttonTable.setIcon(self.tabela)
+        self.toolbar_buttonTable.setObjectName(self.actiontabela.objectName())
         self.tabela = self.toolbar_buttonTable.icon()
         self.toolbar_buttonTable.setCheckable(True)
 
@@ -384,13 +197,64 @@ class MainWindow(QMainWindow):
         self.toolbar.addWidget(self.toolbar_buttonTable)
         
 
-        # status bar
-        self.status = QStatusBar()
-        self.setStatusBar(self.status)
+        # ------------------- construcao do main menu bar ------------------- #
+
+        # main menu bar
+        self.menubar = QMenuBar(parent=self)   #self.menuBar()
+        ## main menu bar - File menu
+        self.menuFile = self.menubar.addMenu("&File")
+        ### main menu bar - File menu - New Project action
+        self.actionNew_Project = QAction("New Project", self)
+        self.actionNew_Project.triggered.connect(self.add_project)
+        self.menuFile.addAction(self.actionNew_Project)
+        self.menuFile.addSeparator()
+        ### main menu bar - File menu - Open Data action
+        self.actionOpen_Data = QAction("Open Data ...", self)
+        self.actionOpen_Data.triggered.connect(self.browse_for_data)
+        self.menuFile.addAction(self.actionOpen_Data)
+        self.menuFile.addSeparator()
+        ### main menu bar - File menu - Generate Model action
+        self.actionGenerate_Model = QAction("Generate Model", self)
+        self.actionGenerate_Model.triggered.connect(self.model_generation)
+        self.menuFile.addAction(self.actionGenerate_Model)
+        self.menuFile.addSeparator()
+        ### main menu bar - File menu - Quit action
+        self.actionQuit = QAction("Quit", self)
+        self.actionQuit.triggered.connect(self.quit_app)
+        self.menuFile.addAction(self.actionQuit)
+        ## main menu bar - Edit menu
+        self.menuEdit = self.menubar.addMenu("&Edit")
+        ### main menu bar - Edit menu - Undo action
+        self.actionUndo = QAction("Undo", self)
+        self.menuEdit.addAction(self.actionUndo)
+        self.menuEdit.addSeparator()
+        ### main menu bar - Edit menu - Redo action
+        self.actionRedo = QAction("Redo", self)
+        self.menuEdit.addAction(self.actionRedo)
+        ## main menu bar - View menu: contem opcoes de esconder widgets, tais como toolbar
+        self.menuView = self.menubar.addMenu("&View")
+        ### main menu bar - View menu - ToolBar action
+        actionToolBar = QAction(self.toolbar.objectName(), self, checkable=True)
+        actionToolBar.setChecked(True)
+        actionToolBar.triggered.connect(self.toolbar.setVisible)
+        self.menuView.addAction(actionToolBar)
+        ### main menu bar - View menu - StatusBar action
+        actionStatusBar = QAction(self.statusbar.objectName(), self, checkable=True)
+        actionStatusBar.setChecked(True)
+        actionStatusBar.triggered.connect(self.statusbar.setVisible)
+        self.menuView.addAction(actionStatusBar)
+        ## main menu bar - Settings menu
+        self.menuSettings = self.menubar.addMenu("&Settings")
+        ## main menu bar - Help menu: documentacao da interface
+        self.menuHelp = self.menubar.addMenu("&Help")
 
 
-        # coisas de Qmainwindow
+        # --------------------- contrucao da main window --------------------- #
+
         self.app = app
+        self.setStatusBar(self.statusbar)
+        self.addToolBar(self.toolbar)
+        self.setMenuBar(self.menubar)
         self.setWindowTitle("IMAIDS Interface")
         self.setCentralWidget(self.projects)
         self.resize(900,600)
@@ -409,29 +273,46 @@ class MainWindow(QMainWindow):
         
         i = self.projects.addTab(project.ProjectWidget(), f"Project {self.projects.count()+1}")
         self.projects.setCurrentIndex(i)
-    
-    def browse_for_data(self,s):
-        filename=QFileDialog.getOpenFileName(self, 'Open data', 'Documents', 'Data (*.dat)')
-        filename = filename[0]
+        self.projects.widget(i).tree.itemClicked.connect(self.on_item_clicked)
 
-        self.filename = filename
+    def browse_for_data(self,s):
+        filenames, _ =QFileDialog.getOpenFileNames(self, 'Open data', '', 'Data (*.dat)')
+
+        number_of_files = len(filenames)
         
         #pegar indice do project atual e acessar tree do project atual
         #por fim, na tree atual, inserir Dados 1
-        self.treeInsertData(filename)
+        
+        #melhorar condicao para algo como isempty
+        if filenames != []:
+            self.treeInsertData(number_of_files)
+            for index in range(number_of_files):
+                self.filename[f'Dados {index+1}'] = filenames[index]
+            return True
+        else:
+            #print('else')
+            return False
 
-        #print(filename)
-        # if filename != '':
-        #     self.table_data(filename)
-        # else:
-        #     return
-        #return filename
+        #index = self.projects.currentIndex()
 
-    def treeInsertData(self,filename):
-        if not self.project.tree.topLevelItemCount():
-            self.dados = QTreeWidgetItem(['Dados'])
-            self.project.Datas = self.project.tree.insertTopLevelItem(0,self.dados)
-        self.dados.addChild(QTreeWidgetItem([f'Dados {self.dados.childCount()+1}']))
+    def treeInsertData(self, number_of_files):
+
+        print(number_of_files)
+
+        # tree.topLevelItemCount() retorna o numero de items mais externos
+        # se nao ha, retorna 0, que e' equivalente a False
+        # not False e' True e entra na condicao quando nao ha toplevel items
+        
+        dados_childs = self.projects.currentWidget().tree.topLevelItem(0).childCount()+1
+        print(dados_childs)  # -> 1
+        for index in range(number_of_files):
+            print('iteracao',index,f'Dados {dados_childs+index}')
+            novo_dado = QTreeWidgetItem([f'Dados {dados_childs+index}'])
+            self.dados[f'Dados {dados_childs+index}'] = novo_dado
+            self.projects.currentWidget().tree.topLevelItem(0).addChild(novo_dado)
+        
+        print(self.dados)
+        # ?: conferir qual a utilidade de self.dados
 
     def model_generation(self):
         dialog = model_dialog.ModelDialog(parent=self)
@@ -450,21 +331,35 @@ class MainWindow(QMainWindow):
     
     # tool bar slots
 
-    def toggle_list_visibility(self):
-
-        topleft_corner = self.toolbar.mapToParent(self.buttonAnalysis.geometry().bottomLeft())
-        print(topleft_corner)
-        self.menuAnalysis.raise_()
-        self.menuAnalysis.setGeometry(QRect(topleft_corner.x()+1, topleft_corner.y(), 150, 300))
-
-        if self.menuAnalysis.isVisible():
-            self.menuAnalysis.setHidden(True)
-        else:
-            self.menuAnalysis.setHidden(False)
-    
-    def manage_analysis(self):
+    def calc_traj(self):
         # obter lista dos items checked
         #self.menuAnalysis.list.
+        print('calcular trajetoria')
+        energy = 3
+        x0 = 0
+        y0 = 0
+        z0 = -900
+        dxds0 = 0
+        dyds0 = 0
+        dzds0 = 1
+        zmax = 900
+        rkstep = 0.5
+
+        traj = QTreeWidgetItem(['Trajectory 1'])
+        self.dados['Dados 1'].addChild(traj)
+
+        x = QTreeWidgetItem(['x'])
+        y = QTreeWidgetItem(['y'])
+        z = QTreeWidgetItem(['z'])
+        dxds = QTreeWidgetItem(["x'"])
+        dyds = QTreeWidgetItem(["y'"])
+        dzds = QTreeWidgetItem(["z'"])
+        traj.addChild(x)
+        traj.addChild(y)
+        traj.addChild(z)
+        traj.addChild(dxds)
+        traj.addChild(dyds)
+        traj.addChild(dzds)
         return
     
     def action_swap(self):
@@ -473,14 +368,14 @@ class MainWindow(QMainWindow):
         self.toolbar_buttonTable.setChecked(True)
         self.toolbar_buttonTable.setObjectName(action.objectName())
 
-    def table_data(self):
+    def table_data(self,filename):
         
         # todo: passar essa condicao para outro lugar e torna-la mais geral
-        if self.project.visuals.count() == 1:
-            self.project.visuals.setTabsClosable(True)
+        if self.projects.currentWidget().visuals.count() == 1:
+            self.projects.currentWidget().visuals.setTabsClosable(True)
         
         tabela = QTableView()
-        modelo = table_model.TableModel(self.filename)
+        modelo = table_model.TableModel(filename)
         tabela.setModel(modelo)
 
         horizontal_color = QColor.fromRgb(80, 174, 144)
@@ -490,8 +385,8 @@ class MainWindow(QMainWindow):
         tabela.horizontalHeader().setStyleSheet(horizontal_header_style)
         tabela.verticalHeader().setStyleSheet(vertical_header_style)
 
-        i = self.project.visuals.addTab(tabela, "tabela")
-        self.project.visuals.setCurrentIndex(i)
+        i = self.projects.currentWidget().visuals.addTab(tabela, "tabela")
+        self.projects.currentWidget().visuals.setCurrentIndex(i)
     
 
     # tab bar slots
@@ -538,20 +433,22 @@ class MainWindow(QMainWindow):
     # tree slots
 
     def on_item_clicked(self, item, column):
-        #print(item.text(0))
 
-        # por algum motivo muito obscuro, quando o icone e' tabela no botao,
-        # self.toolbar_buttonTable.icon()==self.actiontabela.icon() aind e' False
-        # Alem disso, as ids de actiontabela.icon() e actiondog.icon() sao as mesmas
-        # solucao encontrada: em vez de comparar os icones, trocar tambem os nomes dos
-        # objetos e comparar os nomes
+        #print('button is checked',self.toolbar_buttonTable.isChecked())
+        #print('button object name',self.toolbar_buttonTable.objectName())
+        #print('action tabela object name',self.actiontabela.objectName())
         
         # plotar tabela
         if self.toolbar_buttonTable.isChecked() and \
             self.toolbar_buttonTable.objectName()==self.actiontabela.objectName():
             
-            if item.text(0)=='Dados 1':
-                self.table_data()
+            print(item.text(0))
+            #print(self.dados.keys())
+            print('keys',self.filename.keys(),'\n')
+            print('values',self.filename.values())
+            if item.text(0) in self.dados.keys():
+                filename = self.filename[item.text(0)]
+                self.table_data(filename)
     
     def magnetic_field(self):
         print('entrou magnetic_field method')

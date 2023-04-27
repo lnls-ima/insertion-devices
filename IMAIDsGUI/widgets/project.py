@@ -14,6 +14,9 @@ class ProjectWidget(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.Dados = QTreeWidgetItem(['Data'])
+        self.Modelos = QTreeWidgetItem(['Models'])
+
         #labels de parametros dos modelos
         
         self.visuals = QTabWidget()
@@ -28,6 +31,8 @@ class ProjectWidget(QWidget):
         self.splitter.setOrientation(Qt.Orientation.Horizontal)
 
         self.tree = QTreeWidget()
+        self.tree.insertTopLevelItem(0,self.Dados)   # 0: primeiro da lista top level
+        self.tree.insertTopLevelItem(1,self.Modelos) # 1: segundo da lista top level
         
         # todo: alterar modo de selecao da tree para poder clicar de novo e o item ficar desmarcado
         self.tree.setHeaderHidden(True)

@@ -39,12 +39,11 @@ class AnalysisPushButton(QPushButton):
         self.list = QListWidget(parent=self.Menu)
         self.list.setStyleSheet("background-color: #f0f0f0")
 
+
         self.items_checked = []
 
         self.list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
         self.list.itemChanged.connect(self.handle_item_changed)
-
-        
 
         #*: importante ter cada item individual assim para poder chamar cada um na mainwindow e
         #*: e diferenciar as analises
@@ -88,15 +87,31 @@ class AnalysisPushButton(QPushButton):
     
     def toggle_list_visibility(self):
 
-        topleft_corner = self.parent().mapToParent(self.geometry().bottomLeft())
-        print(topleft_corner)
-        self.Menu.raise_()
-        self.Menu.setGeometry(QRect(topleft_corner.x()+1, topleft_corner.y(), 150, 250))
+        # quando vemos botao unchecked e clicamos, apos o clique ele estara checked, mas
+        # caso o botao inicialmente estiver checked, ele ficara' unchecked.
+        # Por isso o "not" abaixo, e' preciso adequar as condicoes para o estado seguinte
+        # ao que vemos inicialmente no botao. Para deixar isso mais claro, a seguir usarei
+        # a palavra inicialmente
 
+        # se botao inicialmente estiver checked
         if not self.isChecked():
+
             self.setChecked(False)
+            self.itemField.setCheckState(Qt.CheckState.Unchecked)
+            self.itemTrajectory.setCheckState(Qt.CheckState.Unchecked)
+            self.itemPhaseError.setCheckState(Qt.CheckState.Unchecked)
+            self.itemIntegrals.setCheckState(Qt.CheckState.Unchecked)
+            self.itemRollOff.setCheckState(Qt.CheckState.Unchecked)
+            self.itemKickmap.setCheckState(Qt.CheckState.Unchecked)
+            self.itemShimming.setCheckState(Qt.CheckState.Unchecked)
+        # se botao inicialmente estiver unchecked
         else:
+
             self.setChecked(False)
+            topleft_corner = self.parent().mapToParent(self.geometry().bottomLeft())
+            self.Menu.raise_()
+            self.Menu.setGeometry(QRect(topleft_corner.x()+1, topleft_corner.y(), 150, 250))
+
             if self.Menu.isVisible():
                 self.Menu.setHidden(True)
             else:
@@ -111,12 +126,14 @@ class AnalysisPushButton(QPushButton):
     
     # check todos os items da lista e coloca ou tira icone da varinha
     def check(self,checked):
-    
+        # limpando dicionario para colocar todos os checkeds
+        self.items_checked = []
         if checked:
             # quando check todos, mudar icone de apply para varinha ou chapeu
             self.apply.setIcon(QIcon('icons/icons/wand.png'))
             for i in range(self.list.count()):
                 self.list.item(i).setCheckState(Qt.CheckState.Checked)
+                self.items_checked.append(self.list.item(i).text())
         else:
             self.apply.setIcon(QIcon(None))
             for i in range(self.list.count()):
@@ -134,6 +151,7 @@ class AnalysisPushButton(QPushButton):
 
         self.setChecked(True)
     
+    
     # list slots
 
     # usado apenas para formar a lista de items checked, que sera posteriormente usada
@@ -147,6 +165,11 @@ class AnalysisPushButton(QPushButton):
             if item.text() in self.items_checked:
                 self.items_checked.remove(item.text())
 
+        # if item in self.items_checked:
+        #     self.items_unchecked.append(self.items_checked.pop(self.items_checked.index(item)))
+        # elif item in self.items_unchecked:
+        #     self.items_checked.append(self.items_unchecked.pop(self.items_unchecked.index(item)))
+    
     # imprime os itens checked da lista
     def keyPressEvent(self, event):
         print('enter')

@@ -59,7 +59,7 @@ from   PyQt6.QtCore   import   (Qt,
                                 QRect,
                                 pyqtSlot)
 
-from widgets import analysis_dialog, model_dialog, project, table_model, analysis_button, painted_button
+from widgets import analysis_dialog, model_dialog, project, table_model, analysis_button, painted_button, items
 
 from imaids.insertiondevice import InsertionDeviceData
 
@@ -68,48 +68,6 @@ from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg,
                                                 NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
 
-
-'''
-class DoublePushButton(QPushButton):
-    doubleClicked = pyqtSignal()
-    clicked = pyqtSignal()
-
-    def __init__(self, *args, **kwargs):
-        QPushButton.__init__(self, *args, **kwargs)
-        self.timer = QTimer()
-        self.timer.setSingleShot(True)
-        self.timer.timeout.connect(self.clicked.emit)
-        super().clicked.connect(self.checkDoubleClick)
-
-    # melhorar essa implementacao, o intervalo de tempo esta sendo usado para
-    # executar a acao de um clique tambem
-
-    # na verdade nao ha como, e' preciso esperar para saber se e' clique duplo ou nao
-    @pyqtSlot()
-    def checkDoubleClick(self):
-        if self.timer.isActive():
-            self.doubleClicked.emit()
-            self.timer.stop()
-        else:
-            self.timer.start(250)
-'''
-
-'''
-class ButtonMenu(QPushButton):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        #self.setFixedSize(32,32)
-
-        self.clicked.connect(self.button_clicked)
-
-        self.custom_buttonMenu = QMenu(self)
-
-    def button_clicked(self,s):
-        self.show_menu()
-
-    def show_menu(self):
-        self.custom_buttonMenu.popup(self.mapToGlobal(self.rect().bottomLeft()))
-'''
 
 
 class MplCanvas(FigureCanvasQTAgg):
@@ -162,8 +120,6 @@ class MainWindow(QMainWindow):
         self.buttonAnalysis = analysis_button.AnalysisPushButton(menu_parent=self,
                                                                  button_text="Analysis",
                                                                  button_parent=self.toolbar)
-        #self.buttonAnalysis.apply.clicked.connect(self.manage_analysis)
-        #self.buttonAnalysis.signalTrajectory.connect(self.calc_traj)
         self.toolbar.addWidget(self.buttonAnalysis)
         self.toolbar.addSeparator()
 
@@ -184,7 +140,6 @@ class MainWindow(QMainWindow):
 
         self.buttonPlot = painted_button.PaintedButton("Plot")
         self.buttonPlot.setIcon(grafico)
-        self.buttonPlot.setCheckable(True)
         self.toolbar.addWidget(self.buttonPlot)
         self.toolbar.addSeparator()
 
@@ -192,7 +147,6 @@ class MainWindow(QMainWindow):
         self.buttonTable.setIcon(self.tabela)
         self.buttonTable.setObjectName(self.actiontabela.objectName())
         self.tabela = self.buttonTable.icon()
-        self.buttonTable.setCheckable(True)
 
         self.actiontabela.triggered.connect(self.action_swap)
         self.actiondog.triggered.connect(self.action_swap)
@@ -204,7 +158,6 @@ class MainWindow(QMainWindow):
                                                                self.actiondog,
                                                                self.actionbug])
 
-        # self.toolbar_buttonTable.manager.connect(self.table_manager)
         self.toolbar.addWidget(self.buttonTable)
         
 
@@ -302,19 +255,19 @@ class MainWindow(QMainWindow):
 
         #todo: melhorar condicao para algo como isempty; melhorar para pegar botao Ok ou Cancel
         # todo: detalhe: nao e' possivel sair do file dialog com Ok se nenhum arquivo for selecionado
-        if filenames != []:
-            print('ok')
+        if len(filenames): #condicao equivalente a: filenames != []
+            print('ok button')
             # haveria overload method para passar lista de objetos InsertionDeviceData
             self.treeInsertData(filenames)
             return True
         else:
-            print('cancel')
+            print('cancel button')
             return False
 
-        #index = self.projects.currentIndex()
+    def treeInsertData(self, filenames: dict):
 
-    def treeInsertData(self, filenames):
-
+        reloaded = []
+        
         for filename in filenames:
             if filename not in self.projects.currentWidget().filenames.values():
                 
@@ -322,14 +275,18 @@ class MainWindow(QMainWindow):
                 Dados_childs = self.projects.currentWidget().tree.topLevelItem(0).childCount()+1
                 meas.name = f'Dados {Dados_childs}'
 
-                # todo: conferir se vou querer guardar name ou item ou objeto insertion device
+                # ?: guardar informacoes em dict acessado pelo nome do dado e' a melhor opcao
                 self.projects.currentWidget().insertiondevice_datas[meas.name] = meas
-                # colocando filename na lista de filenames do respectivo project
+                # colocando filename no dicionario de filenames do respectivo project
                 self.projects.currentWidget().filenames[meas.name] = filename
-                self.projects.currentWidget().tree.topLevelItem(0).addChild(QTreeWidgetItem([meas.name]))
+                self.projects.currentWidget().tree.topLevelItem(0).addChild(items.ExploreItem(items.Items.DataItem,[meas.name]))
             else:
-                # todo: colocar aqui para abrir message box informativo falando que ja carregou o dado
-                print('arquivo ja carregado')
+                reloaded.append(os.path.basename(filename))
+        
+        if len(reloaded):
+            QMessageBox.warning(self,
+                                "Files Warning",
+                                f"Files already loaded! They are:\n{reloaded}")
 
     def model_generation(self):
         dialog = model_dialog.ModelDialog(parent=self)
@@ -355,12 +312,7 @@ class MainWindow(QMainWindow):
 
     # tool bar slots
 
-    def calc_traj(self, meas_item):
-        # obter lista dos items checked
-        #self.menuAnalysis.list.
-        print('calcular trajetoria')
-        #energy = 3 x0 = 0 y0 = 0 z0 = -900 dxds0 = 0 dyds0 = 0 dzds0 = 1 zmax = 900 rkstep = 0.5
-
+    def calc_traj(self, meas_item: items.ExploreItem):
         meas_name = meas_item.text(0)
 
         if meas_name not in self.projects.currentWidget().insertiondevice_trajectories:
@@ -369,18 +321,8 @@ class MainWindow(QMainWindow):
 
             num = meas_name.split()[1]
 
-            traj = QTreeWidgetItem(meas_item, [f'Trajectory {num}'])
-            #self.dados['Dados 1'].addChild(traj)
-            #dados.addChild(traj)
-
-            # se precisar usar os x, y, ... em outro lugar, fazer x = QTreeWidgetItem...
-            #QTreeWidgetItem(traj, ["x"]) # x
-            #QTreeWidgetItem(traj, ["y"]) # y
-            #QTreeWidgetItem(traj, ["z"]) # z
-            #QTreeWidgetItem(traj, ["x'"]) # dxds
-            #QTreeWidgetItem(traj, ["y'"]) # dyds
-            #QTreeWidgetItem(traj, ["z'"]) # dzds
-            #traj.addChildren([x, y, z, dxds, dyds, dzds])
+            traj = items.ExploreItem(items.Items.TrajectoryItem, meas_item, [f'Trajectory {num}'])
+            
             traj.addChildren([QTreeWidgetItem(traj, ["x"]),
                             QTreeWidgetItem(traj, ["y"]),
                             QTreeWidgetItem(traj, ["z"]),
@@ -389,17 +331,18 @@ class MainWindow(QMainWindow):
                             QTreeWidgetItem(traj, ["z'"])])
             
             #energy = 3 x0 = 0 y0 = 0 z0 = -900 dxds0 = 0 dyds0 = 0 dzds0 = 1 zmax = 900 rkstep = 0.5
-            
             traj_imaids = meas.calc_trajectory(3,[0,0,-900,0,0,1],900,0.5)
 
             self.projects.currentWidget().insertiondevice_trajectories[meas_name] = traj_imaids
 
             return
         else:
-            print('trajetoria ja calculada')
+            QMessageBox.warning(self,
+                                "Trajectories Warning",
+                                "Trajectories already calculated!")
             return
     
-    def plot(self,meas_item):
+    def plot(self, meas_item: items.ExploreItem):
 
         meas_name = meas_item.parent().text(0)
 
@@ -423,13 +366,6 @@ class MainWindow(QMainWindow):
         # colocando tabela no visuals
         i = self.projects.currentWidget().visuals.addTab(plot_widget, f"Plot {meas_name} - x' vs z")
         self.projects.currentWidget().visuals.setCurrentIndex(i)
-
-        #plt.plot(traj_imaids[:,2], traj_imaids[:,3], label="x'")
-        #plt.plot(traj_imaids[:,2], traj_imaids[:,4], label="y'")
-        #plt.xlabel('z (mm)')
-        #plt.ylabel("x',y' (rad)")
-        #plt.legend()
-        #plt.show()
     
     def action_swap(self):
         action = self.sender()
@@ -437,7 +373,7 @@ class MainWindow(QMainWindow):
         self.buttonTable.setChecked(True)
         self.buttonTable.setObjectName(action.objectName())
 
-    def table_data(self, meas_item):
+    def table_data(self, meas_item: items.ExploreItem):
 
         meas_name = meas_item.text(0)
         print(meas_name)
@@ -516,17 +452,12 @@ class MainWindow(QMainWindow):
 
     #!: aqui sera gerenciado os clicks nos items, esquecer ideia de classe que recebe sinais de outras classes
     #!  e passa adiante
-    def on_item_clicked(self, item, column):
+    def on_item_clicked(self, item: items.ExploreItem, column):
 
-        print('\n')
-        print(self.buttonTable.isChecked())
-        print(self.buttonTable.objectName()==self.actiontabela.objectName())
-        print(item.parent())
-    
         # plotar tabela
         if self.buttonTable.isChecked() and \
             self.buttonTable.objectName()==self.actiontabela.objectName() and \
-            item.parent() == self.projects.currentWidget().tree.topLevelItem(0):
+            item.item_type == items.Items.DataItem:
             
             self.table_data(item)
         
@@ -536,32 +467,19 @@ class MainWindow(QMainWindow):
         # calcular trajetoria
         if  self.buttonAnalysis.isChecked() and \
             self.buttonAnalysis.itemTrajectory.checkState() == Qt.CheckState.Checked and \
-            item.parent() == self.projects.currentWidget().tree.topLevelItem(0):
+            item.item_type == items.Items.DataItem:
 
             self.calc_traj(item)
 
-        # todo: melhorar condicao, esta aceitando qualquer item que nao seja Data,
-        # todo: ou seja, aceitando Models e outros, quando nao deveria
+        # *: ainda ha problema do Data e Model nao terem atributo item_type
         if  self.buttonPlot.isChecked() and \
-            item.parent().parent() == self.projects.currentWidget().tree.topLevelItem(0):
+            item.item_type == items.Items.TrajectoryItem:
             
             print("vai plotar")
             
             self.plot(item)
     
-    def magnetic_field(self):
-        print('entrou magnetic_field method')
-        return
     
-    def trajectory(self):
-        print('entrou trajectory method')
-        return
-    
-    def phase_error(self):
-        print('entrou phase_error method')
-        return
-
-
     # outros metodos
 
     def mousePressEvent(self, event):

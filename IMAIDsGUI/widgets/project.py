@@ -14,7 +14,9 @@ class ProjectWidget(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.filenames = []
+        self.filenames = {}
+        self.insertiondevice_datas = {}
+        self.insertiondevice_trajectories = {}
 
         self.Dados = QTreeWidgetItem(['Data'])
         self.Modelos = QTreeWidgetItem(['Models'])

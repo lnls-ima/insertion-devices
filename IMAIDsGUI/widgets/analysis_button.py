@@ -6,15 +6,6 @@ from PyQt6.QtCore import Qt, QRect, pyqtSignal
 
 class AnalysisPushButton(QPushButton):
 
-    signalField = pyqtSignal()
-    signalTrajectory = pyqtSignal()
-    signalPhaseError = pyqtSignal()
-    signalIntegrals = pyqtSignal()
-    signalRollOff = pyqtSignal()
-    signalKickma = pyqtSignal()
-    signalCrossTalk = pyqtSignal()
-    signalShimming = pyqtSignal()
-
     def __init__(self, menu_parent, button_text, button_parent, *args, **kwargs):
         super().__init__(text=button_text, parent=button_parent, *args, **kwargs)
 
@@ -138,15 +129,6 @@ class AnalysisPushButton(QPushButton):
 
     def aplicar(self):
         print('aplicou')
-
-        self.signalField.emit()
-        self.signalTrajectory.emit()
-        self.signalPhaseError.emit()
-        self.signalIntegrals.emit()
-        self.signalRollOff.emit()
-        self.signalKickma.emit()
-        self.signalCrossTalk.emit()
-        self.signalShimming.emit()
 
         self.Menu.setHidden(True)
 

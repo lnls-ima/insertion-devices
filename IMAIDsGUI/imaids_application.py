@@ -7,6 +7,9 @@
 
 
 import sys
+import os
+import matplotlib
+matplotlib.use('QtAgg')
 
 from  PyQt6.QtWidgets import   (QApplication,
                                 QWidget,
@@ -20,6 +23,7 @@ from  PyQt6.QtWidgets import   (QApplication,
                                 QLabel,
                                 QLineEdit,
                                 QComboBox,
+                                QDialog,
                                 QFileDialog,
                                 QMenu,
                                 QMenuBar,
@@ -55,9 +59,14 @@ from   PyQt6.QtCore   import   (Qt,
                                 QRect,
                                 pyqtSlot)
 
-from widgets import model_dialog, project, table_model, analysis_button, painted_button
+from widgets import analysis_dialog, model_dialog, project, table_model, analysis_button, painted_button
 
-from imaids import fieldsource, insertiondevice
+from imaids.insertiondevice import InsertionDeviceData
+
+from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg,
+                                                # matplotlib toolbar qt widget class
+                                                NavigationToolbar2QT as NavigationToolbar)
+from matplotlib.figure import Figure
 
 
 '''
@@ -103,18 +112,18 @@ class ButtonMenu(QPushButton):
 '''
 
 
+class MplCanvas(FigureCanvasQTAgg):
+
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = fig.add_subplot(111)
+        super(MplCanvas, self).__init__(fig)
+
+
 class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-
-        # atributo filename
-        # atributo que vai guardar filename quando carregarmos os dados e
-        # sera chamado quando for criar a tabela de dados
-        
-        self.dados = {}
-        self.insertiondevice_datas = {}
-
 
         # -------------- construcao de tab widgets de projetos -------------- #
 
@@ -148,20 +157,13 @@ class MainWindow(QMainWindow):
         # tool bar
         self.toolbar = QToolBar("Barra de Ferramentas")
         self.toolbar.setObjectName("Barra de Ferramentas")
-
-        #self.spacer = QSpacerItem(200,25,QSizePolicy.Policy.Preferred,QSizePolicy.Policy.Fixed)
-        #self.spacer = QWidget()
-        #self.spacer.setSizePolicy(QSizePolicy.Policy.Fixed,QSizePolicy.Policy.Preferred)
-        #self.spacer.setFixedWidth(50)
-        #self.spacer.setFixedHeight(50)
-        #self.toolbar.addWidget(self.spacer)
     
         ## button analysis
         self.buttonAnalysis = analysis_button.AnalysisPushButton(menu_parent=self,
                                                                  button_text="Analysis",
                                                                  button_parent=self.toolbar)
         #self.buttonAnalysis.apply.clicked.connect(self.manage_analysis)
-        self.buttonAnalysis.signalTrajectory.connect(self.calc_traj)
+        #self.buttonAnalysis.signalTrajectory.connect(self.calc_traj)
         self.toolbar.addWidget(self.buttonAnalysis)
         self.toolbar.addSeparator()
 
@@ -180,10 +182,10 @@ class MainWindow(QMainWindow):
         self.actionbug = QAction(self.bug,"inseto",self)
         self.actionbug.setObjectName("bug")
 
-        self.toolbar_buttonPlot = painted_button.PaintedButton("Plot")
-        self.toolbar_buttonPlot.setIcon(grafico)
-        self.toolbar_buttonPlot.setCheckable(True)
-        self.toolbar.addWidget(self.toolbar_buttonPlot)
+        self.buttonPlot = painted_button.PaintedButton("Plot")
+        self.buttonPlot.setIcon(grafico)
+        self.buttonPlot.setCheckable(True)
+        self.toolbar.addWidget(self.buttonPlot)
         self.toolbar.addSeparator()
 
         self.buttonTable = painted_button.PaintedButton("Table")
@@ -233,13 +235,18 @@ class MainWindow(QMainWindow):
         self.menuFile.addAction(self.actionQuit)
         ## main menu bar - Edit menu
         self.menuEdit = self.menubar.addMenu("&Edit")
-        ### main menu bar - Edit menu - Undo action
+        ### main menu bar - Edit menu - Analysis action
+        self.actionAnalysis = QAction("Analysis", self)
+        self.actionAnalysis.triggered.connect(self.edit_analysis_parameters)
+        self.menuEdit.addAction(self.actionAnalysis)
+        self.menuEdit.addSeparator()
+        '''### main menu bar - Edit menu - Undo action
         self.actionUndo = QAction("Undo", self)
         self.menuEdit.addAction(self.actionUndo)
         self.menuEdit.addSeparator()
         ### main menu bar - Edit menu - Redo action
         self.actionRedo = QAction("Redo", self)
-        self.menuEdit.addAction(self.actionRedo)
+        self.menuEdit.addAction(self.actionRedo)'''
         ## main menu bar - View menu: contem opcoes de esconder widgets, tais como toolbar
         self.menuView = self.menubar.addMenu("&View")
         ### main menu bar - View menu - ToolBar action
@@ -264,7 +271,7 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.statusbar)
         self.addToolBar(self.toolbar)
         self.setMenuBar(self.menubar)
-        self.setWindowTitle("IMAIDS Interface")
+        self.setWindowTitle("IMAIDs Interface")
         self.setCentralWidget(self.projects)
         self.resize(900,600)
         
@@ -285,43 +292,44 @@ class MainWindow(QMainWindow):
         self.projects.widget(i).tree.itemClicked.connect(self.on_item_clicked)
 
     def browse_for_data(self,s):
-        filenames, _ =QFileDialog.getOpenFileNames(self, 'Open data', '', 'Data (*.dat)')
+        
+        #filenames, _ = QFileDialog.getOpenFileNames(self, 'Open data', r"C:\Users\juventino.fonseca\OneDrive - CNPEM - Centro Nacional de Pesquisa em Energia e Materiais\Meus arquivos dos codiguinhos\dados", "Data files (*.txt *.dat *.csv)")
+        #filenames, _ = QFileDialog.getOpenFileNames(self, 'Open data', r"C:\Users", "Data files (*.txt *.dat *.csv)")
+        #filenames, _ = QFileDialog.getOpenFileNames(self, 'Open data', r"%userprofile%\Documents", "Data files (*.txt *.dat *.csv)")
+        username = os.getlogin()
+        print(username)
+        filenames, _ =QFileDialog.getOpenFileNames(self, 'Open data', f"C:\\Users\\{username}\\Documents", "Data files (*.txt *.dat *.csv)")
 
-        #todo: melhorar condicao para algo como isempty
+        #todo: melhorar condicao para algo como isempty; melhorar para pegar botao Ok ou Cancel
+        # todo: detalhe: nao e' possivel sair do file dialog com Ok se nenhum arquivo for selecionado
         if filenames != []:
+            print('ok')
             # haveria overload method para passar lista de objetos InsertionDeviceData
             self.treeInsertData(filenames)
             return True
         else:
+            print('cancel')
             return False
 
         #index = self.projects.currentIndex()
 
     def treeInsertData(self, filenames):
 
-        # tree.topLevelItemCount() retorna o numero de items mais externos
-        # se nao ha, retorna 0, que e' equivalente a False
-        # not False e' True e entra na condicao quando nao ha toplevel items
-        
-        # insertiondevice_datas = []
-        # self.insertiondevice_datas = {}     (definicao la no init)
         for filename in filenames:
-            if filename not in self.projects.currentWidget().filenames:
-                # colocando filename na lista de filenames do respectivo project
-                self.projects.currentWidget().filenames.append(filename)
-
-                meas = insertiondevice.InsertionDeviceData(filename=filename)
+            if filename not in self.projects.currentWidget().filenames.values():
+                
+                meas = InsertionDeviceData(filename=filename)
                 Dados_childs = self.projects.currentWidget().tree.topLevelItem(0).childCount()+1
                 meas.name = f'Dados {Dados_childs}'
+
                 # todo: conferir se vou querer guardar name ou item ou objeto insertion device
-                #insertiondevice_datas.append(meas)
-                self.insertiondevice_datas[meas.name] = meas
+                self.projects.currentWidget().insertiondevice_datas[meas.name] = meas
+                # colocando filename na lista de filenames do respectivo project
+                self.projects.currentWidget().filenames[meas.name] = filename
                 self.projects.currentWidget().tree.topLevelItem(0).addChild(QTreeWidgetItem([meas.name]))
             else:
                 # todo: colocar aqui para abrir message box informativo falando que ja carregou o dado
                 print('arquivo ja carregado')
-
-        # ?: conferir qual a utilidade de self.dados
 
     def model_generation(self):
         dialog = model_dialog.ModelDialog(parent=self)
@@ -338,30 +346,90 @@ class MainWindow(QMainWindow):
             self.app.quit()
 
     
+    ## edit slots
+
+    def edit_analysis_parameters(self):
+        dialog = analysis_dialog.AnalysisDialog(parent=self)
+        dialog.exec()
+    
+
     # tool bar slots
 
-    def calc_traj(self):
+    def calc_traj(self, meas_item):
         # obter lista dos items checked
         #self.menuAnalysis.list.
         print('calcular trajetoria')
         #energy = 3 x0 = 0 y0 = 0 z0 = -900 dxds0 = 0 dyds0 = 0 dzds0 = 1 zmax = 900 rkstep = 0.5
 
-        traj = QTreeWidgetItem(['Trajectory 1'])
-        self.projects.currentWidget().tree.topLevelItem(0).child(0).addChild(traj)
+        meas_name = meas_item.text(0)
 
-        x = QTreeWidgetItem(['x'])
-        y = QTreeWidgetItem(['y'])
-        z = QTreeWidgetItem(['z'])
-        dxds = QTreeWidgetItem(["x'"])
-        dyds = QTreeWidgetItem(["y'"])
-        dzds = QTreeWidgetItem(["z'"])
-        traj.addChild(x)
-        traj.addChild(y)
-        traj.addChild(z)
-        traj.addChild(dxds)
-        traj.addChild(dyds)
-        traj.addChild(dzds)
-        return
+        if meas_name not in self.projects.currentWidget().insertiondevice_trajectories:
+
+            meas = self.projects.currentWidget().insertiondevice_datas[meas_name]
+
+            num = meas_name.split()[1]
+
+            traj = QTreeWidgetItem(meas_item, [f'Trajectory {num}'])
+            #self.dados['Dados 1'].addChild(traj)
+            #dados.addChild(traj)
+
+            # se precisar usar os x, y, ... em outro lugar, fazer x = QTreeWidgetItem...
+            #QTreeWidgetItem(traj, ["x"]) # x
+            #QTreeWidgetItem(traj, ["y"]) # y
+            #QTreeWidgetItem(traj, ["z"]) # z
+            #QTreeWidgetItem(traj, ["x'"]) # dxds
+            #QTreeWidgetItem(traj, ["y'"]) # dyds
+            #QTreeWidgetItem(traj, ["z'"]) # dzds
+            #traj.addChildren([x, y, z, dxds, dyds, dzds])
+            traj.addChildren([QTreeWidgetItem(traj, ["x"]),
+                            QTreeWidgetItem(traj, ["y"]),
+                            QTreeWidgetItem(traj, ["z"]),
+                            QTreeWidgetItem(traj, ["x'"]),
+                            QTreeWidgetItem(traj, ["y'"]),
+                            QTreeWidgetItem(traj, ["z'"])])
+            
+            #energy = 3 x0 = 0 y0 = 0 z0 = -900 dxds0 = 0 dyds0 = 0 dzds0 = 1 zmax = 900 rkstep = 0.5
+            
+            traj_imaids = meas.calc_trajectory(3,[0,0,-900,0,0,1],900,0.5)
+
+            self.projects.currentWidget().insertiondevice_trajectories[meas_name] = traj_imaids
+
+            return
+        else:
+            print('trajetoria ja calculada')
+            return
+    
+    def plot(self,meas_item):
+
+        meas_name = meas_item.parent().text(0)
+
+        traj_imaids = self.projects.currentWidget().insertiondevice_trajectories[meas_name]
+
+        sc = MplCanvas(self, width=5, height=4, dpi=100)
+        sc.axes.plot(traj_imaids[:,2],traj_imaids[:,3])
+        sc.axes.set_xlabel('z (mm)')
+        sc.axes.set_ylabel("x' (rad)")
+        sc.axes.set_title('Trajectory - Angular Deviation in x')
+
+        plot_toolbar = NavigationToolbar(sc, self)
+
+        plot_layout = QVBoxLayout()
+        plot_layout.addWidget(plot_toolbar)
+        plot_layout.addWidget(sc)
+
+        plot_widget = QWidget()
+        plot_widget.setLayout(plot_layout)
+
+        # colocando tabela no visuals
+        i = self.projects.currentWidget().visuals.addTab(plot_widget, f"Plot {meas_name} - x' vs z")
+        self.projects.currentWidget().visuals.setCurrentIndex(i)
+
+        #plt.plot(traj_imaids[:,2], traj_imaids[:,3], label="x'")
+        #plt.plot(traj_imaids[:,2], traj_imaids[:,4], label="y'")
+        #plt.xlabel('z (mm)')
+        #plt.ylabel("x',y' (rad)")
+        #plt.legend()
+        #plt.show()
     
     def action_swap(self):
         action = self.sender()
@@ -369,33 +437,37 @@ class MainWindow(QMainWindow):
         self.buttonTable.setChecked(True)
         self.buttonTable.setObjectName(action.objectName())
 
-    #def table_data(self,filename):
-    def table_data(self,meas_name):
+    def table_data(self, meas_item):
+
+        meas_name = meas_item.text(0)
         print(meas_name)
 
-        meas = self.insertiondevice_datas[meas_name]
+        meas = self.projects.currentWidget().insertiondevice_datas[meas_name]
         
         #contrucao da tabela
         tabela = QTableView()
-        # todo: alterar para criar modelo a partir do objeto insertiondevice, pode ter overload function
-        # no TableModel, usar metodos do InsertionDevice para obter mesmo array numpy que obtem-se com
-        # filename
-        # isso ate que e' bom porque na hora dos modelos, isso vai ficar parecido
-        # assim como pode-se definir objeto de varias maneiras no pyqt, devemos poder criar
-        # table model com filename ou objeto InsertionDevice
-        modelo = table_model.TableModel(meas)
-        tabela.setModel(modelo)
+        modeltable = table_model.TableModel(meas)
+        tabela.setModel(modeltable)
 
+        # todo: passar estilo para dentro do .py de modelo da tabela
         # estilo da tabela
-        horizontal_color = QColor.fromRgb(80, 174, 144)
+        '''horizontal_color = QColor.fromRgb(80, 174, 144)
         vertical_color = QColor.fromRgb(136, 59, 144, int(0.8*255))
+        horizontal_header_style = "QHeaderView::section {{background-color: {} }}".format(horizontal_color.name())
+        vertical_header_style = "QHeaderView::section {{background-color: {} }}".format(vertical_color.name())
+        tabela.horizontalHeader().setStyleSheet(horizontal_header_style)
+        tabela.verticalHeader().setStyleSheet(vertical_header_style)'''
+
+        #estilo meh
+        horizontal_color = QColor.fromRgb(200, 200, 200)
+        vertical_color = QColor.fromRgb(200, 200, 200)
         horizontal_header_style = "QHeaderView::section {{background-color: {} }}".format(horizontal_color.name())
         vertical_header_style = "QHeaderView::section {{background-color: {} }}".format(vertical_color.name())
         tabela.horizontalHeader().setStyleSheet(horizontal_header_style)
         tabela.verticalHeader().setStyleSheet(vertical_header_style)
 
         # colocando tabela no visuals
-        i = self.projects.currentWidget().visuals.addTab(tabela, "tabela")
+        i = self.projects.currentWidget().visuals.addTab(tabela, f"Table {meas_name} - x, y, z, Bx, By, Bz")
         self.projects.currentWidget().visuals.setCurrentIndex(i)
     
 
@@ -442,17 +514,40 @@ class MainWindow(QMainWindow):
 
     # tree slots
 
+    #!: aqui sera gerenciado os clicks nos items, esquecer ideia de classe que recebe sinais de outras classes
+    #!  e passa adiante
     def on_item_clicked(self, item, column):
 
+        print('\n')
+        print(self.buttonTable.isChecked())
+        print(self.buttonTable.objectName()==self.actiontabela.objectName())
+        print(item.parent())
+    
         # plotar tabela
         if self.buttonTable.isChecked() and \
             self.buttonTable.objectName()==self.actiontabela.objectName() and \
             item.parent() == self.projects.currentWidget().tree.topLevelItem(0):
             
-            self.table_data(item.text(0))
+            self.table_data(item)
         
-        #if  self.buttonAnalysis.isChecked() and \
-        #    item.parent() == self.projects.currentWidget().tree.topLevelItem(0):
+        #*: alterando analysis button.py para poder acessar facilmente os items abaixo
+        #*  alem disso, possivelmente usando o object name deles, dai checando se estao
+        #*  checked e entao levando ao respectivo metodo
+        # calcular trajetoria
+        if  self.buttonAnalysis.isChecked() and \
+            self.buttonAnalysis.itemTrajectory.checkState() == Qt.CheckState.Checked and \
+            item.parent() == self.projects.currentWidget().tree.topLevelItem(0):
+
+            self.calc_traj(item)
+
+        # todo: melhorar condicao, esta aceitando qualquer item que nao seja Data,
+        # todo: ou seja, aceitando Models e outros, quando nao deveria
+        if  self.buttonPlot.isChecked() and \
+            item.parent().parent() == self.projects.currentWidget().tree.topLevelItem(0):
+            
+            print("vai plotar")
+            
+            self.plot(item)
     
     def magnetic_field(self):
         print('entrou magnetic_field method')

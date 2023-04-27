@@ -35,6 +35,11 @@ class TableModel(QAbstractTableModel):
             return QColor.fromRgb(*color)
         '''
 
+        # meh
+        if role == Qt.ItemDataRole.BackgroundRole:
+            color = [240,240, 240]
+            return QColor.fromRgb(*color)
+
     def rowCount(self, index):
         return self._data.shape[0]
 

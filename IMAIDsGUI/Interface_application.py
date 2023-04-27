@@ -34,7 +34,8 @@ from  PyQt6.QtWidgets import   (QApplication,
                                 QListWidget,
                                 QListWidgetItem,
                                 QCheckBox,
-                                QMessageBox)
+                                QMessageBox,
+                                QSpacerItem)
 from   PyQt6.QtGui    import   (QAction,
                                 QIcon,
                                 QKeySequence,
@@ -110,8 +111,9 @@ class MainWindow(QMainWindow):
         # atributo filename
         # atributo que vai guardar filename quando carregarmos os dados e
         # sera chamado quando for criar a tabela de dados
-        self.filename = {}
+        
         self.dados = {}
+        self.insertiondevice_datas = {}
 
 
         # -------------- construcao de tab widgets de projetos -------------- #
@@ -146,6 +148,13 @@ class MainWindow(QMainWindow):
         # tool bar
         self.toolbar = QToolBar("Barra de Ferramentas")
         self.toolbar.setObjectName("Barra de Ferramentas")
+
+        #self.spacer = QSpacerItem(200,25,QSizePolicy.Policy.Preferred,QSizePolicy.Policy.Fixed)
+        #self.spacer = QWidget()
+        #self.spacer.setSizePolicy(QSizePolicy.Policy.Fixed,QSizePolicy.Policy.Preferred)
+        #self.spacer.setFixedWidth(50)
+        #self.spacer.setFixedHeight(50)
+        #self.toolbar.addWidget(self.spacer)
     
         ## button analysis
         self.buttonAnalysis = analysis_button.AnalysisPushButton(menu_parent=self,
@@ -177,24 +186,24 @@ class MainWindow(QMainWindow):
         self.toolbar.addWidget(self.toolbar_buttonPlot)
         self.toolbar.addSeparator()
 
-        self.toolbar_buttonTable = painted_button.PaintedButton("Table")
-        self.toolbar_buttonTable.setIcon(self.tabela)
-        self.toolbar_buttonTable.setObjectName(self.actiontabela.objectName())
-        self.tabela = self.toolbar_buttonTable.icon()
-        self.toolbar_buttonTable.setCheckable(True)
+        self.buttonTable = painted_button.PaintedButton("Table")
+        self.buttonTable.setIcon(self.tabela)
+        self.buttonTable.setObjectName(self.actiontabela.objectName())
+        self.tabela = self.buttonTable.icon()
+        self.buttonTable.setCheckable(True)
 
         self.actiontabela.triggered.connect(self.action_swap)
         self.actiondog.triggered.connect(self.action_swap)
         self.actioncat.triggered.connect(self.action_swap)
         self.actionbug.triggered.connect(self.action_swap)
 
-        self.toolbar_buttonTable.custom_buttonMenu.addActions([self.actiontabela,
+        self.buttonTable.custom_buttonMenu.addActions([self.actiontabela,
                                                                self.actioncat,
                                                                self.actiondog,
                                                                self.actionbug])
 
         # self.toolbar_buttonTable.manager.connect(self.table_manager)
-        self.toolbar.addWidget(self.toolbar_buttonTable)
+        self.toolbar.addWidget(self.buttonTable)
         
 
         # ------------------- construcao do main menu bar ------------------- #
@@ -278,40 +287,40 @@ class MainWindow(QMainWindow):
     def browse_for_data(self,s):
         filenames, _ =QFileDialog.getOpenFileNames(self, 'Open data', '', 'Data (*.dat)')
 
-        number_of_files = len(filenames)
-        
-        #pegar indice do project atual e acessar tree do project atual
-        #por fim, na tree atual, inserir Dados 1
-        
-        #melhorar condicao para algo como isempty
+        #todo: melhorar condicao para algo como isempty
         if filenames != []:
-            self.treeInsertData(number_of_files)
-            for index in range(number_of_files):
-                self.filename[f'Dados {index+1}'] = filenames[index]
+            # haveria overload method para passar lista de objetos InsertionDeviceData
+            self.treeInsertData(filenames)
             return True
         else:
-            #print('else')
             return False
 
         #index = self.projects.currentIndex()
 
-    def treeInsertData(self, number_of_files):
-
-        print(number_of_files)
+    def treeInsertData(self, filenames):
 
         # tree.topLevelItemCount() retorna o numero de items mais externos
         # se nao ha, retorna 0, que e' equivalente a False
         # not False e' True e entra na condicao quando nao ha toplevel items
         
-        dados_childs = self.projects.currentWidget().tree.topLevelItem(0).childCount()+1
-        print(dados_childs)  # -> 1
-        for index in range(number_of_files):
-            print('iteracao',index,f'Dados {dados_childs+index}')
-            novo_dado = QTreeWidgetItem([f'Dados {dados_childs+index}'])
-            self.dados[f'Dados {dados_childs+index}'] = novo_dado
-            self.projects.currentWidget().tree.topLevelItem(0).addChild(novo_dado)
-        
-        print(self.dados)
+        # insertiondevice_datas = []
+        # self.insertiondevice_datas = {}     (definicao la no init)
+        for filename in filenames:
+            if filename not in self.projects.currentWidget().filenames:
+                # colocando filename na lista de filenames do respectivo project
+                self.projects.currentWidget().filenames.append(filename)
+
+                meas = insertiondevice.InsertionDeviceData(filename=filename)
+                Dados_childs = self.projects.currentWidget().tree.topLevelItem(0).childCount()+1
+                meas.name = f'Dados {Dados_childs}'
+                # todo: conferir se vou querer guardar name ou item ou objeto insertion device
+                #insertiondevice_datas.append(meas)
+                self.insertiondevice_datas[meas.name] = meas
+                self.projects.currentWidget().tree.topLevelItem(0).addChild(QTreeWidgetItem([meas.name]))
+            else:
+                # todo: colocar aqui para abrir message box informativo falando que ja carregou o dado
+                print('arquivo ja carregado')
+
         # ?: conferir qual a utilidade de self.dados
 
     def model_generation(self):
@@ -335,18 +344,10 @@ class MainWindow(QMainWindow):
         # obter lista dos items checked
         #self.menuAnalysis.list.
         print('calcular trajetoria')
-        energy = 3
-        x0 = 0
-        y0 = 0
-        z0 = -900
-        dxds0 = 0
-        dyds0 = 0
-        dzds0 = 1
-        zmax = 900
-        rkstep = 0.5
+        #energy = 3 x0 = 0 y0 = 0 z0 = -900 dxds0 = 0 dyds0 = 0 dzds0 = 1 zmax = 900 rkstep = 0.5
 
         traj = QTreeWidgetItem(['Trajectory 1'])
-        self.dados['Dados 1'].addChild(traj)
+        self.projects.currentWidget().tree.topLevelItem(0).child(0).addChild(traj)
 
         x = QTreeWidgetItem(['x'])
         y = QTreeWidgetItem(['y'])
@@ -364,20 +365,28 @@ class MainWindow(QMainWindow):
     
     def action_swap(self):
         action = self.sender()
-        self.toolbar_buttonTable.setIcon(action.icon())
-        self.toolbar_buttonTable.setChecked(True)
-        self.toolbar_buttonTable.setObjectName(action.objectName())
+        self.buttonTable.setIcon(action.icon())
+        self.buttonTable.setChecked(True)
+        self.buttonTable.setObjectName(action.objectName())
 
-    def table_data(self,filename):
+    #def table_data(self,filename):
+    def table_data(self,meas_name):
+        print(meas_name)
+
+        meas = self.insertiondevice_datas[meas_name]
         
-        # todo: passar essa condicao para outro lugar e torna-la mais geral
-        if self.projects.currentWidget().visuals.count() == 1:
-            self.projects.currentWidget().visuals.setTabsClosable(True)
-        
+        #contrucao da tabela
         tabela = QTableView()
-        modelo = table_model.TableModel(filename)
+        # todo: alterar para criar modelo a partir do objeto insertiondevice, pode ter overload function
+        # no TableModel, usar metodos do InsertionDevice para obter mesmo array numpy que obtem-se com
+        # filename
+        # isso ate que e' bom porque na hora dos modelos, isso vai ficar parecido
+        # assim como pode-se definir objeto de varias maneiras no pyqt, devemos poder criar
+        # table model com filename ou objeto InsertionDevice
+        modelo = table_model.TableModel(meas)
         tabela.setModel(modelo)
 
+        # estilo da tabela
         horizontal_color = QColor.fromRgb(80, 174, 144)
         vertical_color = QColor.fromRgb(136, 59, 144, int(0.8*255))
         horizontal_header_style = "QHeaderView::section {{background-color: {} }}".format(horizontal_color.name())
@@ -385,6 +394,7 @@ class MainWindow(QMainWindow):
         tabela.horizontalHeader().setStyleSheet(horizontal_header_style)
         tabela.verticalHeader().setStyleSheet(vertical_header_style)
 
+        # colocando tabela no visuals
         i = self.projects.currentWidget().visuals.addTab(tabela, "tabela")
         self.projects.currentWidget().visuals.setCurrentIndex(i)
     
@@ -434,21 +444,15 @@ class MainWindow(QMainWindow):
 
     def on_item_clicked(self, item, column):
 
-        #print('button is checked',self.toolbar_buttonTable.isChecked())
-        #print('button object name',self.toolbar_buttonTable.objectName())
-        #print('action tabela object name',self.actiontabela.objectName())
-        
         # plotar tabela
-        if self.toolbar_buttonTable.isChecked() and \
-            self.toolbar_buttonTable.objectName()==self.actiontabela.objectName():
+        if self.buttonTable.isChecked() and \
+            self.buttonTable.objectName()==self.actiontabela.objectName() and \
+            item.parent() == self.projects.currentWidget().tree.topLevelItem(0):
             
-            print(item.text(0))
-            #print(self.dados.keys())
-            print('keys',self.filename.keys(),'\n')
-            print('values',self.filename.values())
-            if item.text(0) in self.dados.keys():
-                filename = self.filename[item.text(0)]
-                self.table_data(filename)
+            self.table_data(item.text(0))
+        
+        #if  self.buttonAnalysis.isChecked() and \
+        #    item.parent() == self.projects.currentWidget().tree.topLevelItem(0):
     
     def magnetic_field(self):
         print('entrou magnetic_field method')

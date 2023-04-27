@@ -102,10 +102,14 @@ class AnalysisPushButton(QPushButton):
         self.Menu.raise_()
         self.Menu.setGeometry(QRect(topleft_corner.x()+1, topleft_corner.y(), 150, 250))
 
-        if self.Menu.isVisible():
-            self.Menu.setHidden(True)
+        if not self.isChecked():
+            self.setChecked(False)
         else:
-            self.Menu.setHidden(False)
+            self.setChecked(False)
+            if self.Menu.isVisible():
+                self.Menu.setHidden(True)
+            else:
+                self.Menu.setHidden(False)
     
     # menu slots
 

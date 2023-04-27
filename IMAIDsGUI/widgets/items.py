@@ -2,6 +2,8 @@ import enum
 from PyQt6.QtWidgets import QTreeWidgetItem
 
 class Items(enum.Enum):
+    DataContainer = 0
+    ModelContainer = 1
     DataItem = 2
     ModelItem = 3
     FieldItem = 4

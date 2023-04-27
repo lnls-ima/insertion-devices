@@ -10,16 +10,19 @@ from PyQt6.QtWidgets import (QWidget,
                              QLineEdit)
 from PyQt6.QtCore import Qt, QTimer
 
+from . import items
+
 class ProjectWidget(QWidget):
     def __init__(self):
         super().__init__()
 
         self.filenames = {}
         self.insertiondevice_datas = {}
+        self.insertiondevice_models = {}
         self.insertiondevice_trajectories = {}
 
-        self.Dados = QTreeWidgetItem(['Data'])
-        self.Modelos = QTreeWidgetItem(['Models'])
+        self.Dados = items.ExploreItem(items.Items.DataContainer, ['Data'])
+        self.Modelos = items.ExploreItem(items.Items.ModelContainer, ['Models'])
 
         #labels de parametros dos modelos
         

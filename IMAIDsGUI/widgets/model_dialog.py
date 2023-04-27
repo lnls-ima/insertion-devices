@@ -10,48 +10,18 @@ from PyQt6.QtWidgets import (QGroupBox,
                              QVBoxLayout,
                              QFormLayout)
 
+import imaids.models as models
 
-class ModelDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent=parent)
 
-        self.setWindowTitle("Model")
-
-        self.models_list = ["Delta Prototype",
-                            "Delta Sabia",
-                            "Delta Carnauba",
-                            "AppleX Sabia",
-                            "AppleX Carnauba",
-                            "AppleII Sabia",
-                            "AppleII Carnauba",
-                            "Kyma 22",
-                            "Kyma 58",
-                            "PAPU",
-                            "Hybrid APU",
-                            "Hybrid Planar",
-                            "Mini Planar Sabia"]
+class DeltaLayout(QGroupBox):
+    def __init__(self,title,parent,
+                 nr_periods,period_length,gap,longitudinal_distance,mr,
+                 *args,**kwargs):
         
-        
-        # ajustando widgets principais em um layout
-        
-        self.dialogvbox = QVBoxLayout()
+        super().__init__(title=title,parent=parent,
+                         *args,**kwargs)
 
-        self.layoutModelInput = QHBoxLayout() #indicar que e' horizontal
-
-        self.labelModels = QLabel("Enter the model:")
-        self.models = QComboBox()
-        self.models.addItems(["",*self.models_list])
-        self.models.activated.connect(self.model_chose)
-
-        self.layoutModelInput.addWidget(self.labelModels)
-        self.layoutModelInput.addWidget(self.models)
-
-        
-        # ajustando labels e spinboxes em group boxes
-
-        self.groupDeltaSabia = QGroupBox(title="Delta Sabia Parameters",parent=self)
-
-        self.layout_group_h = QHBoxLayout(self.groupDeltaSabia)
+        self.layout_group_h = QHBoxLayout(self)
 
         self.layout_group_form = QFormLayout()
 
@@ -61,28 +31,29 @@ class ModelDialog(QDialog):
         self.label_longitudinal_distance = QLabel("Longitudinal Distance:")
         self.label_mr = QLabel("Magnetization Remanent:")
 
-        self.spin_nr_periods = QSpinBox(parent=self.groupDeltaSabia)
+        #todo: valores padrao mudam de modelo especifico para modelo especifico
+        self.spin_nr_periods = QSpinBox(parent=self)
         self.spin_nr_periods.setObjectName("nr_periods")
-        self.spin_nr_periods.setProperty("value",21)
-        self.spin_period_length = QDoubleSpinBox(parent=self.groupDeltaSabia)
+        self.spin_nr_periods.setProperty("value",nr_periods)
+        self.spin_period_length = QDoubleSpinBox(parent=self)
         self.spin_period_length.setObjectName("period_length")
         self.spin_period_length.setDecimals(1)
-        self.spin_period_length.setProperty("value",52.5)
+        self.spin_period_length.setProperty("value",period_length)
         self.spin_period_length.setSuffix(" mm")
-        self.spin_gap = QDoubleSpinBox(parent=self.groupDeltaSabia)
+        self.spin_gap = QDoubleSpinBox(parent=self)
         self.spin_gap.setObjectName("gap")
         self.spin_gap.setDecimals(1)
-        self.spin_gap.setProperty("value",13.6)
+        self.spin_gap.setProperty("value",gap)
         self.spin_gap.setSuffix(" mm")
-        self.spin_longitudinal_distance = QDoubleSpinBox(parent=self.groupDeltaSabia)
+        self.spin_longitudinal_distance = QDoubleSpinBox(parent=self)
         self.spin_longitudinal_distance.setObjectName("longitudinal_distance")
         self.spin_longitudinal_distance.setDecimals(3)
-        self.spin_longitudinal_distance.setProperty("value",0.125)
+        self.spin_longitudinal_distance.setProperty("value",longitudinal_distance)
         self.spin_longitudinal_distance.setSuffix(" mm")
-        self.spin_mr = QDoubleSpinBox(parent=self.groupDeltaSabia)
+        self.spin_mr = QDoubleSpinBox(parent=self)
         self.spin_mr.setObjectName("mr")
         self.spin_mr.setDecimals(2)
-        self.spin_mr.setProperty("value",1.39)
+        self.spin_mr.setProperty("value",mr)
         self.spin_mr.setSuffix(" T")
 
         #checar se ha' maneira mais simples de povoar o form layout
@@ -136,8 +107,55 @@ class ModelDialog(QDialog):
 
         self.layout_group_h.addWidget(self.group2)
 
-        self.groupDeltaSabia.setHidden(True)
 
+
+class ModelDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+
+        self.setWindowTitle("Model")
+
+        self.models_list = ["Delta Prototype",
+                            "Delta Sabia",
+                            "Delta Carnauba",
+                            "AppleX Sabia",
+                            "AppleX Carnauba",
+                            "AppleII Sabia",
+                            "AppleII Carnauba",
+                            "Kyma 22",
+                            "Kyma 58",
+                            "PAPU",
+                            "Hybrid APU",
+                            "Hybrid Planar",
+                            "Mini Planar Sabia"]
+        
+        
+        # ajustando widgets principais em um layout
+        
+        self.dialogvbox = QVBoxLayout()
+
+        self.layoutModelInput = QHBoxLayout() #indicar que e' horizontal
+
+        self.labelModels = QLabel("Enter the model:")
+        self.models = QComboBox()
+        self.models.addItems(["",*self.models_list])
+        self.models.activated.connect(self.model_chose)
+
+        self.layoutModelInput.addWidget(self.labelModels)
+        self.layoutModelInput.addWidget(self.models)
+
+        self.groups = []
+        
+        self.groupDeltaPrototype = DeltaLayout(title="Delta Prototype Parameters",parent=self,
+                                           nr_periods=60,period_length=20, gap=7, longitudinal_distance=0, mr=1.36)
+        self.groups.append(self.groupDeltaPrototype)
+        self.groupDeltaPrototype.setHidden(True)
+        self.groupDeltaSabia = DeltaLayout(title="Delta Sabia Parameters",parent=self,
+                                           nr_periods=21,period_length=52.5, gap=13.6, longitudinal_distance=0.125, mr=1.39)
+        self.groupDeltaSabia.setHidden(True)
+        self.groupDeltaCarnauba = DeltaLayout(title="Delta Carnauba Parameters",parent=self,
+                                           nr_periods=52,period_length=22, gap=7, longitudinal_distance=0.05, mr=1.37)
+        self.groupDeltaCarnauba.setHidden(True)
 
         # botoes a serem usados
         buttons = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
@@ -149,9 +167,10 @@ class ModelDialog(QDialog):
         ## signal sent from Ok button to the handler reject of QDialog class
         self.buttonBox.rejected.connect(self.reject)
 
-
         self.dialogvbox.addLayout(self.layoutModelInput)
+        self.dialogvbox.addWidget(self.groupDeltaPrototype)
         self.dialogvbox.addWidget(self.groupDeltaSabia)
+        self.dialogvbox.addWidget(self.groupDeltaCarnauba)
         self.dialogvbox.addWidget(self.buttonBox)
 
         self.setLayout(self.dialogvbox)
@@ -159,13 +178,37 @@ class ModelDialog(QDialog):
 
 
     def model_chose(self,index):
-        model = self.models_list[index-1]
-        print("modelo escolhido:",model)
-        if model=='Delta Sabia':
+        print("modelo escolhido:", self.models.currentData(index))
+        # todo: melhorar maneira de esconder os groups quando mudar de modelo especifico
+        #self.past_model.setHidden(True)
+        self.groupDeltaPrototype.setHidden(True)
+        self.groupDeltaSabia.setHidden(True)
+        self.groupDeltaCarnauba.setHidden(True)
+        
+        if index==1:
+            self.setObjectName("DeltaPrototype")
+            self.groupDeltaPrototype.setHidden(False)
+        if index==2:
+            self.setObjectName("DeltaSabia")
             self.groupDeltaSabia.setHidden(False)
-        else:
-            self.groupDeltaSabia.setHidden(True)
+        if index==3:
+            self.setObjectName("DeltaCarnauba")
+            self.groupDeltaCarnauba.setHidden(False)
 
+    def get_values(self):
+        cassette_positions = {self.groupDeltaSabia.spin_dp.objectName(): self.groupDeltaSabia.spin_dp.value(),
+                              self.groupDeltaSabia.spin_dcp.objectName(): self.groupDeltaSabia.spin_dcp.value(),
+                              self.groupDeltaSabia.spin_dgv.objectName(): self.groupDeltaSabia.spin_dgv.value(),
+                              self.groupDeltaSabia.spin_dgh.objectName(): self.groupDeltaSabia.spin_dgh.value()}
+        
+        parameters = {self.groupDeltaSabia.spin_nr_periods.objectName(): self.groupDeltaSabia.spin_nr_periods.value(),
+                      self.groupDeltaSabia.spin_period_length.objectName(): self.groupDeltaSabia.spin_period_length.value(),
+                      self.groupDeltaSabia.spin_gap.objectName(): self.groupDeltaSabia.spin_gap.value(),
+                      self.groupDeltaSabia.spin_longitudinal_distance.objectName(): self.groupDeltaSabia.spin_longitudinal_distance.value(),
+                      self.groupDeltaSabia.spin_mr.objectName(): self.groupDeltaSabia.spin_mr.value()}
+        
+        return parameters, cassette_positions
+    
     # def accept(self) -> None:
     #     print('aceito')
     #     return super().accept()
@@ -173,3 +216,12 @@ class ModelDialog(QDialog):
     # def reject(self) -> None:
     #     print('rejeitado')
     #     return super().reject()
+
+
+# ?: como conseguir string do nome da classe
+#  : usando o atributo __name__
+# ?: como conseguir dict diretamente das classes sem precisar construir como abaixo
+
+#dircionario = {DeltaLayout.__name__: DeltaLayout, ModelDialog.__name__: ModelDialog}
+
+#print(dircionario)

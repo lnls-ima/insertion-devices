@@ -1,7 +1,7 @@
 
 from PyQt6.QtGui import QColor
 from PyQt6.QtCore import Qt, QAbstractTableModel
-import numpy as np
+from PyQt6.QtWidgets import QTableView
 from imaids.insertiondevice import InsertionDeviceData
 
 
@@ -61,3 +61,33 @@ class TableModel(QAbstractTableModel):
             if orientation == Qt.Orientation.Vertical:
                 return QColor.fromRgb(255, 255, 255)
         '''
+
+class Table(QTableView):
+    def __init__(self, meas: InsertionDeviceData):
+        super().__init__()
+
+        # todo: alterar para criar modelo a partir do objeto insertiondevice, pode ter overload function
+        # no TableModel, usar metodos do InsertionDevice para obter mesmo array numpy que obtem-se com
+        # filename
+        # isso ate que e' bom porque na hora dos modelos, isso vai ficar parecido
+        # assim como pode-se definir objeto de varias maneiras no pyqt, devemos poder criar
+        # table model com filename ou objeto InsertionDevice
+        modeltable = TableModel(meas)
+        self.setModel(modeltable)
+
+        # todo: passar estilo para dentro do .py de modelo da tabela
+        # estilo da tabela
+        '''horizontal_color = QColor.fromRgb(80, 174, 144)
+        vertical_color = QColor.fromRgb(136, 59, 144, int(0.8*255))
+        horizontal_header_style = "QHeaderView::section {{background-color: {} }}".format(horizontal_color.name())
+        vertical_header_style = "QHeaderView::section {{background-color: {} }}".format(vertical_color.name())
+        tabela.horizontalHeader().setStyleSheet(horizontal_header_style)
+        tabela.verticalHeader().setStyleSheet(vertical_header_style)'''
+
+        #estilo meh
+        horizontal_color = QColor.fromRgb(200, 200, 200)
+        vertical_color = QColor.fromRgb(200, 200, 200)
+        horizontal_header_style = "QHeaderView::section {{background-color: {} }}".format(horizontal_color.name())
+        vertical_header_style = "QHeaderView::section {{background-color: {} }}".format(vertical_color.name())
+        self.horizontalHeader().setStyleSheet(horizontal_header_style)
+        self.verticalHeader().setStyleSheet(vertical_header_style)

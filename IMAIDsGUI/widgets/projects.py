@@ -7,22 +7,24 @@ from PyQt6.QtWidgets import (QWidget,
                              QVBoxLayout,
                              QHBoxLayout,
                              QLabel,
-                             QLineEdit)
-from PyQt6.QtCore import Qt, QTimer
+                             QLineEdit,
+                             QToolButton)
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 
-from . import items
+from .items import ExploreItem
+
 
 class ProjectWidget(QWidget):
+
     def __init__(self):
         super().__init__()
 
-        self.filenames = {}
-        self.insertiondevice_datas = {}
-        self.insertiondevice_models = {}
+        self.filenames = []
+        self.insertiondevices = {}
         self.insertiondevice_trajectories = {}
 
-        self.Dados = items.ExploreItem(items.Items.DataContainer, ['Data'])
-        self.Modelos = items.ExploreItem(items.Items.ModelContainer, ['Models'])
+        self.Dados = ExploreItem(ExploreItem.Type.ContainerData, ['Data'])
+        self.Modelos = ExploreItem(ExploreItem.Type.ContainerModel, ['Models'])
 
         #labels de parametros dos modelos
         
@@ -32,7 +34,7 @@ class ProjectWidget(QWidget):
         #self.visuals.addTab(QWidget(),'Blank')
         self.visuals.setTabsClosable(True)
 
-        self.visuals.tabCloseRequested.connect(self.close_current_tab)
+        self.visuals.tabCloseRequested.connect(self.visuals.removeTab)
 
         self.splitter = QSplitter()
         self.splitter.setOrientation(Qt.Orientation.Horizontal)
@@ -118,6 +120,86 @@ class ProjectWidget(QWidget):
     #     raise NotImplementedError
 
 
+class TabProjects(QTabWidget):
+
+    itemconnect = pyqtSignal(int) #pass a type/class as signal argument
+
+    def __init__(self,parent):
+        super().__init__(parent)
+
+        ## projects tab widget - features
+        self.setDocumentMode(True) # talvez possa ser desabilitado
+        self.setMovable(True)
+        ## projects tab widget - signals
+        self.tabCloseRequested.connect(self.close_current_tab)
+        self.tabBarDoubleClicked.connect(self.start_rename)
+        ## projects tab widget - tab inicial
+        self.addTab(ProjectWidget(),'Project')
+        #self.widget(0).tree.itemClicked.connect(self.on_item_clicked)
+        self.itemconnect.emit(0)
+        ## projects tab widget - plus button: abrir mais uma aba de projeto
+        self.PlusButton = QToolButton()
+        self.PlusButton.setText("+")
+        self.PlusButton.clicked.connect(self.add_project)
+        self.setCornerWidget(self.PlusButton,corner=Qt.Corner.TopLeftCorner)
+
+    # metodo widget redefinido apenas para impor que o retorno e' objeto do tipo ProjectWidget
+    def widget(self, index: int) -> ProjectWidget:
+        return super().widget(index)
+    # metodo currentWidget redefinido apenas para impor que o retorno e' objeto do tipo ProjectWidget
+    def currentWidget(self) -> ProjectWidget:
+        return super().currentWidget()
+    
+    def add_project(self, i):
+
+        if self.count() == 1:
+            self.setTabsClosable(True)
+        
+        i = self.addTab(ProjectWidget(), f"Project {self.count()+1}")
+        self.setCurrentIndex(i)
+
+        # todo: emitir sinal de new_project
+        # todo: descobir como emitir sinal e passar algo pelo sinal, como existem alguns que ja usei
+        # *: o abaixo sera feito na main_window, apos conectar com sinal
+        #self.widget(i).tree.itemClicked.connect(self.on_item_clicked)
+        self.itemconnect.emit(i)
+
     def close_current_tab(self, i):
 
-        self.visuals.removeTab(i)
+        # if there is only one tab
+        if self.count() == 1:
+            # do nothing
+            return
+
+        # else remove the tab
+        self.removeTab(i)
+
+        if self.count() == 1:
+            self.setTabsClosable(False)
+
+    #todo: corrigir self ai para ser o parent
+    def start_rename(self, tab_index):
+        self.editting_tab = tab_index
+        rect = self.tabBar().tabRect(tab_index)
+        pos = rect.bottomRight()
+        w = rect.width()
+    
+        top_margin = 4
+        left_margin = 2
+
+        self.edit = QLineEdit(parent=self.parent())
+        self.edit.show()
+        # todo: corrigir como coloca-se y
+        self.edit.move(pos.x()-w+20+left_margin,3*pos.y()+top_margin)
+
+        # verificar se todos os rect das abas teem mesmo tamanho
+
+        self.edit.resize(w, self.edit.height())
+        self.edit.setText(self.tabText(tab_index))
+        self.edit.selectAll()
+        self.edit.setFocus() # talvez de problema quando clicar fora do line edit enquanto ele tiver aberto
+        self.edit.editingFinished.connect(self.finish_rename)
+
+    def finish_rename(self):
+        self.setTabText(self.editting_tab, self.edit.text())
+        self.edit.deleteLater()

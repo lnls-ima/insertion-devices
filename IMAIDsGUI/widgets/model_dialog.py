@@ -1,8 +1,10 @@
 
-from PyQt6.QtWidgets import (QGroupBox,
+from PyQt6.QtWidgets import (QWidget,
+                             QGroupBox,
                              QSpinBox,
                              QDoubleSpinBox,
                              QLabel,
+                             QLineEdit,
                              QComboBox,
                              QDialog,
                              QDialogButtonBox,
@@ -13,12 +15,12 @@ from PyQt6.QtWidgets import (QGroupBox,
 import imaids.models as models
 
 
-class DeltaLayout(QGroupBox):
-    def __init__(self,title,parent,
-                 nr_periods,period_length,gap,longitudinal_distance,mr,
+class ModelLayout(QGroupBox):
+    def __init__(self,model_name='',parent=None,
+                 nr_periods=0,period_length=0,gap=0,longitudinal_distance=0,mr=0,
                  *args,**kwargs):
         
-        super().__init__(title=title,parent=parent,
+        super().__init__(title=f'{model_name} Parameters',parent=parent,
                          *args,**kwargs)
 
         self.layout_group_h = QHBoxLayout(self)
@@ -31,7 +33,6 @@ class DeltaLayout(QGroupBox):
         self.label_longitudinal_distance = QLabel("Longitudinal Distance:")
         self.label_mr = QLabel("Magnetization Remanent:")
 
-        #todo: valores padrao mudam de modelo especifico para modelo especifico
         self.spin_nr_periods = QSpinBox(parent=self)
         self.spin_nr_periods.setObjectName("nr_periods")
         self.spin_nr_periods.setProperty("value",nr_periods)
@@ -70,107 +71,194 @@ class DeltaLayout(QGroupBox):
         
         self.layout_group_h.addLayout(self.layout_group_form)
 
-        self.group2 = QGroupBox(title="Cassette Parameters",parent=self)
+        self.groupCassettePositions = QGroupBox(title="Cassette Parameters",parent=self)
 
-        self.layout_group2_form = QFormLayout(parent=self.group2)
+        self.formCassettePos = QFormLayout(parent=self.groupCassettePositions)
 
         self.label_dp = QLabel("dp:")
         self.label_dcp = QLabel("dcp:") 
+        self.label_dg = QLabel("dg:")
         self.label_dgv = QLabel("dgv:")
         self.label_dgh = QLabel("dgh:")
 
-        self.spin_dp = QDoubleSpinBox(parent=self.group2)
+        self.spin_dp = QDoubleSpinBox()#parent=self.groupCassettePositions)
         self.spin_dp.setObjectName("dp")
         self.spin_dp.setDecimals(2)
         self.spin_dp.setSuffix(" mm")
-        self.spin_dcp = QDoubleSpinBox(parent=self.group2)
+        self.spin_dcp = QDoubleSpinBox()
         self.spin_dcp.setObjectName("dcp")
         self.spin_dcp.setDecimals(2)
         self.spin_dcp.setSuffix(" mm")
-        self.spin_dgv = QDoubleSpinBox(parent=self.group2)
+        self.spin_dg = QDoubleSpinBox()
+        self.spin_dg.setObjectName("dg")
+        self.spin_dg.setDecimals(2)
+        self.spin_dg.setSuffix(" mm")
+        self.spin_dgv = QDoubleSpinBox()
         self.spin_dgv.setObjectName("dgv")
         self.spin_dgv.setDecimals(2)
         self.spin_dgv.setSuffix(" mm")
-        self.spin_dgh = QDoubleSpinBox(parent=self.group2)
+        self.spin_dgh = QDoubleSpinBox()
         self.spin_dgh.setObjectName("dgh")
         self.spin_dgh.setDecimals(2)
         self.spin_dgh.setSuffix(" mm")
 
-        self.layout_group2_form.setWidget(0,QFormLayout.ItemRole.LabelRole,self.label_dp)
-        self.layout_group2_form.setWidget(0,QFormLayout.ItemRole.FieldRole,self.spin_dp)
-        self.layout_group2_form.setWidget(1,QFormLayout.ItemRole.LabelRole,self.label_dcp)
-        self.layout_group2_form.setWidget(1,QFormLayout.ItemRole.FieldRole,self.spin_dcp)
-        self.layout_group2_form.setWidget(2,QFormLayout.ItemRole.LabelRole,self.label_dgv)
-        self.layout_group2_form.setWidget(2,QFormLayout.ItemRole.FieldRole,self.spin_dgv)
-        self.layout_group2_form.setWidget(3,QFormLayout.ItemRole.LabelRole,self.label_dgh)
-        self.layout_group2_form.setWidget(3,QFormLayout.ItemRole.FieldRole,self.spin_dgh)
+        self.formCassettePos.setWidget(0,QFormLayout.ItemRole.LabelRole,self.label_dp)
+        self.formCassettePos.setWidget(0,QFormLayout.ItemRole.FieldRole,self.spin_dp)
+        self.formCassettePos.setWidget(1,QFormLayout.ItemRole.LabelRole,self.label_dcp)
+        self.formCassettePos.setWidget(1,QFormLayout.ItemRole.FieldRole,self.spin_dcp)
+        self.formCassettePos.setWidget(2,QFormLayout.ItemRole.LabelRole,self.label_dg)
+        self.formCassettePos.setWidget(2,QFormLayout.ItemRole.FieldRole,self.spin_dg)
+        self.formCassettePos.setWidget(3,QFormLayout.ItemRole.LabelRole,self.label_dgv)
+        self.formCassettePos.setWidget(3,QFormLayout.ItemRole.FieldRole,self.spin_dgv)
+        self.formCassettePos.setWidget(4,QFormLayout.ItemRole.LabelRole,self.label_dgh)
+        self.formCassettePos.setWidget(4,QFormLayout.ItemRole.FieldRole,self.spin_dgh)
 
-        self.layout_group_h.addWidget(self.group2)
-
+        if 'Delta' not in model_name:
+            self.formCassettePos.removeRow(4)
+            self.formCassettePos.removeRow(3)
+            if 'Apple' not in model_name:
+                self.formCassettePos.removeRow(1)
+                self.formCassettePos.removeRow(0)
+        else:
+            self.formCassettePos.removeRow(2)
+        
+        self.layout_group_h.addWidget(self.groupCassettePositions)
 
 
 class ModelDialog(QDialog):
+
+    parameters = {'DeltaPrototype': {'nr_periods': 60,
+                                     'period_length': 20,
+                                     'gap': 7,
+                                     'mr': 1.36,
+                                     'longitudinal_distance': 0},
+                  'DeltaSabia': {'nr_periods': 21,
+                                 'period_length': 52.5,
+                                 'gap': 13.6,
+                                 'mr': 1.39,
+                                 'longitudinal_distance': 0.125},
+                  'DeltaCarnauba': {'nr_periods': 52,
+                                    'period_length': 22,
+                                    'gap': 7,
+                                    'mr': 1.37,
+                                    'longitudinal_distance': 0.05},
+                  'AppleXSabia': {'nr_periods': 21,
+                                  'period_length': 52.5,
+                                  'gap': 13.6,
+                                  'mr': 1.39,
+                                  'longitudinal_distance': 0.125},
+                  'AppleXCarnauba': {'nr_periods': 53,
+                                     'period_length': 22,
+                                     'gap': 7,
+                                     'mr': 1.39,
+                                     'longitudinal_distance': 0.1},
+                  'AppleIISabia': {'nr_periods': 21,
+                                   'period_length': 52.5,
+                                   'gap': 8,
+                                   'mr': 1.32,
+                                   'longitudinal_distance': 0.125},
+                  'AppleIICarnauba': {'nr_periods': 53,
+                                      'period_length': 22,
+                                      'gap': 7,
+                                      'mr': 1.39,
+                                      'longitudinal_distance': 0.1},
+                  'Kyma22': {'nr_periods': 51,
+                             'period_length': 22,
+                             'gap': 8,
+                             'mr': 1.32,
+                             'longitudinal_distance': 0.1},
+                  'Kyma58': {'nr_periods': 18,
+                             'period_length': 58,
+                             'gap': 15.8,
+                             'mr': 1.32,
+                             'longitudinal_distance': 0.1},
+                  'PAPU': {'nr_periods': 18,
+                           'period_length': 50,
+                           'gap': 24,
+                           'mr': 1.22,
+                           'longitudinal_distance': 0.2},
+                  'HybridAPU': {'nr_periods': 10,
+                                'period_length': 19.9,
+                                'gap': 5.2,
+                                'mr': 1.34,
+                                'longitudinal_distance': 0.1},
+                  'HybridPlanar': {'nr_periods': 10,
+                                   'period_length': 19.9,
+                                   'gap': 5.2,
+                                   'mr': 1.34,
+                                   'longitudinal_distance': 0.1},
+                  'MiniPlanarSabia': {'nr_periods': 3,
+                                      'period_length': 52.5,
+                                      'gap': 13.6,
+                                      'mr': 1.39,
+                                      'longitudinal_distance': 0.125}}
+
     def __init__(self, parent=None):
         super().__init__(parent=parent)
 
-        self.setWindowTitle("Model")
+        self.setWindowTitle("Generate Model")
 
-        self.models_list = ["Delta Prototype",
-                            "Delta Sabia",
-                            "Delta Carnauba",
-                            "AppleX Sabia",
-                            "AppleX Carnauba",
-                            "AppleII Sabia",
-                            "AppleII Carnauba",
-                            "Kyma 22",
-                            "Kyma 58",
-                            "PAPU",
-                            "Hybrid APU",
-                            "Hybrid Planar",
-                            "Mini Planar Sabia"]
-        
+        self.models_dict = {}
+        for name in dir(models):
+            obj = getattr(models, name)
+            if isinstance(obj, type):
+                self.models_dict[name] = obj
+
+        # deixar apenas modelos especificos no dicionario de modelos
+        #todo: colocar condicao na criacao do models dict que checa se classe e' subclassed
+        #todo: com isso, pegaremos apenas os modelos especificos
+        for model_type in ["Delta","AppleX","AppleII","APU","Planar"]:
+            self.models_dict.pop(model_type)
         
         # ajustando widgets principais em um layout
         
         self.dialogvbox = QVBoxLayout()
 
-        self.layoutModelInput = QHBoxLayout() #indicar que e' horizontal
+        self.layoutModelInput = QHBoxLayout() #nome da variavel indicar que e' horizontal
 
         self.labelModels = QLabel("Enter the model:")
-        self.models = QComboBox()
-        self.models.addItems(["",*self.models_list])
-        self.models.activated.connect(self.model_chose)
+        self.comboboxModels = QComboBox()
+        self.comboboxModels.addItems(["",*self.parameters.keys()])
+        self.comboboxModels.currentIndexChanged.connect(self.model_chose)
 
         self.layoutModelInput.addWidget(self.labelModels)
-        self.layoutModelInput.addWidget(self.models)
+        self.layoutModelInput.addWidget(self.comboboxModels)
 
-        self.groups = []
+        self.groups = {}
+        for model_name in self.models_dict:
+            self.groups[model_name] = ModelLayout(model_name=model_name, parent=self, **self.parameters[model_name])
+
+        self.currentModelGroup = QGroupBox()
+
+
+        self.widgetNaming = QWidget()
         
-        self.groupDeltaPrototype = DeltaLayout(title="Delta Prototype Parameters",parent=self,
-                                           nr_periods=60,period_length=20, gap=7, longitudinal_distance=0, mr=1.36)
-        self.groups.append(self.groupDeltaPrototype)
-        self.groupDeltaPrototype.setHidden(True)
-        self.groupDeltaSabia = DeltaLayout(title="Delta Sabia Parameters",parent=self,
-                                           nr_periods=21,period_length=52.5, gap=13.6, longitudinal_distance=0.125, mr=1.39)
-        self.groupDeltaSabia.setHidden(True)
-        self.groupDeltaCarnauba = DeltaLayout(title="Delta Carnauba Parameters",parent=self,
-                                           nr_periods=52,period_length=22, gap=7, longitudinal_distance=0.05, mr=1.37)
-        self.groupDeltaCarnauba.setHidden(True)
+        self.layoutModelNaming = QHBoxLayout()
+        
+        self.labelModelNaming = QLabel("Name model label:")
+        self.lineModelNaming = QLineEdit()
+        
 
-        # botoes a serem usados
+        self.layoutModelNaming.addWidget(self.labelModelNaming)
+        self.layoutModelNaming.addWidget(self.lineModelNaming)
+
+        self.widgetNaming.setLayout(self.layoutModelNaming)
+        self.widgetNaming.setHidden(True)
+
+
+        ## dialog button box - buttons
         buttons = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
-        # criando os botoes
+        # dialog button box
         self.buttonBox = QDialogButtonBox(buttons)
-        # signals
-        ## signal sent from Ok button to the handler accept of QDialog class
+        ## dialog button box - signals
         self.buttonBox.accepted.connect(self.accept)
-        ## signal sent from Ok button to the handler reject of QDialog class
         self.buttonBox.rejected.connect(self.reject)
 
         self.dialogvbox.addLayout(self.layoutModelInput)
-        self.dialogvbox.addWidget(self.groupDeltaPrototype)
-        self.dialogvbox.addWidget(self.groupDeltaSabia)
-        self.dialogvbox.addWidget(self.groupDeltaCarnauba)
+        for group in self.groups.values():
+            group.setHidden(True)
+            self.dialogvbox.addWidget(group)
+        self.dialogvbox.addWidget(self.widgetNaming)
         self.dialogvbox.addWidget(self.buttonBox)
 
         self.setLayout(self.dialogvbox)
@@ -178,36 +266,47 @@ class ModelDialog(QDialog):
 
 
     def model_chose(self,index):
-        print("modelo escolhido:", self.models.currentData(index))
-        # todo: melhorar maneira de esconder os groups quando mudar de modelo especifico
-        #self.past_model.setHidden(True)
-        self.groupDeltaPrototype.setHidden(True)
-        self.groupDeltaSabia.setHidden(True)
-        self.groupDeltaCarnauba.setHidden(True)
+        print("modelo escolhido:", self.comboboxModels.currentText())
         
-        if index==1:
-            self.setObjectName("DeltaPrototype")
-            self.groupDeltaPrototype.setHidden(False)
-        if index==2:
-            self.setObjectName("DeltaSabia")
-            self.groupDeltaSabia.setHidden(False)
-        if index==3:
-            self.setObjectName("DeltaCarnauba")
-            self.groupDeltaCarnauba.setHidden(False)
+        #escondendo modelo escolhido anteriormente
+        self.currentModelGroup.setHidden(True)
+    
+        currentModel = self.comboboxModels.currentText()
+        
+        if index != 0:
+            self.currentModelGroup = self.groups[currentModel]
+            self.currentModelGroup.setHidden(False)
+            self.lineModelNaming.setText(self.comboboxModels.currentText())
+            self.widgetNaming.setHidden(False)
+        else:
+            self.widgetNaming.setHidden(True)
+            self.adjustSize()
 
     def get_values(self):
-        cassette_positions = {self.groupDeltaSabia.spin_dp.objectName(): self.groupDeltaSabia.spin_dp.value(),
-                              self.groupDeltaSabia.spin_dcp.objectName(): self.groupDeltaSabia.spin_dcp.value(),
-                              self.groupDeltaSabia.spin_dgv.objectName(): self.groupDeltaSabia.spin_dgv.value(),
-                              self.groupDeltaSabia.spin_dgh.objectName(): self.groupDeltaSabia.spin_dgh.value()}
         
-        parameters = {self.groupDeltaSabia.spin_nr_periods.objectName(): self.groupDeltaSabia.spin_nr_periods.value(),
-                      self.groupDeltaSabia.spin_period_length.objectName(): self.groupDeltaSabia.spin_period_length.value(),
-                      self.groupDeltaSabia.spin_gap.objectName(): self.groupDeltaSabia.spin_gap.value(),
-                      self.groupDeltaSabia.spin_longitudinal_distance.objectName(): self.groupDeltaSabia.spin_longitudinal_distance.value(),
-                      self.groupDeltaSabia.spin_mr.objectName(): self.groupDeltaSabia.spin_mr.value()}
+        model_label = self.lineModelNaming.text()
+
+        parameters = {}
+        for parameter in [self.currentModelGroup.spin_nr_periods,
+                          self.currentModelGroup.spin_period_length,
+                          self.currentModelGroup.spin_gap,
+                          self.currentModelGroup.spin_longitudinal_distance,
+                          self.currentModelGroup.spin_mr]:
+            #storing parameter
+            parameters[parameter.objectName()] = parameter.value()
         
-        return parameters, cassette_positions
+        Nrows = self.currentModelGroup.formCassettePos.rowCount()
+
+        cassette_positions = {}
+        for row_index in range(Nrows):
+            # cassette displacement
+            dcassette = self.currentModelGroup.formCassettePos.itemAt(row_index,
+                                                                      QFormLayout.ItemRole.FieldRole)
+            dcassette = dcassette.widget()
+            #storing displacement
+            cassette_positions[dcassette.objectName()] = dcassette.value()
+
+        return model_label, parameters, cassette_positions
     
     # def accept(self) -> None:
     #     print('aceito')

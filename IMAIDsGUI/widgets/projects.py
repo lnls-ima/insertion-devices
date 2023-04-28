@@ -1,15 +1,17 @@
 
-from PyQt6.QtWidgets import (QWidget,
-                             QTreeWidgetItem,
-                             QTabWidget,
-                             QSplitter,
-                             QTreeWidget,
-                             QVBoxLayout,
-                             QHBoxLayout,
-                             QLabel,
-                             QLineEdit,
-                             QToolButton)
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
+from  PyQt6.QtWidgets import   (QWidget,
+                                QTreeWidgetItem,
+                                QTabWidget,
+                                QSplitter,
+                                QTreeWidget,
+                                QVBoxLayout,
+                                QHBoxLayout,
+                                QLabel,
+                                QLineEdit,
+                                QToolButton)
+from   PyQt6.QtCore   import   (Qt,
+                                QTimer,
+                                pyqtSignal)
 
 from .items import ExploreItem
 
@@ -31,7 +33,6 @@ class ProjectWidget(QWidget):
         self.visuals = QTabWidget()
         self.visuals.setDocumentMode(True) # talvez possa ser desabilitado
         self.visuals.setMovable(True)
-        #self.visuals.addTab(QWidget(),'Blank')
         self.visuals.setTabsClosable(True)
 
         self.visuals.tabCloseRequested.connect(self.visuals.removeTab)

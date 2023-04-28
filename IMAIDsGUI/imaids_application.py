@@ -134,11 +134,6 @@ class MainWindow(QMainWindow):
         # --------------------- contrucao da main window --------------------- #
 
         self.app = app
-        self.models_dict = {}
-        for name in dir(models):
-            obj = getattr(models, name)
-            if isinstance(obj, type):
-                self.models_dict[name] = obj
         
         self.setStatusBar(self.statusbar)
         self.addToolBar(self.toolbar)
@@ -184,7 +179,7 @@ class MainWindow(QMainWindow):
     def check_files(self, filenames):
 
         # arquivos carregados novamente
-        reloaded = []
+        reloaded_files = []
         
         # iterando sobre cada endereco+nome dos arquivos da lista filenames
         for filename in filenames:
@@ -199,47 +194,55 @@ class MainWindow(QMainWindow):
             else:
                 # guardando nome do arquivo ja carregado
                 filename = os.path.basename(filename)
-                reloaded.append(os.path.basename(filename))
+                reloaded_files.append(filename)
         
         # alertando sobre os arquivos ja carregados
-        if len(reloaded):
+        if len(reloaded_files):
             QMessageBox.warning(self,
                                 "Files Warning",
-                                f"Files already loaded! They are:\n{reloaded}")
+                                f"Files already loaded! They are:\n{reloaded_files}")
 
     def model_generation(self):
-        # todo: deve-se poder saber qual classe de modelos foi selecionada (Delta, AppleX, AppleII, APU ou Planar),
-        # todo: bem como o modelo especifico selecionado. na classe, há metodos especificos para definir as posições
-        # todo: dos cassetes, por isso passar a classe.
-
         # todo: ter opcao de carregar arquivo com o conjunto de pontos para ter forma dos blocos
         dialog = model_dialog.ModelDialog(parent=self)
         answer = dialog.exec()
         
-        if answer == QDialog.DialogCode.Accepted and dialog.models.currentText() != '':
+        if (answer == QDialog.DialogCode.Accepted) and (dialog.comboboxModels.currentText() != ''):
             #print('modelo ok')
             # valores usados nas spin boxes (parametros e posicoes dos cassetes)
-            kwargs_model, kwargs_cassettes = dialog.get_values()
+            ID_name, kwargs_model, kwargs_cassettes = dialog.get_values()
 
-            modelo_class = self.models_dict[dialog.objectName()]
+            modelo_class = dialog.models_dict[dialog.comboboxModels.currentText()]
+            
             ID = modelo_class(**kwargs_model)
+            #*: polemico, ja que usa-se mesmo padrao de nome para dado e modelo
+            #ID.name = ID_name
             ID.set_cassete_positions(**kwargs_cassettes)
+
+            #ID.draw()
+
             # *: podera' criar modelos iguais uns aos outros, entao nao precisa checar se ja foi adicionado
-            self.treeInsert(ID=ID,ID_type="Model")
+            self.treeInsert(ID=ID,ID_type="Model", name=ID_name)
             return
         # elif answer == QDialog.DialogCode.Rejected:
         #     print('model cancel')
         #     return
     
-    def treeInsert(self, ID, ID_type):
+    def treeInsert(self, ID, ID_type, name=''):
 
         id_num = {"Data": 0, "Model": 1}
         
-        childs = self.projects.currentWidget().tree.topLevelItem(id_num[ID_type]).childCount()+1
-        ID.name = f'{ID_type} {childs}'
+        if ID_type=="Data":
+            childs = self.projects.currentWidget().tree.topLevelItem(id_num[ID_type]).childCount()+1
+            ID.name = f'{ID_type} {childs}'
+        elif ID_type=="Model":
+            models_names = [device.rstrip(device.split()[-1]).rstrip() 
+                            for device in self.projects.currentWidget().insertiondevices]
+            num = models_names.count(name)+1
+            ID.name = f'{name} {num}'
 
-        # ?: guardar informacoes em dict acessado pelo nome do dado e' a melhor opcao
         self.projects.currentWidget().insertiondevices[ID.name] = ID
+        #todo: type deve ser diferente de modelo para dado
         self.projects.currentWidget().tree.topLevelItem(id_num[ID_type]).addChild(ExploreItem(ExploreItem.Type.ItemData,[ID.name]))
     
     def quit_app(self):
@@ -282,8 +285,8 @@ class MainWindow(QMainWindow):
 
     def edit_analysis_parameters(self):
         dialog = analysis_dialog.AnalysisDialog(parent=self)
-        button = dialog.exec()
-        if button==1:   #todo: descobrir de onde vem cada numero
+        answer = dialog.exec()
+        if answer == QDialog.DialogCode.Accepted:
             print('edit ok')
     
 

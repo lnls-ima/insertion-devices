@@ -11,34 +11,26 @@ import time
 t = time.time()
 import os
 import sys
-import getpass
+#import getpass
 dt = time.time()-t
 print('imports menores =',dt*1000,'ms')
 
 t = time.time()
 from  PyQt6.QtWidgets import   (QApplication,
-                                QWidget,
                                 QMainWindow,
-                                QTabWidget,
                                 QStatusBar,
-                                QToolBar,
-                                QToolButton,
-                                QLineEdit,
                                 QFileDialog,
                                 QMenuBar,
-                                QVBoxLayout,
-                                QTreeWidgetItem,
                                 QMessageBox,
                                 QDialog)
 from   PyQt6.QtGui    import   (QAction,
-                                QIcon,
                                 QCursor)
 from   PyQt6.QtCore   import    Qt
 dt = time.time()-t
 print('imports pyqt =',dt*1000,'ms')
 
 t = time.time()
-from widgets import analysis_dialog, model_dialog, projects, table_model, toolbar
+from widgets import analysis_dialog, model_dialog, projects, table_model, toolbar, canvas
 from widgets.items import ExploreItem
 dt = time.time()-t
 print('imports widgets =',dt*1000,'ms')
@@ -48,22 +40,6 @@ from imaids.insertiondevice import InsertionDeviceData
 import imaids.models as models
 dt = time.time()-t
 print('imports imaids =',dt*1000,'ms')
-
-t = time.time()
-import matplotlib
-matplotlib.use('QtAgg')
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg,
-                                                # matplotlib toolbar qt widget class
-                                                NavigationToolbar2QT as NavigationToolbar)
-dt = time.time()-t
-print('imports matplotlib =',dt*1000,'ms')
-
-
-class Canvas(FigureCanvasQTAgg):
-    def __init__(self, dpi=100):
-        self.fig, self.ax = plt.subplots(dpi=dpi)
-        super().__init__(self.fig)
 
 
 class MainWindow(QMainWindow):
@@ -184,12 +160,17 @@ class MainWindow(QMainWindow):
     # procurar dados e carregar enderecos dos seus arquivos
     def browse_for_data(self,s):
         #username = os.getlogin()
-        username = getpass.getuser()
-        print(username)
+        #username = os.environ.get('USER', os.environ.get('USERNAME'))
+        #username = getpass.getuser()
+        #username = pwd.getpwuid(os.getuid())[0] (not tested)
+        #print(username)
+
+        userhome = os.path.expanduser('~')
+        
         # filenames: file adress + file name of the selected data files
         filenames, _ =QFileDialog.getOpenFileNames(parent=self, 
                                                    caption='Open data',
-                                                   directory=f"C:\\Users\\{username}\\Documents",
+                                                   directory=f"{userhome}\\Documents",
                                                    filter="Data files (*.txt *.dat *.csv)")
 
         if len(filenames):
@@ -242,6 +223,7 @@ class MainWindow(QMainWindow):
 
             modelo_class = self.models_dict[dialog.objectName()]
             ID = modelo_class(**kwargs_model)
+            ID.set_cassete_positions(**kwargs_cassettes)
             # *: podera' criar modelos iguais uns aos outros, entao nao precisa checar se ja foi adicionado
             self.treeInsert(ID=ID,ID_type="Model")
             return
@@ -333,33 +315,20 @@ class MainWindow(QMainWindow):
                                 f"Trajectories {num} already calculated!")
             return
     
-    def plot(self, id_item: ExploreItem):
+    def plotar(self, id_item: ExploreItem):
 
         id_name = id_item.parent().text(0)
         traj_imaids = self.projects.currentWidget().insertiondevice_trajectories[id_name]
 
-        #todo: passar plot para um arquivo e classe, em vez de precisar criar canvas, toolbar e layout aqui
-        #*: proposito aqui: so' plotar
-
-        chart = Canvas()
-
-        chart.ax.plot(traj_imaids[:,2],traj_imaids[:,3])
-        chart.ax.set_xlabel('z (mm)')
-        chart.ax.set_ylabel("x' (rad)")
-        chart.ax.set_title('Trajectory - Angular Deviation in x')
-        chart.fig.tight_layout()
-
-        plot_toolbar = NavigationToolbar(chart, self)
-
-        plot_layout = QVBoxLayout()
-        plot_layout.addWidget(plot_toolbar)
-        plot_layout.addWidget(chart)
-
-        plot_widget = QWidget()
-        plot_widget.setLayout(plot_layout)
-
+        # tracando grafico padrao
+        chart = canvas.Grafico()
+        chart.Plot(traj_imaids[:,2],traj_imaids[:,3])
+        chart.plotStuff(title='Trajectory - Angular Deviation in x',
+                        xlabel='z (mm)',
+                        ylabel="x' (rad)")
+        
         # colocando tabela no visuals
-        i = self.projects.currentWidget().visuals.addTab(plot_widget, f"Plot {id_name} - x' vs z")
+        i = self.projects.currentWidget().visuals.addTab(chart, f"Plot {id_name} - x' vs z")
         self.projects.currentWidget().visuals.setCurrentIndex(i)
     
     #todo: ampliar recursos da tabela
@@ -395,7 +364,7 @@ class MainWindow(QMainWindow):
         if  self.toolbar.buttonPlot.isChecked() and \
             item.item_type == ExploreItem.Type.ItemTrajectory:
             
-            self.plot(item)
+            self.plotar(item)
         
         # tabela
         if self.toolbar.buttonTable.isChecked() and \

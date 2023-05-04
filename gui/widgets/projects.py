@@ -23,10 +23,12 @@ class ProjectWidget(QWidget):
 
         self.filenames = []
         self.insertiondevices = {}
-        self.insertiondevice_trajectories = {}
-
-        self.Dados = ExploreItem(ExploreItem.Type.ContainerData, ['Data'])
-        self.Modelos = ExploreItem(ExploreItem.Type.ContainerModel, ['Models'])
+        self.fields = {}
+        self.trajectories = {}
+        self.phaserr = {}
+        self.integrals = {}
+        self.rolloffpeaks = {}
+        self.rolloffamp = {}
 
         #labels de parametros dos modelos
         
@@ -41,11 +43,21 @@ class ProjectWidget(QWidget):
         self.splitter.setOrientation(Qt.Orientation.Horizontal)
 
         self.tree = QTreeWidget()
-        self.tree.insertTopLevelItem(0,self.Dados)   # 0: primeiro da lista top level
-        self.tree.insertTopLevelItem(1,self.Modelos) # 1: segundo da lista top level
+        self.tree.setColumnCount(2)
+        self.tree.setHeaderLabels(["Item", "Content"])
+        #self.tree.setHeaderHidden(True)
+        self.tree.header().resizeSection(0, 0.24*self.tree.width())
+        self.tree.setIndentation(12)
+        self.tree.headerItem().setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
+
+        # 0: primeiro da lista top level
+        self.tree.insertTopLevelItem(0,ExploreItem(ExploreItem.Type.ContainerData, ["Data", "Container"]))
+        self.tree.topLevelItem(0).setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
+        # 1: segundo da lista top level
+        self.tree.insertTopLevelItem(1,ExploreItem(ExploreItem.Type.ContainerModel, ["Models", "Container"]))
+        self.tree.topLevelItem(1).setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
         
         # todo: alterar modo de selecao da tree para poder clicar de novo e o item ficar desmarcado
-        self.tree.setHeaderHidden(True)
         self.splitter.addWidget(self.tree)
         self.splitter.addWidget(self.visuals)
 
@@ -81,18 +93,13 @@ class ProjectWidget(QWidget):
         
         widt = self.width()
 
-        self.splitter.setSizes([int(widt/4),int(3*widt/4)])
+        self.splitter.setSizes([widt*80/100,widt])
 
 
         self.resize_timer = QTimer()
         self.resize_timer.timeout.connect(self.handleResize)
         self.resize_timer.setInterval(500)
 
-        # objetos
-        self.Datas = None
-        self.Models = None
-        self.Tables = None
-        self.Plots = None
     
 
     def resizeEvent(self, event):

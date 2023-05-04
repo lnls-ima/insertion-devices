@@ -7,21 +7,23 @@ from imaids.insertiondevice import InsertionDeviceData
 
 class TableModel(QAbstractTableModel):
 
-    def __init__(self, meas: InsertionDeviceData):
+    def __init__(self, id_meas: InsertionDeviceData):
         super(TableModel, self).__init__()
 
         # acessar filename pelas variaveis de insertion device
-        filename = meas.filename
+        #filename = meas.filename
 
         # apenas pegar o header com o open
         # demais dados pegar pelos metodos e atributos de insertiondevice
 
-        with open(filename, 'r') as f:
-            self._header = f.readline().split()
+        # abaixo so funciona se cabecalho estiver na primeira linha
+        # with open(filename, 'r') as f:
+        #     self._header = f.readline().split()
         
-        # todo: fechar arquivo com .close()
+        # fechar arquivo com .close()
 
-        self._data = meas._raw_data #np.loadtxt(filename, skiprows=2)
+        self._header = ['X[mm]', 'Y[mm]', 'Z[mm]', 'Bx[T]', 'By[T]', 'Bz[T]']
+        self._data = id_meas._raw_data
 
 
     def data(self, index, role):
@@ -63,7 +65,7 @@ class TableModel(QAbstractTableModel):
         '''
 
 class Table(QTableView):
-    def __init__(self, meas: InsertionDeviceData):
+    def __init__(self, id_meas: InsertionDeviceData):
         super().__init__()
 
         # todo: alterar para criar modelo a partir do objeto insertiondevice, pode ter overload function
@@ -72,7 +74,7 @@ class Table(QTableView):
         # isso ate que e' bom porque na hora dos modelos, isso vai ficar parecido
         # assim como pode-se definir objeto de varias maneiras no pyqt, devemos poder criar
         # table model com filename ou objeto InsertionDevice
-        modeltable = TableModel(meas)
+        modeltable = TableModel(id_meas)
         self.setModel(modeltable)
 
         # todo: passar estilo para dentro do .py de modelo da tabela

@@ -6,7 +6,7 @@ from . import analysis_button, painted_button
 
 class IMAIDsToolBar(QToolBar):
 
-    def __init__(self, title, parent):
+    def __init__(self, title='', parent=None):
         super().__init__(title, parent)
 
         grafico = QIcon("icons/icons/guide.png")

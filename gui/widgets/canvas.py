@@ -35,6 +35,8 @@ class Grafico(QWidget):
 
     def on_draw(self, event):
         self.chart.fig.tight_layout()
+    
+    #todo: encontrar maneira de embrulhar quaisquer metodos do matplotlib e em seguida poder fazer o tightlayout
 
     def Plot(self,x,y):
         self.chart.ax.plot(x,y)

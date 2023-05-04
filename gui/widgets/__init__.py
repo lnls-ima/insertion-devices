@@ -1,6 +1,7 @@
 
 from . import analysis_button
 from . import analysis_dialog
+from . import canvas
 from . import items
 from . import model_dialog
 from . import painted_button

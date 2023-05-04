@@ -1,7 +1,9 @@
 
 from PyQt6.QtWidgets import QPushButton, QFrame, QListWidget, QListWidgetItem, QCheckBox, QVBoxLayout
 from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt, QRect, pyqtSignal
+from PyQt6.QtCore import Qt, QRect
+
+from .items import AnalysisItem
 
 
 class AnalysisPushButton(QPushButton):
@@ -29,18 +31,30 @@ class AnalysisPushButton(QPushButton):
         
         ## analysis menu - list
         self.list = QListWidget(parent=self.Menu)
+        self.list.setSelectionMode(QListWidget.SelectionMode.NoSelection)
         self.list.setStyleSheet("background-color: #f0f0f0")
 
         ### analysis menu - list - items:
         ### Create the items and automatically add them to the list widget
-        self.itemField = QListWidgetItem("Magnetic Field", self.list)
-        self.itemTrajectory = QListWidgetItem("Trajectory", self.list)
-        self.itemPhaseError = QListWidgetItem("Phase Error", self.list)
-        self.itemIntegrals = QListWidgetItem("Field Integrals", self.list)
-        self.itemRollOff = QListWidgetItem("Roll Off", self.list)
-        self.itemKickmap = QListWidgetItem("Kickmap", self.list)
-        self.itemCrossTalk = QListWidgetItem("Cross Talk", self.list)
-        self.itemShimming = QListWidgetItem("Shimming", self.list)
+        self.itemMagneticField = AnalysisItem(text="Magnetic Field",parent=self.list)
+        self.itemTrajectory = AnalysisItem(text="Trajectory",parent=self.list)
+        self.itemPhaseError = AnalysisItem(text="Phase Error",parent=self.list)
+        self.itemIntegrals = AnalysisItem(text="Field Integrals",parent=self.list)
+        # kickmap temporariamente fora, pois nao esta devidamente implementado no imaids
+        #self.itemKickmap = AnalysisItem(text="Kickmap",parent=self.list)
+        # multipolos e multipolos dinamicos em avaliacao
+        self.itemRollOffPeaks = AnalysisItem(text="Roll Off Peaks",parent=self.list)
+        self.itemRollOffAmp = AnalysisItem(text="Roll Off Amplitude",parent=self.list)
+        self.itemCrossTalk = AnalysisItem(text="Cross Talk",parent=self.list)
+        # shimming fora, pois e' um calculo muito personalizado e que exige cuidado
+        #self.Shimming = AnalysisItem(text="Shimming",parent=self.list)
+        
+        self.itemMagneticField.setSuperior(self.itemIntegrals)
+        self.itemTrajectory.setSuperior(self.itemPhaseError)
+        self.itemPhaseError.setSubordinate(self.itemTrajectory)
+        #print('phase error tem subordinado:',self.itemPhaseError.hasSubordinate())
+        self.itemIntegrals.setSubordinate(self.itemMagneticField)
+        
         for i in range(self.list.count()):
             item = self.list.item(i)
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
@@ -51,6 +65,7 @@ class AnalysisPushButton(QPushButton):
         ### analysis menu - list - signals
         self.list.itemClicked.connect(self.item_clicked)
         self.list.itemChanged.connect(lambda: setattr(self, 'changed', True))
+        #self.list.itemChanged.connect(self.item_changed)
 
         self.changed = False
         
@@ -97,55 +112,82 @@ class AnalysisPushButton(QPushButton):
             # uncheck all checked list items
             [item.setCheckState(Qt.CheckState.Unchecked) for item in self.checkedItems()]
 
-            # retoma valor padrao a changed, pois faz-se a mudanca acima
-            self.changed = False
+            # uncheck checkbox, items and remove wand icon
+            if self.checkBoxSelectAll.isChecked():
+                    self.checkBoxSelectAll.setChecked(False)
+                    self.check_all_items(False)
 
         # se botao inicialmente estiver unchecked
         else:
             # uncheck the analysis button
             self.setChecked(False)
+
             # hide the menu
             if self.Menu.isVisible():
                 self.Menu.setHidden(True)
             
             # expose the menu
             else:
-                # uncheck checkbox and remove the icon, for the case if it was checked
-                # before the last hide
-                if self.checkBoxSelectAll.isChecked():
-                    self.checkBoxSelectAll.setChecked(False)
-                    self.apply.setIcon(QIcon(None))
+                #?: desmarcar items apos desexibir e exibir novamente
+                # uncheck checkbox, items and remove wand icon if the menu was closed without apply analysis
+                # if self.checkBoxSelectAll.isChecked():
+                #     self.checkBoxSelectAll.setChecked(False)
+                #     self.check_all_items(False)
+                
+                # uncheck items if there is anyone checked after just close the menu without apply analysis
+                # items_checked = self.checkedItems()
+                # if len(items_checked):
+                #     for item in items_checked:
+                #         item.setCheckState(Qt.CheckState.Unchecked)
+                
                 # positionate the menu
                 topleft_corner = self.parent().mapToParent(self.geometry().bottomLeft())
-                self.Menu.setGeometry(QRect(topleft_corner.x()+1, topleft_corner.y(), 150, 250))
+                self.Menu.setGeometry(QRect(topleft_corner.x()+1, topleft_corner.y(), 160, 220))
                 self.Menu.raise_()
                 self.Menu.setHidden(False)
+        
+        # restaura valor padrao de changed
+            self.changed = False
     
 
     # analysis menu slots
 
     ## list slot
 
-    def item_clicked(self, item: QListWidgetItem):
+    def item_clicked(self, item: AnalysisItem):
         print('item clicado')
-
+        
         # caso o usuario marque tudo, depois clique em um item
         if self.checkBoxSelectAll.isChecked():
             self.checkBoxSelectAll.setChecked(False)
 
-        # checkbox do item nao foi clicada
-        if not self.changed:
+        # restaurando estado do item antes de clicar na checkbox
+        if self.changed:
+            # setcheckstate de qlistwidget para nao alterar estado dos subordinados tambem
+            QListWidgetItem.setCheckState(item,Qt.CheckState(2-item.checkState().value))
 
-            print('fora da checkbox')
-            # bloquear sinal para nao ativar o itemChanged signal
-            #?: talvez nem precise, ja que o itemChanged vai estar ligado a uma coisa que da' sempre True
-            #self.blockSignals(True)
-            if item.checkState()==Qt.CheckState.Unchecked:
-                item.setCheckState(Qt.CheckState.Checked)
-            else:
-                item.setCheckState(Qt.CheckState.Unchecked)
+        '''#item checkbox clicked
+        if self.changed:
+            # se o superior estiver marcado
+            if item.hasSuperior() and item.isSuperiorsChecked():
+                item.setCheckState(Qt.CheckState(2-item.checkState().value))
+            if item.hasSubordinate() and item.checkState().value:
+                [subordinate.setCheckState(item.checkState()) for subordinate in item.subordinates]
+        
+        #item label clicked (not item checkbox)
+        else:
+            if not item.hasSuperior() or (item.hasSuperior() and not item.isSuperiorsChecked()):
+                item.setCheckState(Qt.CheckState(2-item.checkState().value))'''
+        
+        # mudar estado de item comum, sem superior
+        # bloquear mudanca de estado para item subordinado a outro quando algum
+        # de seus superiores estiver checked
+        if  (not item.hasSuperior()) or \
+            (item.hasSuperior() and not item.isSuperiorsChecked()):
 
-        # retomando changed ao seu valor padrao
+            item.setCheckState(Qt.CheckState(2-item.checkState().value))
+
+        # restaurando changed ao seu valor padrao
         self.changed = False
 
         # alterar ou nao icone do apply
@@ -184,7 +226,7 @@ class AnalysisPushButton(QPushButton):
     
     # funcionalidades do apply
     def aplicar(self):
-        print('aplicou')
+        print('aplicar')
 
         self.Menu.setHidden(True)
 

@@ -1,4 +1,6 @@
 
+import os
+
 from PyQt6.QtWidgets import (QWidget,
                              QGroupBox,
                              QSpinBox,
@@ -13,6 +15,8 @@ from PyQt6.QtWidgets import (QWidget,
                              QFormLayout)
 
 import imaids.models as models
+
+import json
 
 
 class ModelLayout(QGroupBox):
@@ -31,7 +35,7 @@ class ModelLayout(QGroupBox):
         self.label_period_length = QLabel("Period Length:")
         self.label_gap = QLabel("Gap Length:")
         self.label_longitudinal_distance = QLabel("Longitudinal Distance:")
-        self.label_mr = QLabel("Magnetization Remanent:")
+        self.label_mr = QLabel("Magnetization Remanent:") #todo: mudar nome
 
         self.spin_nr_periods = QSpinBox(parent=self)
         self.spin_nr_periods.setObjectName("nr_periods")
@@ -127,71 +131,20 @@ class ModelLayout(QGroupBox):
 
 class ModelDialog(QDialog):
 
-    parameters = {'DeltaPrototype': {'nr_periods': 60,
-                                     'period_length': 20,
-                                     'gap': 7,
-                                     'mr': 1.36,
-                                     'longitudinal_distance': 0},
-                  'DeltaSabia': {'nr_periods': 21,
-                                 'period_length': 52.5,
-                                 'gap': 13.6,
-                                 'mr': 1.39,
-                                 'longitudinal_distance': 0.125},
-                  'DeltaCarnauba': {'nr_periods': 52,
-                                    'period_length': 22,
-                                    'gap': 7,
-                                    'mr': 1.37,
-                                    'longitudinal_distance': 0.05},
-                  'AppleXSabia': {'nr_periods': 21,
-                                  'period_length': 52.5,
-                                  'gap': 13.6,
-                                  'mr': 1.39,
-                                  'longitudinal_distance': 0.125},
-                  'AppleXCarnauba': {'nr_periods': 53,
-                                     'period_length': 22,
-                                     'gap': 7,
-                                     'mr': 1.39,
-                                     'longitudinal_distance': 0.1},
-                  'AppleIISabia': {'nr_periods': 21,
-                                   'period_length': 52.5,
-                                   'gap': 8,
-                                   'mr': 1.32,
-                                   'longitudinal_distance': 0.125},
-                  'AppleIICarnauba': {'nr_periods': 53,
-                                      'period_length': 22,
-                                      'gap': 7,
-                                      'mr': 1.39,
-                                      'longitudinal_distance': 0.1},
-                  'Kyma22': {'nr_periods': 51,
-                             'period_length': 22,
-                             'gap': 8,
-                             'mr': 1.32,
-                             'longitudinal_distance': 0.1},
-                  'Kyma58': {'nr_periods': 18,
-                             'period_length': 58,
-                             'gap': 15.8,
-                             'mr': 1.32,
-                             'longitudinal_distance': 0.1},
-                  'PAPU': {'nr_periods': 18,
-                           'period_length': 50,
-                           'gap': 24,
-                           'mr': 1.22,
-                           'longitudinal_distance': 0.2},
-                  'HybridAPU': {'nr_periods': 10,
-                                'period_length': 19.9,
-                                'gap': 5.2,
-                                'mr': 1.34,
-                                'longitudinal_distance': 0.1},
-                  'HybridPlanar': {'nr_periods': 10,
-                                   'period_length': 19.9,
-                                   'gap': 5.2,
-                                   'mr': 1.34,
-                                   'longitudinal_distance': 0.1},
-                  'MiniPlanarSabia': {'nr_periods': 3,
-                                      'period_length': 52.5,
-                                      'gap': 13.6,
-                                      'mr': 1.39,
-                                      'longitudinal_distance': 0.125}}
+    filename = 'models_parameters.json'
+
+    # Get the current directory
+    current_dir = os.getcwd()
+    # Iterate over all the files in the directory tree
+    for root, dirs, files in os.walk(current_dir):
+        # Check if the file we're looking for is in the list of files
+        if filename in files:
+            # If it is, print the full path to the file
+            filename = os.path.join(root, filename)
+            break
+    
+    with open(filename) as f:
+        parameters = json.load(f)
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)

@@ -20,7 +20,6 @@ t = time.time()
 from  PyQt6.QtWidgets import   (QApplication,
                                 QMainWindow,
                                 QStatusBar,
-                                QFileDialog,
                                 QMenuBar,
                                 QMessageBox,
                                 QDialog)
@@ -31,15 +30,10 @@ dt = time.time()-t
 print('imports pyqt =',dt*1000,'ms')
 
 t = time.time()
-from widgets import analysis_dialog, model_dialog, projects, table_model, toolbar, canvas
+from widgets import analysis_dialog, model_dialog, projects, table_model, toolbar, canvas, data_dialog
 from widgets.items import ExploreItem
 dt = time.time()-t
 print('imports widgets =',dt*1000,'ms')
-
-t = time.time()
-from imaids.insertiondevice import InsertionDeviceData
-dt = time.time()-t
-print('import InsertionDeviceData =',dt*1000,'ms')
 
 
 class MainWindow(QMainWindow):
@@ -55,6 +49,10 @@ class MainWindow(QMainWindow):
         self.skip_poles = 4
         self.Z = np.arange(-900,900,0.5)
         self.X = np.linspace(-5, 5, 23)
+
+        self.multiplotchart = canvas.Canvas()
+        self.abscissa = []
+        self.ordenada = []
 
         # -------------- construcao de tab widgets de projetos -------------- #
 
@@ -92,7 +90,7 @@ class MainWindow(QMainWindow):
         self.menuFile.addSeparator()
         ### main menu bar - File menu - Open Data action
         self.actionOpen_Data = QAction("Open Data ...", self)
-        self.actionOpen_Data.triggered.connect(self.browse_for_data)
+        self.actionOpen_Data.triggered.connect(self.open_files)
         self.menuFile.addAction(self.actionOpen_Data)
         self.menuFile.addSeparator()
         ### main menu bar - File menu - Generate Model action
@@ -161,57 +159,19 @@ class MainWindow(QMainWindow):
 
     # menu slots
 
-    # procurar dados e carregar enderecos dos seus arquivos
-    def browse_for_data(self,s):
+    def open_files(self, checked):
+        #?: todo: criar datadialog no init e apenas fazer show dele quando abrir files
+        #?: todo: quando terminar e fechar o dialog, apagar o que foi inserido
         
-        userhome = os.path.expanduser('~')
+        ID_list, filenames, name_list = data_dialog.DataDialog.getOpenFileIDs(files=self.projects.currentWidget().filenames, parent=self)
         
-        # filenames: file adress + file name of the selected data files
-        filenames, _ =QFileDialog.getOpenFileNames(parent=self, 
-                                                   caption='Open data',
-                                                   directory=f"{userhome}\\Documents",
-                                                   filter="Data files (*.txt *.dat *.csv)")
+        for ID, filename, name in zip(ID_list, filenames, name_list):
+            self.projects.currentWidget().filenames.append(filename)
+            self.treeInsert(ID=ID, ID_type="Data",name=name)
 
-        if len(filenames):
-            #print('ok button')
-            self.check_files(filenames=filenames)
-            #return True
-        # else:
-        #     print('cancel button')
-        #     return False
-
-    def check_files(self, filenames):
-
-        # arquivos carregados novamente
-        reloaded_files = []
-        
-        # iterando sobre cada endereco+nome dos arquivos da lista filenames
-        for filename in filenames:
-            if filename not in self.projects.currentWidget().filenames:
-                
-                # criando objeto insertion device
-                #!: no momento so' esta' sendo possivel carregar dados de Delta Sabia
-                #todo: criar janela de dialog intermediaria antes de carregar os arquivos onde
-                #todo: sera feita a renomeacao e passagem dos parametros/selecao do modelo de
-                #todo: ondulador que os dados seguem. havera tambem checkbox para escolher criar
-                #todo: modelo relativo aos dados ou nao
-                
-                ID = InsertionDeviceData(nr_periods=21, period_length=52.5,filename=filename)
-                # colocando endereco do arquivo na lista de enderecos do respectivo project
-                self.projects.currentWidget().filenames.append(filename)
-                # inserindo texto do dado na arvore
-                self.treeInsert(ID=ID, ID_type="Data")
-            else:
-                # guardando nome do arquivo ja carregado
-                filename = os.path.basename(filename)
-                reloaded_files.append(filename)
-        
-        # alertando sobre os arquivos ja carregados
-        if len(reloaded_files):
-            QMessageBox.warning(self,
-                                "Files Warning",
-                                f"Files already loaded! They are:\n{reloaded_files}")
-
+    #!: todo: passar criacao do objeto insertion device para dentro do dialog, um dos parametros do dialog vai ser o project tab atual
+    #!: vai ajudar na parte de passar os parametros
+    #!: ja vai poder colocar metodo accept la
     def model_generation(self):
         # todo: ter opcao de carregar arquivo com o conjunto de pontos para ter forma dos blocos
         dialog = model_dialog.ModelDialog(parent=self)
@@ -239,13 +199,15 @@ class MainWindow(QMainWindow):
         #     return
     
     #todo: maneira de passar children em vez de chamar esse metodo para todo arquivo e passar child
+    #!: tree insert dentro de projects, como metodo da tree mesmo
     def treeInsert(self, ID, ID_type, name=''):
 
         id_num = {"Data": 0, "Model": 1}
         
         if ID_type=="Data":
-            childs = self.projects.currentWidget().tree.topLevelItem(id_num[ID_type]).childCount()+1
-            ID.name = f'{ID_type} {childs}'
+            #childs = self.projects.currentWidget().tree.topLevelItem(id_num[ID_type]).childCount()+1
+            #ID.name = f'{ID_type} {childs}'
+            ID.name = name
         elif ID_type=="Model":
             models_names = [device.rstrip(device.split()[-1]).rstrip() 
                             for device in self.projects.currentWidget().insertiondevices]
@@ -268,6 +230,7 @@ class MainWindow(QMainWindow):
         if answer == QMessageBox.StandardButton.Yes:
             self.app.quit()
 
+    #!: colocar todo apply no segundo, normal no else e for all no if
     def enable_AnalysisForAll(self,checked):
         print('checked',checked)
         if checked:
@@ -276,7 +239,6 @@ class MainWindow(QMainWindow):
         else:
             self.toolbar.buttonAnalysis.apply.clicked.disconnect(self.aplicar_AnalysisForAll)
             self.toolbar.buttonAnalysis.apply.clicked.connect(self.toolbar.buttonAnalysis.aplicar)
-
     def aplicar_AnalysisForAll(self):
         print('aplicar para todos')
 
@@ -310,6 +272,7 @@ class MainWindow(QMainWindow):
 
     ## edit slots
 
+    #!: this method can be in the AnalysisDialog class
     def edit_analysis_parameters(self):
         dialog = analysis_dialog.AnalysisDialog(parent=self)
         answer = dialog.exec()
@@ -323,15 +286,18 @@ class MainWindow(QMainWindow):
 
         id_name = id_item.text(0)
 
-        if id_name not in self.projects.currentWidget().fields:
+        #todo: talvez fazer os enums serem as chaves e passar texto na atribuicao dos enums Type
+        analysis = self.projects.currentWidget().analysis_dict["Magnetic Field"]
+
+        if id_name not in analysis:
 
             id_meas = self.projects.currentWidget().insertiondevices[id_name]
 
-            result = id_meas.get_field(x=0, y=0, z=self.Z, nproc=None, chunksize=100)
-            self.projects.currentWidget().fields[id_name] = result
+            B = id_meas.get_field(x=0, y=0, z=self.Z, nproc=None, chunksize=100)
+            Bx, By, Bz = B.T
+            analysis[id_name] = {"Bx": Bx, "By": By, "Bz": Bz}
 
-            num = id_name.split()[1]
-            field = ExploreItem(ExploreItem.Type.ItemMagneticField, id_item, [f"Magnetic Field {num}", "Analysis"])
+            field = ExploreItem(ExploreItem.Type.ItemMagneticField, id_item, [f"Magnetic Field", "Analysis"])
             field.setTextAlignment(1,Qt.AlignmentFlag.AlignRight)
             children = [ExploreItem(ExploreItem.Type.ItemResult, field, ["Bx", "List"]),
                         ExploreItem(ExploreItem.Type.ItemResult, field, ["By", "List"]),
@@ -342,23 +308,25 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.warning(self,
                                 "Field Warning",
-                                f"Magnetic Field of {id_name} already calculated!")
+                                f"Magnetic Field of ({id_name}) already calculated!")
             return
 
     def calcTrajectory(self, id_item: ExploreItem):
 
         id_name = id_item.text(0)
+
+        analysis = self.projects.currentWidget().analysis_dict["Trajectory"]
         
-        if id_name not in self.projects.currentWidget().trajectories:
+        if id_name not in analysis:
 
             id_meas = self.projects.currentWidget().insertiondevices[id_name]
 
             #energy = 3 x0 = 0 y0 = 0 z0 = -900 dxds0 = 0 dyds0 = 0 dzds0 = 1 zmax = 900 rkstep = 0.5
-            result = id_meas.calc_trajectory(self.energy,[self.x0,self.y0,self.z0,self.dxds0,self.dyds0,self.dzds0],self.zmax,self.rkstep, dz=0, on_axis_field=False)
-            self.projects.currentWidget().trajectories[id_name] = result
+            traj = id_meas.calc_trajectory(self.energy,[self.x0,self.y0,self.z0,self.dxds0,self.dyds0,self.dzds0],self.zmax,self.rkstep, dz=0, on_axis_field=False)
+            x, y, z, dxds, dyds, dzds = traj.T
+            analysis[id_name] = {"x": x, "y": y, "z": z, "x'": dxds, "y'": dyds, "z'": dzds}
 
-            num = id_name.split()[1]
-            traj = ExploreItem(ExploreItem.Type.ItemTrajectory, id_item, [f"Trajectory {num}", "Analysis"])
+            traj = ExploreItem(ExploreItem.Type.ItemTrajectory, id_item, [f"Trajectory", "Analysis"])
             traj.setTextAlignment(1,Qt.AlignmentFlag.AlignRight)
             children = [ExploreItem(ExploreItem.Type.ItemResult, traj, ["x", "List"]),
                         ExploreItem(ExploreItem.Type.ItemResult, traj, ["y", "List"]),
@@ -372,25 +340,28 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.warning(self,
                                 "Trajectory Warning",
-                                f"Trajectory of {id_name} already calculated!")
+                                f"Trajectory of ({id_name}) already calculated!")
             return
     
     def calcPhaseError(self, id_item: ExploreItem):
         
         id_name = id_item.text(0)
+
+        analysis = self.projects.currentWidget().analysis_dict["Phase Error"]
         
-        if id_name not in self.projects.currentWidget().phaserr:
+        if id_name not in analysis:
         
             id_meas = self.projects.currentWidget().insertiondevices[id_name]
 
-            traj = self.projects.currentWidget().trajectories[id_name]
+            traj_dict = self.projects.currentWidget().analysis_dict["Trajectory"][id_name]
+            traj = np.array(list(traj_dict.values())).T
             bxamp, byamp, _, _ = id_meas.calc_field_amplitude()
             kh, kv = id_meas.calc_deflection_parameter(bxamp, byamp)
             z_list, pe, pe_rms = id_meas.calc_phase_error(self.energy, traj, bxamp, byamp, self.skip_poles, zmin=None, zmax=None, field_comp=None)
-            self.projects.currentWidget().phaserr[id_name] = [z_list, pe, pe_rms]
+            #chaves do dicionario no membro direito devem ser iguais aos nomes usados nos respectivos items
+            analysis[id_name] = {"z poles": z_list, "PhaseErr": pe, "RMS [rad]": pe_rms}
 
-            num = id_name.split()[1]
-            phaserr = ExploreItem(ExploreItem.Type.ItemPhaseError, id_item, [f"Phase Error {num}","Analysis"])
+            phaserr = ExploreItem(ExploreItem.Type.ItemPhaseError, id_item, [f"Phase Error","Analysis"])
             phaserr.setTextAlignment(1,Qt.AlignmentFlag.AlignRight)
             children = [ExploreItem(ExploreItem.Type.ItemResult, phaserr, ["z poles", "List"]),
                         ExploreItem(ExploreItem.Type.ItemResult, phaserr, ["PhaseErr", "List"]),
@@ -405,25 +376,27 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.warning(self,
                                 "Phase Error Warning",
-                                f"Phase Error of {id_name} already calculated!")
+                                f"Phase Error of ({id_name}) already calculated!")
             return
     
     def calcIntegrals(self, id_item: ExploreItem):
         
         id_name = id_item.text(0)
+
+        analysis = self.projects.currentWidget().analysis_dict["Field Integrals"]
         
-        if id_name not in self.projects.currentWidget().integrals:
+        if id_name not in analysis:
         
             id_meas = self.projects.currentWidget().insertiondevices[id_name]
 
-            B = self.projects.currentWidget().fields[id_name]
+            B_dict = self.projects.currentWidget().analysis_dict["Magnetic Field"][id_name]
+            B = np.array(list(B_dict.values())).T
             ib, iib = id_meas.calc_field_integrals(z_list=self.Z, x=0, y=0, field_list=B, nproc=None, chunksize=100)
-            self.projects.currentWidget().integrals[id_name] = [ib, iib]
+            analysis[id_name] = [ib, iib]
             ibx, iby, ibz = ib.T
             iibx, iiby, iibz = iib.T
 
-            num = id_name.split()[1]
-            integrals = ExploreItem(ExploreItem.Type.ItemIntegrals, id_item, [f'Field Integrals {num}', "Analysis"])
+            integrals = ExploreItem(ExploreItem.Type.ItemIntegrals, id_item, [f"Field Integrals", "Analysis"])
             integrals.setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
             children = [ExploreItem(ExploreItem.Type.ItemResult, integrals, ['IBx',  "List"]),
                         ExploreItem(ExploreItem.Type.ItemResult, integrals, ['IBy',  "List"]),
@@ -443,22 +416,23 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.warning(self,
                                 "Integrals Warning",
-                                f"Field Integrals of {id_name} already calculated!")
+                                f"Field Integrals of ({id_name}) already calculated!")
             return
     
     def calcRollOffPeaks(self, id_item: ExploreItem):
 
         id_name = id_item.text(0)
+
+        analysis = self.projects.currentWidget().analysis_dict["Roll Off Peaks"]
         
-        if id_name not in self.projects.currentWidget().rolloffpeaks:
+        if id_name not in analysis:
         
             id_meas = self.projects.currentWidget().insertiondevices[id_name]
 
             result = id_meas.calc_roll_off_peaks(z=self.Z,x=self.X,y=0,field_comp=None)
-            self.projects.currentWidget().rolloffpeaks[id_name] = result
+            analysis[id_name] = result
 
-            num = id_name.split()[1]
-            rollffp = ExploreItem(ExploreItem.Type.ItemRollOffPeaks, id_item, [f'Roll Off Peaks {num}', "Analysis"])
+            rollffp = ExploreItem(ExploreItem.Type.ItemRollOffPeaks, id_item, [f'Roll Off Peaks', "Analysis"])
             rollffp.setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
             children = [ExploreItem(ExploreItem.Type.ItemResult, rollffp, ['ROPx',  "List"]),
                         ExploreItem(ExploreItem.Type.ItemResult, rollffp, ['ROPy',  "List"]),
@@ -469,22 +443,23 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.warning(self,
                                 "Roll Off Warning",
-                                f"Roll Off Peaks of {id_name} already calculated!")
+                                f"Roll Off Peaks of ({id_name}) already calculated!")
             return
     
     def calcRollOffAmp(self, id_item: ExploreItem):
 
         id_name = id_item.text(0)
+
+        analysis = self.projects.currentWidget().analysis_dict["Roll Off Amplitude"]
         
-        if id_name not in self.projects.currentWidget().rolloffamp:
+        if id_name not in analysis:
         
             id_meas = self.projects.currentWidget().insertiondevices[id_name]
 
             result = id_meas.calc_roll_off_amplitude(z=self.Z,x=self.X,y=0)
-            self.projects.currentWidget().rolloffamp[id_name] = result
+            analysis[id_name] = result
 
-            num = id_name.split()[1]
-            rollffa = ExploreItem(ExploreItem.Type.ItemRollOffAmp, id_item, [f'Roll Off Amplitude {num}', "Analysis"])
+            rollffa = ExploreItem(ExploreItem.Type.ItemRollOffAmp, id_item, [f'Roll Off Amplitude', "Analysis"])
             rollffa.setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
             children = [ExploreItem(ExploreItem.Type.ItemResult, rollffa, ['ROAx',  "List"]),
                         ExploreItem(ExploreItem.Type.ItemResult, rollffa, ['ROAy',  "List"]),
@@ -495,7 +470,7 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.warning(self,
                                 "Roll Off Warning",
-                                f"Roll Off Amplitude of {id_name} already calculated!")
+                                f"Roll Off Amplitude of ({id_name}) already calculated!")
             return
     
     def calcCrossTalk(self, id_item: ExploreItem):
@@ -520,47 +495,98 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.warning(self,
                                 "Cross Talk Warning",
-                                f"Cross Talk of {id_name} already calculated!")
+                                f"Cross Talk of ({id_name}) already calculated!")
             return
 
-    def update_dicts_key(self,key,new_key):
+    def update_dicts_key(self, key, new_key):
         dicts =[self.projects.currentWidget().insertiondevices,
-                self.projects.currentWidget().fields,
-                self.projects.currentWidget().trajectories,
-                self.projects.currentWidget().phaserr,
-                self.projects.currentWidget().integrals]
+                *self.projects.currentWidget().analysis_dict.values()]
         
-        for dirc in dicts:
-            if key in dirc:
-                value = dirc.pop(key)
-                dirc[new_key] = value
+        for dicti in dicts:
+            if key in dicti:
+                value = dicti.pop(key)
+                dicti[new_key] = value
     
-    def plotar(self, id_item: ExploreItem):
+    def plotar(self, analysis_item: ExploreItem):
 
-        id_name = id_item.parent().text(0)
+        analysis_name = analysis_item.parent().text(0)
 
         # tracando grafico padrao
-        chart = canvas.Grafico()
+        chart = canvas.Canvas()
 
-        if id_item.item_type is ExploreItem.Type.ItemTrajectory:
-            traj = self.projects.currentWidget().trajectories[id_name]
-            chart.Plot(traj[:,2],traj[:,3])
-            chart.plotStuff(title='Trajectory - Angular Deviation in x',
-                            xlabel='z (mm)',
-                            ylabel="x' (rad)")
-            
-        if id_item.item_type is ExploreItem.Type.ItemPhaseError:
-            z_poles, pe, perms = self.projects.currentWidget().phaserr[id_name]
-            chart.Plot(np.arange(1,len(pe)+1), pe*180/np.pi)
-            #ax.plot(,,'.-')
-            chart.plotStuff(title='Phase Error',
-                            xlabel='Pole',
-                            ylabel='Phase Error (°)')
+        if  analysis_item.item_type is ExploreItem.Type.ItemTrajectory:
+            traj_dict = self.projects.currentWidget().analysis_dict["Trajectory"][analysis_name]
+            x, y, z, dxds, dyds, dzds = traj_dict.values()
+
+            chart.ax.plot(z,dxds)
+            chart.ax.grid()
+            chart.ax.set_title("Trajectory - Angular Deviation in x")
+            chart.ax.set_xlabel("z (mm)")
+            chart.ax.set_ylabel("x' (rad)")
+
+        if  analysis_item.item_type is ExploreItem.Type.ItemPhaseError:
+            phaserr_dict = self.projects.currentWidget().analysis_dict["Phase Error"][analysis_name]
+            z_poles, pe, perms = phaserr_dict.values()
+
+            chart.ax.plot(np.arange(1,len(pe)+1), pe*180/np.pi,'o-')
+            chart.ax.grid()
+            chart.ax.set_title("Phase Error")
+            chart.ax.set_xlabel("Pole")
+            chart.ax.set_ylabel("Phase Error (°)")
         
         # colocando grafico no visuals
-        i = self.projects.currentWidget().visuals.addTab(chart, f"Plot {id_name} - x' vs z")
+        i = self.projects.currentWidget().visuals.addTab(chart, f"Plot {analysis_name} - x' vs z")
         self.projects.currentWidget().visuals.setCurrentIndex(i)
-    
+
+        chart.fig.tight_layout()
+
+    def plotar2x2(self, result_item: ExploreItem):
+
+        param = result_item.text(0)
+        calc = result_item.parent().text(0)
+        data = result_item.parent().parent().text(0)
+        params_dict = self.projects.currentWidget().analysis_dict[calc][data]
+
+        #todo: abrir dialogo para personalizar o grafico
+
+        if self.abscissa:
+            if not self.ordenada:
+                self.ordenada = [param, params_dict[param]]
+
+                if self.toolbar.buttonPlot.objectName()==self.toolbar.actiongrafico2x2.objectName():
+                    chart = canvas.Canvas()
+
+                    chart.ax.set_title(f"{self.ordenada[0]} vs {self.abscissa[0]}")
+                    chart.ax.set_xlabel(self.abscissa[0])
+                    chart.ax.set_ylabel(self.ordenada[0])
+                
+                elif self.toolbar.buttonPlot.objectName()==self.toolbar.actiongraficos.objectName():
+                    chart = self.multiplotchart
+
+                isPlotEmpty = not (len(chart.ax.get_lines()) or \
+                                   len(chart.ax.patches) or \
+                                   len(chart.ax.images))
+            
+                chart.ax.plot(self.abscissa[1],self.ordenada[1])
+                chart.ax.grid(visible=True)
+
+                # colocando grafico no visuals
+                if isPlotEmpty:
+                    i = self.projects.currentWidget().visuals.addTab(chart, "Plot")
+                    self.projects.currentWidget().visuals.setCurrentIndex(i)
+
+                # Trigger the canvas to update and redraw
+                chart.draw()
+
+                # adjustment
+                chart.fig.tight_layout()
+
+                # restore abscissa and ordenada empty
+                self.abscissa = []
+                self.ordenada = []
+        else:
+            self.abscissa = [param, params_dict[param]]
+
     #todo: ampliar recursos da tabela
     def table_data(self, id_meas_item: ExploreItem):
 
@@ -585,49 +611,49 @@ class MainWindow(QMainWindow):
 
         # analise: campo magnetico
         if  self.toolbar.buttonAnalysis.isChecked() and \
-            self.toolbar.buttonAnalysis.itemMagneticField.checkState() == Qt.CheckState.Checked and \
+            self.toolbar.buttonAnalysis.itemMagneticField.isChecked() and \
             item.item_type is ExploreItem.Type.ItemData:
 
             self.calcMagneticField(item)
         
         # analise: trajetoria
         if  self.toolbar.buttonAnalysis.isChecked() and \
-            self.toolbar.buttonAnalysis.itemTrajectory.checkState() == Qt.CheckState.Checked and \
+            self.toolbar.buttonAnalysis.itemTrajectory.isChecked() and \
             item.item_type is ExploreItem.Type.ItemData:
 
             self.calcTrajectory(item)
         
         # analise: erro de fase
         if  self.toolbar.buttonAnalysis.isChecked() and \
-            self.toolbar.buttonAnalysis.itemPhaseError.checkState() == Qt.CheckState.Checked and \
+            self.toolbar.buttonAnalysis.itemPhaseError.isChecked() and \
             item.item_type is ExploreItem.Type.ItemData:
             
             self.calcPhaseError(item)
 
         # analise: integrais de campo
         if  self.toolbar.buttonAnalysis.isChecked() and \
-            self.toolbar.buttonAnalysis.itemIntegrals.checkState() == Qt.CheckState.Checked and \
+            self.toolbar.buttonAnalysis.itemIntegrals.isChecked() and \
             item.item_type is ExploreItem.Type.ItemData:
             
             self.calcIntegrals(item)
 
         # analise: roll off peaks
         if  self.toolbar.buttonAnalysis.isChecked() and \
-            self.toolbar.buttonAnalysis.itemRollOffPeaks.checkState() == Qt.CheckState.Checked and \
+            self.toolbar.buttonAnalysis.itemRollOffPeaks.isChecked() and \
             item.item_type is ExploreItem.Type.ItemData:
 
             self.calcRollOffPeaks(item)
         
         # analise: roll off amplitude
         if  self.toolbar.buttonAnalysis.isChecked() and \
-            self.toolbar.buttonAnalysis.itemRollOffAmp.checkState() == Qt.CheckState.Checked and \
+            self.toolbar.buttonAnalysis.itemRollOffAmp.isChecked() and \
             item.item_type is ExploreItem.Type.ItemData:
 
             self.calcRollOffAmp(item)
         
         # analise: cross talk
         if  self.toolbar.buttonAnalysis.isChecked() and \
-            self.toolbar.buttonAnalysis.itemCrossTalk.checkState() == Qt.CheckState.Checked and \
+            self.toolbar.buttonAnalysis.itemCrossTalk.isChecked() and \
             item.item_type is ExploreItem.Type.ItemData:
       
             self.calcCrossTalk(item)
@@ -636,10 +662,24 @@ class MainWindow(QMainWindow):
         #todo: criar item que abarque todos os de analysis para que plot de phaseerror e trajectory
         #todo: seja feita em condicao mais simples
         if  self.toolbar.buttonPlot.isChecked() and \
+            self.toolbar.buttonPlot.objectName()==self.toolbar.actiongrafico.objectName() and \
             (item.item_type is ExploreItem.Type.ItemTrajectory or \
              item.item_type is ExploreItem.Type.ItemPhaseError):
             
             self.plotar(item)
+
+        # plot 2 a 2
+        if  self.toolbar.buttonPlot.isChecked():
+            if  self.toolbar.buttonPlot.objectName()!=self.toolbar.actiongrafico.objectName() and \
+                item.item_type is ExploreItem.Type.ItemResult:
+                
+                self.plotar2x2(item)
+
+        # desmarcar botao de plot ou mudar tipo de plot e clicar em um item qualquer
+        if  not self.toolbar.buttonPlot.isChecked() or \
+            self.toolbar.buttonPlot.objectName()!=self.toolbar.actiongraficos.objectName():
+            
+            self.multiplotchart = canvas.Canvas()
         
         # tabela
         if self.toolbar.buttonTable.isChecked() and \

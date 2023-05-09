@@ -41,7 +41,8 @@ class AnalysisItem(QListWidgetItem):
         self.superiors = superiors #list of superior items of this item
         self.subordinates = subordinates #list of subordinate items of this item
         
-    
+    def isChecked(self) -> bool:
+        return bool(self.checkState() == Qt.CheckState.Checked)
 
     def hasSuperior(self) -> bool:
         return bool(len(self.superiors))

@@ -8,44 +8,27 @@ from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as FigureCanva
                                                 # matplotlib toolbar qt widget class
                                                 NavigationToolbar2QT as NavigationToolbar)
 
-class Canvas(FigureCanvas):
+class Canvas(QWidget):
+
     def __init__(self, dpi=100):
-        self.fig, self.ax = plt.subplots(dpi=dpi)
-        super().__init__(self.fig)
-
-
-class Grafico(QWidget):
-    def __init__(self):
         super().__init__()
+
+        self.fig, self.ax = plt.subplots(dpi=dpi)
+        self.figure = FigureCanvas(self.fig)
+
+        self.figure.mpl_connect('draw_event',self.on_draw)
 
         layout = QVBoxLayout()
 
-        self.chart = Canvas()
-        self.chart.fig.tight_layout()
-        self.chart.mpl_connect('draw_event',self.on_draw)
-
-        toolbar = NavigationToolbar(self.chart, self)
+        toolbar = NavigationToolbar(self.figure, self)
 
         layout.addWidget(toolbar)
-        layout.addWidget(self.chart)
+        layout.addWidget(self.figure)
 
         self.setLayout(layout)
     
-
-
+    def draw(self):
+        self.figure.draw()
+    
     def on_draw(self, event):
-        self.chart.fig.tight_layout()
-    
-    #todo: encontrar maneira de embrulhar quaisquer metodos do matplotlib e em seguida poder fazer o tightlayout
-
-    def Plot(self,x,y):
-        self.chart.ax.plot(x,y)
-
-        self.chart.fig.tight_layout()
-    
-    def plotStuff(self,title: str, xlabel: str, ylabel: str):
-        self.chart.ax.set_title(title)
-        self.chart.ax.set_xlabel(xlabel)
-        self.chart.ax.set_ylabel(ylabel)
-
-        self.chart.fig.tight_layout()
+        self.fig.tight_layout()

@@ -23,12 +23,12 @@ class ProjectWidget(QWidget):
 
         self.filenames = []
         self.insertiondevices = {}
-        self.fields = {}
-        self.trajectories = {}
-        self.phaserr = {}
-        self.integrals = {}
-        self.rolloffpeaks = {}
-        self.rolloffamp = {}
+        self.analysis_dict = {"Magnetic Field": {},
+                              "Trajectory": {},
+                              "Phase Error": {},
+                              "Field Integrals": {},
+                              "Roll Off Peaks": {},
+                              "Roll Off Amplitude": {}}
 
         #labels de parametros dos modelos
         
@@ -42,6 +42,7 @@ class ProjectWidget(QWidget):
         self.splitter = QSplitter()
         self.splitter.setOrientation(Qt.Orientation.Horizontal)
 
+        #todo: change qtreewidget to qtreeview to allow a better customization
         self.tree = QTreeWidget()
         self.tree.setColumnCount(2)
         self.tree.setHeaderLabels(["Item", "Content"])
@@ -93,7 +94,7 @@ class ProjectWidget(QWidget):
         
         widt = self.width()
 
-        self.splitter.setSizes([widt*80/100,widt])
+        self.splitter.setSizes([widt*85/100,widt])
 
 
         self.resize_timer = QTimer()

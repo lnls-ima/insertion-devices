@@ -9,7 +9,9 @@ class IMAIDsToolBar(QToolBar):
     def __init__(self, title='', parent=None):
         super().__init__(title, parent)
 
-        grafico = QIcon("icons/icons/guide.png")
+        self.grafico = QIcon("icons/icons/guide.png")
+        self.grafico2x2 = QIcon("icons/icons/grid.png")
+        self.graficos = QIcon("icons/icons/guide-snap.png")
         self.tabela = QIcon("icons/icons/table.png")
         self.dog = QIcon("icons/icons/animal-dog.png")
         self.cat = QIcon("icons/icons/animal.png")
@@ -39,7 +41,23 @@ class IMAIDsToolBar(QToolBar):
         self.addSeparator()
         ## tool bar - plot button: fazer graficos dos dados
         self.buttonPlot = painted_button.PaintedButton("Plot")
-        self.buttonPlot.setIcon(grafico)
+        self.buttonPlot.setIcon(self.grafico)
+
+        self.actiongrafico = QAction(self.grafico,"grafico",self.buttonPlot)
+        self.actiongrafico.triggered.connect(self.action_swap)
+        self.actiongrafico.setObjectName("graph")
+        self.actiongrafico2x2 = QAction(self.grafico2x2,"grafico",self.buttonPlot)
+        self.actiongrafico2x2.triggered.connect(self.action_swap)
+        self.actiongrafico2x2.setObjectName("graph22")
+        self.actiongraficos = QAction(self.graficos,"graficos",self.buttonPlot)
+        self.actiongraficos.triggered.connect(self.action_swap)
+        self.actiongraficos.setObjectName("graphs")
+
+        self.buttonPlot.setObjectName(self.actiongrafico.objectName())
+        self.grafico = self.buttonPlot.icon()
+        self.buttonPlot.custom_buttonMenu.addActions([self.actiongrafico,
+                                                      self.actiongrafico2x2,
+                                                      self.actiongraficos])
         self.addWidget(self.buttonPlot)
         self.addSeparator()
         ## tool bar - table button: fazer tabelas dos dados
@@ -48,13 +66,21 @@ class IMAIDsToolBar(QToolBar):
         self.buttonTable.setObjectName(self.actiontabela.objectName())
         self.tabela = self.buttonTable.icon()
         self.buttonTable.custom_buttonMenu.addActions([self.actiontabela,
-                                                               self.actioncat,
-                                                               self.actiondog,
-                                                               self.actionbug])
+                                                       self.actioncat,
+                                                       self.actiondog,
+                                                       self.actionbug])
         self.addWidget(self.buttonTable)
 
     def action_swap(self):
         action = self.sender()
-        self.buttonTable.setIcon(action.icon())
-        self.buttonTable.setChecked(True)
-        self.buttonTable.setObjectName(action.objectName())
+        if self.buttonPlot==action.parent():
+            self.buttonPlot.setIcon(action.icon())
+            self.buttonPlot.setChecked(True)
+            self.buttonPlot.setObjectName(action.objectName())
+        else:
+            self.buttonTable.setIcon(action.icon())
+            self.buttonTable.setChecked(True)
+            self.buttonTable.setObjectName(action.objectName())
+
+    #todo: criar metodo aqui ou em painted button ou subclass QAction... para checar se o
+    #todo: botao selecionou e' tal ou tal (exemplo: e' grafico ou e' grafico2x2)

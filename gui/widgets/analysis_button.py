@@ -1,12 +1,14 @@
 
 from PyQt6.QtWidgets import QPushButton, QFrame, QListWidget, QListWidgetItem, QCheckBox, QVBoxLayout
 from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt, QRect
+from PyQt6.QtCore import Qt, QRect, pyqtSignal
 
 from .items import AnalysisItem
 
 
 class AnalysisPushButton(QPushButton):
+
+    modeChanged = pyqtSignal(bool)
 
     def __init__(self, menu_parent, button_text, button_parent, *args, **kwargs):
         super().__init__(text=button_text, parent=button_parent, *args, **kwargs)
@@ -76,7 +78,7 @@ class AnalysisPushButton(QPushButton):
         ## analysis menu - apply button
         self.apply = QPushButton("Apply")
         self.apply.setShortcut(Qt.Key.Key_Return)
-        self.apply.clicked.connect(self.aplicar)
+        self.apply.clicked.connect(self.applyHide)
         
         ## analysis menu - layout
         layout = QVBoxLayout(self.Menu)
@@ -102,6 +104,15 @@ class AnalysisPushButton(QPushButton):
     # SLOTS
 
     # analysis button slot
+
+    def uncheckAnalysisMenu(self):
+        # uncheck all checked list items
+        [item.setCheckState(Qt.CheckState.Unchecked) for item in self.checkedItems()]
+
+        # uncheck checkbox, items and remove wand icon
+        if self.checkBoxSelectAll.isChecked():
+                self.checkBoxSelectAll.setChecked(False)
+                self.check_all_items(False)
     
     def toggle_list_visibility(self):
 
@@ -109,13 +120,9 @@ class AnalysisPushButton(QPushButton):
         if not self.isChecked():
             # analysis button automatically unchecks itself
 
-            # uncheck all checked list items
-            [item.setCheckState(Qt.CheckState.Unchecked) for item in self.checkedItems()]
+            self.uncheckAnalysisMenu()
 
-            # uncheck checkbox, items and remove wand icon
-            if self.checkBoxSelectAll.isChecked():
-                    self.checkBoxSelectAll.setChecked(False)
-                    self.check_all_items(False)
+            self.modeChanged.emit(True)
 
         # se botao inicialmente estiver unchecked
         else:
@@ -225,10 +232,9 @@ class AnalysisPushButton(QPushButton):
             self.apply.setIcon(QIcon(None))
     
     # funcionalidades do apply
-    def aplicar(self):
-        print('aplicar')
-
+    def applyHide(self):
+        
         self.Menu.setHidden(True)
 
-        if len(self.checkedItems()):
-            self.setChecked(True)
+        if self.checkedItems():
+            self.modeChanged.emit(False)

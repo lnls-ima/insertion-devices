@@ -39,7 +39,7 @@ class DataDialog(QDialog):
     def __init__(self, filenames=[] ,parent=None, *args, **kwargs):
         super().__init__(parent=parent, *args, **kwargs)
 
-        self.setWindowTitle("Open Data Dialog")
+        self.setWindowTitle("Data Manager")
 
         self.spins_nr_periods = []
         self.spins_period_length = []
@@ -230,6 +230,7 @@ class DataDialog(QDialog):
 
             line_name = QLineEdit()
             line_name.textChanged.connect(self.resize_to_content)
+            #todo: mudar name e phase para um padrao caso nao encontre nada no filename
             und_name = self.getUndulatorName(filename)
             und_phase = self.getUndulatorPhase(filename)
             #line_name.setText(f"Data {(rows-2)+nr_oldfiles+i+1}")

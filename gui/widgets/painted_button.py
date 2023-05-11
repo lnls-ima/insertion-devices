@@ -1,9 +1,11 @@
 
 from PyQt6.QtWidgets import QPushButton, QMenu
 from PyQt6.QtGui import QPainter, QPolygon, QCursor
-from PyQt6.QtCore import QPoint, Qt
+from PyQt6.QtCore import QPoint, Qt, pyqtSignal
 
 class PaintedButton(QPushButton):
+
+    modeChanged = pyqtSignal(bool)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -44,11 +46,28 @@ class PaintedButton(QPushButton):
         len = min(self.width(),self.height())/2
 
         if (width-len <= x <= width) and (height-len <= y <= height):
-            self.setChecked(False)
-            print('dentro')
+            if self.isChecked():
+                self.setChecked(False)
+            else:
+                self.setChecked(True)
+            #dentro
             self.show_menu()
         else:
-            print('fora')
+            #fora
+            self.modeChanged.emit(True)
+
 
     def show_menu(self):
         self.custom_buttonMenu.popup(self.mapToGlobal(self.rect().bottomLeft()))
+    
+    def action_swap(self):
+
+        action = self.sender()
+
+        self.setIcon(action.icon())
+        self.setChecked(True)
+        self.setObjectName(action.objectName())
+        # fazer swap da acao e ja mudar de botao
+        self.modeChanged.emit(False)
+
+        

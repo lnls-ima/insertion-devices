@@ -47,7 +47,7 @@ class ProjectWidget(QWidget):
         self.tree.setColumnCount(2)
         self.tree.setHeaderLabels(["Item", "Content"])
         #self.tree.setHeaderHidden(True)
-        self.tree.header().resizeSection(0, 0.24*self.tree.width())
+        self.tree.header().resizeSection(0, 0.27*self.tree.width())
         self.tree.setIndentation(12)
         self.tree.headerItem().setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
 

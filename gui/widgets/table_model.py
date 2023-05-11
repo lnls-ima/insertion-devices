@@ -1,13 +1,12 @@
 
 from PyQt6.QtGui import QColor
-from PyQt6.QtCore import Qt, QAbstractTableModel
+from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, pyqtSignal
 from PyQt6.QtWidgets import QTableView
-from imaids.insertiondevice import InsertionDeviceData
 
 
 class TableModel(QAbstractTableModel):
 
-    def __init__(self, id_meas: InsertionDeviceData):
+    def __init__(self, data, header):
         super(TableModel, self).__init__()
 
         # acessar filename pelas variaveis de insertion device
@@ -22,30 +21,25 @@ class TableModel(QAbstractTableModel):
         
         # fechar arquivo com .close()
 
-        self._header = ['X[mm]', 'Y[mm]', 'Z[mm]', 'Bx[T]', 'By[T]', 'Bz[T]']
-        self._data = id_meas._raw_data
+        self._header = header
+        self._data = data
 
-
-    def data(self, index, role):
+    def data(self, index: QModelIndex, role):
         if role == Qt.ItemDataRole.DisplayRole:
-            value = self._data[index.row(), index.column()]
-            return str(value)
+            value = self._data[index.row()][index.column()]
+            if "e" in str(value):
+                return f"{value:.2e}"
+            else:
+                return f"{value:.2f}"
         
-        '''
-        if role == Qt.ItemDataRole.BackgroundRole:
-            color = [206,171, 71, int(0.3*255)]
-            return QColor.fromRgb(*color)
-        '''
-
-        # meh
         if role == Qt.ItemDataRole.BackgroundRole:
             color = [240,240, 240]
             return QColor.fromRgb(*color)
 
-    def rowCount(self, index):
+    def rowCount(self, index=QModelIndex()):
         return self._data.shape[0]
 
-    def columnCount(self, index):
+    def columnCount(self, index=QModelIndex()):
         return self._data.shape[1]
     
     def headerData(self, section, orientation, role):
@@ -65,31 +59,26 @@ class TableModel(QAbstractTableModel):
         '''
 
 class Table(QTableView):
-    def __init__(self, id_meas: InsertionDeviceData):
+
+    selectReturned = pyqtSignal(list)
+
+    def __init__(self, data, header):
         super().__init__()
 
-        # todo: alterar para criar modelo a partir do objeto insertiondevice, pode ter overload function
-        # no TableModel, usar metodos do InsertionDevice para obter mesmo array numpy que obtem-se com
-        # filename
-        # isso ate que e' bom porque na hora dos modelos, isso vai ficar parecido
-        # assim como pode-se definir objeto de varias maneiras no pyqt, devemos poder criar
-        # table model com filename ou objeto InsertionDevice
-        modeltable = TableModel(id_meas)
-        self.setModel(modeltable)
-
-        # todo: passar estilo para dentro do .py de modelo da tabela
+        self.modeltable = TableModel(data, header)
+        self.setModel(self.modeltable)
+        
         # estilo da tabela
-        '''horizontal_color = QColor.fromRgb(80, 174, 144)
-        vertical_color = QColor.fromRgb(136, 59, 144, int(0.8*255))
-        horizontal_header_style = "QHeaderView::section {{background-color: {} }}".format(horizontal_color.name())
-        vertical_header_style = "QHeaderView::section {{background-color: {} }}".format(vertical_color.name())
-        tabela.horizontalHeader().setStyleSheet(horizontal_header_style)
-        tabela.verticalHeader().setStyleSheet(vertical_header_style)'''
-
-        #estilo meh
         horizontal_color = QColor.fromRgb(200, 200, 200)
         vertical_color = QColor.fromRgb(200, 200, 200)
         horizontal_header_style = "QHeaderView::section {{background-color: {} }}".format(horizontal_color.name())
         vertical_header_style = "QHeaderView::section {{background-color: {} }}".format(vertical_color.name())
         self.horizontalHeader().setStyleSheet(horizontal_header_style)
         self.verticalHeader().setStyleSheet(vertical_header_style)
+    
+    
+    def keyPressEvent(self, event) -> None:
+        if event.key() in [Qt.Key.Key_Return,Qt.Key.Key_Enter]:
+            self.selectReturned.emit(self.selectedIndexes())
+        else:
+            return super().keyPressEvent(event)

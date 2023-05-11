@@ -11,7 +11,6 @@ import time
 t = time.time()
 import os
 import sys
-#import getpass
 import numpy as np
 dt = time.time()-t
 print('imports menores =',dt*1000,'ms')
@@ -24,6 +23,7 @@ from  PyQt6.QtWidgets import   (QApplication,
                                 QMessageBox,
                                 QDialog)
 from   PyQt6.QtGui    import   (QAction,
+                                QIcon,
                                 QCursor)
 from   PyQt6.QtCore   import    Qt
 dt = time.time()-t
@@ -54,14 +54,16 @@ class MainWindow(QMainWindow):
         self.abscissa = []
         self.ordenada = []
 
+        self.tabela = None
+
         # -------------- construcao de tab widgets de projetos -------------- #
 
         # projects tab widget
         self.projects = projects.TabProjects(parent=self)
-        self.projects.widget(0).tree.itemClicked.connect(self.on_item_clicked)
+        self.projects.widget(0).tree.itemClicked.connect(self.tree_item_clicked)
         self.projects.itemconnect.connect(
             lambda i: self.projects.widget(i).tree.itemClicked.connect(
-                self.on_item_clicked
+                self.tree_item_clicked
             )
         )
 
@@ -75,6 +77,7 @@ class MainWindow(QMainWindow):
         # ---------------------- contrucao da tool bar ---------------------- #
 
         self.toolbar = toolbar.IMAIDsToolBar(title="Tool Bar",parent=self)
+        self.toolbar.buttonAnalysis.apply.clicked.connect(self.applyAnalysis)
         
 
         # ------------------- construcao do main menu bar ------------------- #
@@ -84,28 +87,28 @@ class MainWindow(QMainWindow):
         ## main menu bar - File menu
         self.menuFile = self.menubar.addMenu("&File")
         ### main menu bar - File menu - New Project action
-        self.actionNew_Project = QAction("New Project", self)
+        self.actionNew_Project = QAction(QIcon("icons/icons/projection-screen--plus.png"),"New Project", self)
         self.actionNew_Project.triggered.connect(self.projects.add_project)
         self.menuFile.addAction(self.actionNew_Project)
         self.menuFile.addSeparator()
         ### main menu bar - File menu - Open Data action
-        self.actionOpen_Data = QAction("Open Data ...", self)
+        self.actionOpen_Data = QAction(QIcon("icons/icons/database-import.png"),"Open Data ...", self)
         self.actionOpen_Data.triggered.connect(self.open_files)
         self.menuFile.addAction(self.actionOpen_Data)
         self.menuFile.addSeparator()
         ### main menu bar - File menu - Generate Model action
-        self.actionGenerate_Model = QAction("Generate Model", self)
+        self.actionGenerate_Model = QAction(QIcon("icons/icons/magnet-blue.png"),"Generate Model", self)
         self.actionGenerate_Model.triggered.connect(self.model_generation)
         self.menuFile.addAction(self.actionGenerate_Model)
         self.menuFile.addSeparator()
-        ### main menu bar - File menu - Quit action
-        self.actionQuit = QAction("Quit", self)
-        self.actionQuit.triggered.connect(self.quit_app)
-        self.menuFile.addAction(self.actionQuit)
+        ### main menu bar - File menu - Exit action
+        self.actionExit = QAction(QIcon("icons/icons/door-open-out.png"),"Exit", self)
+        self.actionExit.triggered.connect(self.close)
+        self.menuFile.addAction(self.actionExit)
         ## main menu bar - Edit menu
         self.menuEdit = self.menubar.addMenu("&Edit")
         ### main menu bar - Edit menu - Analysis action
-        self.actionAnalysis = QAction("Analysis", self)
+        self.actionAnalysis = QAction(QIcon("icons/icons/beaker--pencil"),"Custom Analysis", self)
         self.actionAnalysis.triggered.connect(self.edit_analysis_parameters)
         self.menuEdit.addAction(self.actionAnalysis)
         self.menuEdit.addSeparator()
@@ -119,21 +122,20 @@ class MainWindow(QMainWindow):
         ## main menu bar - View menu: contem opcoes de esconder widgets, tais como toolbar
         self.menuView = self.menubar.addMenu("&View")
         ### main menu bar - View menu - ToolBar action
-        actionToolBar = QAction(self.toolbar.objectName(), self, checkable=True)
+        actionToolBar = QAction(QIcon("icons/icons/toolbox.png"),self.toolbar.objectName(), self, checkable=True)
         actionToolBar.setChecked(True)
         actionToolBar.triggered.connect(self.toolbar.setVisible)
         self.menuView.addAction(actionToolBar)
         ### main menu bar - View menu - StatusBar action
-        actionStatusBar = QAction(self.statusbar.objectName(), self, checkable=True)
+        actionStatusBar = QAction(QIcon("icons/icons/ui-status-bar-blue.png"),self.statusbar.objectName(), self, checkable=True)
         actionStatusBar.setChecked(True)
         actionStatusBar.triggered.connect(self.statusbar.setVisible)
         self.menuView.addAction(actionStatusBar)
         ## main menu bar - Settings menu
         self.menuSettings = self.menubar.addMenu("&Settings")
         ### main menu bar - Settings menu - Apply action
-        self.actionApply = QAction("Apply for All", self, checkable=True)
-        self.actionApply.triggered.connect(self.enable_AnalysisForAll)
-        self.menuSettings.addAction(self.actionApply)
+        self.actionApplyForAll = QAction(QIcon("icons/icons/wand-hat.png"),"Apply for All", self, checkable=True)
+        self.menuSettings.addAction(self.actionApplyForAll)
         ## main menu bar - Help menu: documentacao da interface
         self.menuHelp = self.menubar.addMenu("&Help")
 
@@ -220,31 +222,21 @@ class MainWindow(QMainWindow):
         data.setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
         self.projects.currentWidget().tree.topLevelItem(id_num[ID_type]).addChild(data)
     
-    def quit_app(self):
+    def closeEvent(self, event):
         answer = QMessageBox.question(self,
-                                      "Quit Question",
+                                      "Quit Confirmation",
                                       "Are you sure you want to quit the application?",
                                       QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                                       QMessageBox.StandardButton.No)
 
         if answer == QMessageBox.StandardButton.Yes:
-            self.app.quit()
-
-    #!: colocar todo apply no segundo, normal no else e for all no if
-    def enable_AnalysisForAll(self,checked):
-        print('checked',checked)
-        if checked:
-            self.toolbar.buttonAnalysis.apply.clicked.disconnect(self.toolbar.buttonAnalysis.aplicar)
-            self.toolbar.buttonAnalysis.apply.clicked.connect(self.aplicar_AnalysisForAll)
+            event.accept()
         else:
-            self.toolbar.buttonAnalysis.apply.clicked.disconnect(self.aplicar_AnalysisForAll)
-            self.toolbar.buttonAnalysis.apply.clicked.connect(self.toolbar.buttonAnalysis.aplicar)
-    def aplicar_AnalysisForAll(self):
-        print('aplicar para todos')
+            event.ignore()
 
-        self.toolbar.buttonAnalysis.Menu.setHidden(True)
-        
-        if self.actionApply.isChecked():
+    def applyAnalysis(self):
+
+        if self.actionApplyForAll.isChecked():
             #executar analises para todos
             for item in self.projects.currentWidget().tree.topLevelItem(0).children():
                 
@@ -264,10 +256,9 @@ class MainWindow(QMainWindow):
                     self.calcRollOffPeaks(item)
                 if self.toolbar.buttonAnalysis.itemRollOffAmp.checkState() == Qt.CheckState.Checked:
                     self.calcRollOffAmp(item)
-        #else: aplicar normal
-        
-        self.toolbar.buttonAnalysis.checkBoxSelectAll.setChecked(False)
-        [item.setCheckState(Qt.CheckState.Unchecked) for item in self.toolbar.buttonAnalysis.checkedItems()]
+
+        elif self.toolbar.buttonAnalysis.checkedItems():
+            self.toolbar.buttonAnalysis.setChecked(True)
     
 
     ## edit slots
@@ -295,11 +286,12 @@ class MainWindow(QMainWindow):
 
             B = id_meas.get_field(x=0, y=0, z=self.Z, nproc=None, chunksize=100)
             Bx, By, Bz = B.T
-            analysis[id_name] = {"Bx": Bx, "By": By, "Bz": Bz}
+            analysis[id_name] = {"z": self.Z, "Bx": Bx, "By": By, "Bz": Bz}
 
             field = ExploreItem(ExploreItem.Type.ItemMagneticField, id_item, [f"Magnetic Field", "Analysis"])
             field.setTextAlignment(1,Qt.AlignmentFlag.AlignRight)
-            children = [ExploreItem(ExploreItem.Type.ItemResult, field, ["Bx", "List"]),
+            children = [ExploreItem(ExploreItem.Type.ItemResult, field, ["z", "List"]),
+                        ExploreItem(ExploreItem.Type.ItemResult, field, ["Bx", "List"]),
                         ExploreItem(ExploreItem.Type.ItemResult, field, ["By", "List"]),
                         ExploreItem(ExploreItem.Type.ItemResult, field, ["Bz", "List"])]
             [item.setTextAlignment(1,Qt.AlignmentFlag.AlignRight) for item in children]
@@ -390,11 +382,11 @@ class MainWindow(QMainWindow):
             id_meas = self.projects.currentWidget().insertiondevices[id_name]
 
             B_dict = self.projects.currentWidget().analysis_dict["Magnetic Field"][id_name]
-            B = np.array(list(B_dict.values())).T
+            B = np.array(list(B_dict.values())[:-1]).T
             ib, iib = id_meas.calc_field_integrals(z_list=self.Z, x=0, y=0, field_list=B, nproc=None, chunksize=100)
-            analysis[id_name] = [ib, iib]
             ibx, iby, ibz = ib.T
             iibx, iiby, iibz = iib.T
+            analysis[id_name] = {'IBx': ibx, 'IBy': iby, 'IBz': ibz, 'IIBx': iibx, 'IIBy': iiby, 'IIBz': iibz}
 
             integrals = ExploreItem(ExploreItem.Type.ItemIntegrals, id_item, [f"Field Integrals", "Analysis"])
             integrals.setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
@@ -429,8 +421,8 @@ class MainWindow(QMainWindow):
         
             id_meas = self.projects.currentWidget().insertiondevices[id_name]
 
-            result = id_meas.calc_roll_off_peaks(z=self.Z,x=self.X,y=0,field_comp=None)
-            analysis[id_name] = result
+            ropx, ropy, ropz = id_meas.calc_roll_off_peaks(z=self.Z,x=self.X,y=0,field_comp=None)
+            analysis[id_name] = {'ROPx': ropx,'ROPy': ropy,'ROPz': ropz}
 
             rollffp = ExploreItem(ExploreItem.Type.ItemRollOffPeaks, id_item, [f'Roll Off Peaks', "Analysis"])
             rollffp.setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
@@ -456,8 +448,8 @@ class MainWindow(QMainWindow):
         
             id_meas = self.projects.currentWidget().insertiondevices[id_name]
 
-            result = id_meas.calc_roll_off_amplitude(z=self.Z,x=self.X,y=0)
-            analysis[id_name] = result
+            roax, roay, roaz = id_meas.calc_roll_off_amplitude(z=self.Z,x=self.X,y=0)
+            analysis[id_name] = {'ROAx': roax,'ROAy': roay,'ROAz': roaz}
 
             rollffa = ExploreItem(ExploreItem.Type.ItemRollOffAmp, id_item, [f'Roll Off Amplitude', "Analysis"])
             rollffa.setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
@@ -587,27 +579,118 @@ class MainWindow(QMainWindow):
         else:
             self.abscissa = [param, params_dict[param]]
 
-    #todo: ampliar recursos da tabela
+    #*: metodo suspenso por enquanto
+    # def plotar2x2_table_section(self, column):
+
+    #     #tablemodel = self.tabela.modeltable
+    #     tablemodel = self.projects.currentWidget().visuals.currentWidget().modeltable
+    #     sectionData = tablemodel._data[:,column]
+    #     sectionText = tablemodel.headerData(column, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
+
+    #     if self.abscissa:
+    #         if not self.ordenada:
+    #             self.ordenada = [sectionText,sectionData]
+
+    #             chart = canvas.Canvas()
+
+    #             chart.ax.set_title(f"{self.ordenada[0]} vs {self.abscissa[0]}")
+    #             chart.ax.set_xlabel(self.abscissa[0])
+    #             chart.ax.set_ylabel(self.ordenada[0])
+    #             chart.ax.plot(self.abscissa[1], self.ordenada[1])
+    #             chart.ax.grid(visible=True)
+
+    #             i = self.projects.currentWidget().visuals.addTab(chart, "Plot")
+    #             self.projects.currentWidget().visuals.setCurrentIndex(i)
+                
+    #             chart.fig.tight_layout()
+
+    #             # restore abscissa and ordenada empty
+    #             self.abscissa = []
+    #             self.ordenada = []
+    #     else:
+    #         self.abscissa = [sectionText,sectionData]
+
+    def plotar2x2_table_select(self, indexes):
+
+        tablemodel = self.projects.currentWidget().visuals.currentWidget().modeltable
+
+        colx = indexes[0].column()
+        coly = indexes[-1].column()
+
+        xx = []
+        yy = []
+        for index in indexes:
+            row = index.row()
+            col = index.column()
+            if col==colx:
+                xx.append(tablemodel._data[row,col])
+            if col==coly:
+                yy.append(tablemodel._data[row,col])
+
+        chart = canvas.Canvas()
+        chart.ax.plot(xx,yy)
+
+        i = self.projects.currentWidget().visuals.addTab(chart, "plot")
+        self.projects.currentWidget().visuals.setCurrentIndex(i)
+
     def table_data(self, id_meas_item: ExploreItem):
 
         id_meas_name = id_meas_item.text(0)
         
         meas = self.projects.currentWidget().insertiondevices[id_meas_name]
+        data = meas._raw_data
+        header = ['X[mm]', 'Y[mm]', 'Z[mm]', 'Bx[T]', 'By[T]', 'Bz[T]']
         
         #contrucao da tabela
-        tabela = table_model.Table(meas)
+        self.tabela = table_model.Table(data, header)
+        #self.tabela.horizontalHeader().sectionClicked.connect(self.table_section_clicked)
+        self.tabela.selectReturned.connect(self.table_cells_returned)
         
         # colocando tabela no visuals
-        i = self.projects.currentWidget().visuals.addTab(tabela, f"Table {id_meas_name} - x, y, z, Bx, By, Bz")
+        i = self.projects.currentWidget().visuals.addTab(self.tabela, f"Table {id_meas_name}")
         self.projects.currentWidget().visuals.setCurrentIndex(i)
-    
+
+    def table_result(self, result_item: ExploreItem):
+
+        param = result_item.text(0)
+        calc = result_item.parent().text(0)
+        data = result_item.parent().parent().text(0)
+        params_dict = self.projects.currentWidget().analysis_dict[calc][data]
+
+        param_array = params_dict[param]
+        param_array = param_array.reshape(-1,1)
+        #print(param_array.shape)
+        print(param)
+
+        #contrucao da tabela
+        tabela = table_model.Table(param_array, [param])
+
+        # colocando tabela no visuals
+        i = self.projects.currentWidget().visuals.addTab(tabela, f"Table {param} - {calc} - {data}")
+        self.projects.currentWidget().visuals.setCurrentIndex(i)
+
+    def table_cells_returned(self, indexes):
+
+        if  self.toolbar.buttonPlot.isChecked() and \
+            self.toolbar.buttonPlot.objectName()==self.toolbar.actiongraficotable.objectName():
+            
+            self.plotar2x2_table_select(indexes)
+
+    #*: metodo suspenso por enquanto
+    # def table_section_clicked(self, column):
+        
+    #     if  self.toolbar.buttonPlot.isChecked() and \
+    #         self.toolbar.buttonPlot.objectName()==self.toolbar.actiongraficotable.objectName():
+            
+    #         self.plotar2x2_table_section(column)
+
 
     # tab bar slots
 
 
     # tree slots
 
-    def on_item_clicked(self, item: ExploreItem, column):
+    def tree_item_clicked(self, item: ExploreItem, column):
 
         # analise: campo magnetico
         if  self.toolbar.buttonAnalysis.isChecked() and \
@@ -669,11 +752,12 @@ class MainWindow(QMainWindow):
             self.plotar(item)
 
         # plot 2 a 2
-        if  self.toolbar.buttonPlot.isChecked():
-            if  self.toolbar.buttonPlot.objectName()!=self.toolbar.actiongrafico.objectName() and \
-                item.item_type is ExploreItem.Type.ItemResult:
+        if  self.toolbar.buttonPlot.isChecked() and \
+            (self.toolbar.buttonPlot.objectName()==self.toolbar.actiongrafico2x2.objectName() or \
+             self.toolbar.buttonPlot.objectName()==self.toolbar.actiongraficos.objectName()) and \
+            item.item_type is ExploreItem.Type.ItemResult:
                 
-                self.plotar2x2(item)
+            self.plotar2x2(item)
 
         # desmarcar botao de plot ou mudar tipo de plot e clicar em um item qualquer
         if  not self.toolbar.buttonPlot.isChecked() or \
@@ -681,12 +765,19 @@ class MainWindow(QMainWindow):
             
             self.multiplotchart = canvas.Canvas()
         
-        # tabela
+        # tabela: mapa de campo
         if self.toolbar.buttonTable.isChecked() and \
             self.toolbar.buttonTable.objectName()==self.toolbar.actiontabela.objectName() and \
             item.item_type is ExploreItem.Type.ItemData:
             
             self.table_data(item)
+        
+        # tabela: resultado
+        if  self.toolbar.buttonTable.isChecked() and \
+            self.toolbar.buttonTable.objectName()==self.toolbar.actiontabela.objectName() and \
+            item.item_type is ExploreItem.Type.ItemResult:
+            
+            self.table_result(item)
     
     
     # outros metodos

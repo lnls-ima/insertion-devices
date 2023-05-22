@@ -1534,12 +1534,13 @@ class FieldData(FieldSource):
 
         self._update_interpolation_functions()
 
-    def correct_cross_talk(self, ky=[-0.006781104386361973,
+    def correct_cross_talk(self, kx=None,
+                                 ky=[-0.006781104386361973,
                                      -0.01675247563602003,
                                      7.568631573320983e-06],
-                           kz=[-0.006170829583118335,
-                               -0.016051627320478382,
-                               7.886674928668737e-06]):
+                                 kz=[-0.006170829583118335,
+                                     -0.016051627320478382,
+                                     7.886674928668737e-06]):
         """Correct hall probe 03121 Bx crosstalk.
             Default values were measured in CNPEM.
 
@@ -1548,32 +1549,58 @@ class FieldData(FieldSource):
             kz (list): Polynomial coefficients from Bz x Bx curve.
         """
 
-        tmpBx = _np.copy(self._bx)
-        tmpBy = _np.copy(self._by)
-        tmpBz = _np.copy(self._bz)
+        if (len(ky)==3) and (len(kz)==3):
+            tmpBx = _np.copy(self._bx)
+            tmpBy = _np.copy(self._by)
+            tmpBz = _np.copy(self._bz)
 
-        tmpBxCorr = []
+            tmpBxCorr = []
 
-        for x in range(len(tmpBx)):
-            tmpBxCorr.append([])
-            for z in range(len(tmpBx[x])):
-                if (abs(tmpBz[x][z]/tmpBy[x][z]) > 10 or
-                    abs(tmpBy[x][z]/tmpBz[x][z]) > 10):
-                    tmpBxCorr[x].append(tmpBx[x][z])
-                else:
-                    tmpBxCorr[x].append(tmpBx[x][z] - (
-                        (
-                            ky[2] + ky[1]*tmpBy[x][z] +
-                            ky[0]*tmpBy[x][z]**2)
-                        *0.3825*tmpBz[x][z]/tmpBy[x][z] +
-                        (
-                            kz[2] + kz[1]*tmpBz[x][z] +
-                            kz[0]*tmpBz[x][z]**2)
-                        *0.6175*tmpBy[x][z]/tmpBz[x][z]
-                        )
-                                        )
+            for x in range(len(tmpBx)):
+                tmpBxCorr.append([])
+                for z in range(len(tmpBx[x])):
+                    if (abs(tmpBz[x][z]/tmpBy[x][z]) > 10 or
+                        abs(tmpBy[x][z]/tmpBz[x][z]) > 10):
+                        tmpBxCorr[x].append(tmpBx[x][z])
+                    else:
+                        tmpBxCorr[x].append(tmpBx[x][z] - (
+                            (
+                                ky[2] + ky[1]*tmpBy[x][z] +
+                                ky[0]*tmpBy[x][z]**2)
+                            *0.3825*tmpBz[x][z]/tmpBy[x][z] +
+                            (
+                                kz[2] + kz[1]*tmpBz[x][z] +
+                                kz[0]*tmpBz[x][z]**2)
+                            *0.6175*tmpBy[x][z]/tmpBz[x][z]
+                            )
+                                            )
 
-        self._bx = _np.array(tmpBxCorr)
+            self._bx = _np.array(tmpBxCorr)
+
+        elif (kx is not None) and (len(kx) == len(ky) == len(kz) == 10):
+
+            def func(b, a, nx, ny, nz, kxx, kxy, kxz, kyy, kyz, kzz):
+                bx, by, bz = b
+                return a + nx*bx + ny*by + nz*bz \
+                         + kxx*bx*bx + kxy*bx*by + kxz*bx*bz \
+                         + kyy*by*by + kyz*by*bz + kzz*bz*bz
+
+            func_x = lambda bx, by, bz: func([bx, by, bz], *kx)
+            func_y = lambda bx, by, bz: func([bx, by, bz], *ky)
+            func_z = lambda bx, by, bz: func([bx, by, bz], *kz)
+
+            vectorized_func_x = _np.vectorize(func_x)
+            vectorized_func_y = _np.vectorize(func_y)
+            vectorized_func_z = _np.vectorize(func_z)
+
+            corrected_bx = vectorized_func_x(self._bx, self._by, self._bz)
+            corrected_by = vectorized_func_y(self._bx, self._by, self._bz)
+            corrected_bz = vectorized_func_z(self._bx, self._by, self._bz)
+
+            self._bx = corrected_bx
+            self._by = corrected_by
+            self._bz = corrected_bz
+
         self._update_interpolation_functions()
 
     def get_field_at_point(self, point):

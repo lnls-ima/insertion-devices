@@ -1,33 +1,67 @@
 
-import enum
+from enum import Enum
+from PyQt6 import sip
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QTreeWidgetItem, QListWidgetItem
 
 
 class ExploreItem(QTreeWidgetItem):
 
-    class Type(enum.Enum):
+    class Container(Enum):
         ContainerData = 0
         ContainerModel = 1
-        ItemData = 2
-        ItemModel = 3
-        ItemMagneticField = 4
-        ItemTrajectory = 5
-        ItemPhaseError = 6
-        ItemIntegrals = 7
-        ItemRollOffPeaks = 8
-        ItemRollOffAmp = 9
-        ItemResult = 10
 
-    def __init__(self, item_type: 'ExploreItem.Type', *args, **kwargs):
+    class IDType(Enum):
+        IDData = 0
+        IDModel = 1
+    
+    #*: na tree, de analysis items pra baixo, nao podera' renomear
+    class Analysis(Enum):
+        MagneticField = "Magnetic Field"
+        Trajectory = "Trajectory"
+        PhaseError = "Phase Error"
+        Integrals = "Field Integrals"
+        RollOffPeaks = "Roll Off Peaks"
+        RollOffAmp = "Roll Off Amplitude"
+        CrossTalk = "Cross Talk"
+    
+    class ResultType(Enum):
+        ResultArray = 0
+        ResultNumeric = 1
+
+    def __init__(self, item_type: Enum, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.item_type = item_type
 
-
+    def delete(self):
+        sip.delete(self)
 
     def children(self):
         return [self.child(i) for i in range(self.childCount())]
+    
+    def parent(self) -> 'ExploreItem':
+        return super().parent()
+    
+    def depth(self):
+        
+        if self.parent() is None:
+            return 0
+        else:
+            return self.parent().depth()+1
+        
+    def idName(self):
+
+        depth = self.depth()
+
+        if depth==1:
+            id_name = self.text(0)
+        elif depth==2:
+            id_name = self.parent().text(0)
+        elif depth==3:
+            id_name = self.parent().parent().text(0)
+        
+        return id_name
 
 
 class AnalysisItem(QListWidgetItem):

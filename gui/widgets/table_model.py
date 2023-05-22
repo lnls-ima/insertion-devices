@@ -1,25 +1,18 @@
 
-from PyQt6.QtGui import QColor
-from PyQt6.QtCore import Qt, QAbstractTableModel, QModelIndex, pyqtSignal
+from PyQt6.QtGui import QColor, QKeyEvent
+from PyQt6.QtCore import (Qt,
+                          QAbstractTableModel,
+                          QModelIndex,
+                          pyqtSignal,
+                          QItemSelection,
+                          QItemSelectionModel,
+                          QItemSelectionRange)
 from PyQt6.QtWidgets import QTableView
-
 
 class TableModel(QAbstractTableModel):
 
     def __init__(self, data, header):
         super(TableModel, self).__init__()
-
-        # acessar filename pelas variaveis de insertion device
-        #filename = meas.filename
-
-        # apenas pegar o header com o open
-        # demais dados pegar pelos metodos e atributos de insertiondevice
-
-        # abaixo so funciona se cabecalho estiver na primeira linha
-        # with open(filename, 'r') as f:
-        #     self._header = f.readline().split()
-        
-        # fechar arquivo com .close()
 
         self._header = header
         self._data = data
@@ -51,22 +44,58 @@ class TableModel(QAbstractTableModel):
 
             if orientation == Qt.Orientation.Vertical:
                 return range(1, self._data.shape[0]+1)[section]
+
+
+class TableSelectionModel(QItemSelectionModel):
+    def __init__(self, model: QAbstractTableModel, view: QTableView):
+        super().__init__(model)
+
+        self.view = view
+
+    def select(self, selection: QItemSelection, command):
         
-        '''
-        if role==Qt.ItemDataRole.ForegroundRole:
-            if orientation == Qt.Orientation.Vertical:
-                return QColor.fromRgb(255, 255, 255)
-        '''
+        #caso entre apenas QModelIndex, o qual nao e' iteravel nem manipavel como QItemSelection
+        if isinstance(selection, QModelIndex):
+            selection = QItemSelection(selection, selection)
+        
+        viewcol = -1
+        for index in self.view.selectedIndexes():
+            viewcol = index.column()
+            break
+        
+        indexes = selection.indexes()
+        filtered_range = []
+
+        if len(indexes)==1:
+            filtered_range=indexes
+        else:
+            #filtrando indices
+            for index in indexes:
+                column = max(indexes[0].column(),viewcol)
+                #aceitando apenas items da mesma coluna da primeira
+                if index.column()==column:
+                    filtered_range.append(index)
+
+        filtered_selection = QItemSelection()
+        if filtered_range:
+            filtered_selection.select(filtered_range[0],filtered_range[-1])
+
+        return super().select(filtered_selection, command)
+        
 
 class Table(QTableView):
 
     selectReturned = pyqtSignal(list)
+    keyPressed = pyqtSignal(QKeyEvent)
 
     def __init__(self, data, header):
         super().__init__()
 
-        self.modeltable = TableModel(data, header)
-        self.setModel(self.modeltable)
+        modelTable = TableModel(data, header)
+        self.setModel(modelTable)
+
+        modelSelection = TableSelectionModel(model=modelTable, view=self)
+        self.setSelectionModel(modelSelection)
         
         # estilo da tabela
         horizontal_color = QColor.fromRgb(200, 200, 200)
@@ -77,8 +106,10 @@ class Table(QTableView):
         self.verticalHeader().setStyleSheet(vertical_header_style)
     
     
-    def keyPressEvent(self, event) -> None:
-        if event.key() in [Qt.Key.Key_Return,Qt.Key.Key_Enter]:
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() in [Qt.Key.Key_Space,Qt.Key.Key_Return,Qt.Key.Key_Enter]:
             self.selectReturned.emit(self.selectedIndexes())
+        elif event.key() in [Qt.Key.Key_G,Qt.Key.Key_P, Qt.Key.Key_T]:
+            self.keyPressed.emit(event)
         else:
             return super().keyPressEvent(event)

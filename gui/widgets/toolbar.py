@@ -1,9 +1,12 @@
 
 from PyQt6.QtWidgets import QToolBar
 from PyQt6.QtGui import QIcon, QAction
+from PyQt6.QtCore import Qt
 
 from . import analysis_button, painted_button
 
+
+#todo: renomear, tirar nome IMAIDs
 class IMAIDsToolBar(QToolBar):
 
     def __init__(self, title='', parent=None):
@@ -47,22 +50,10 @@ class IMAIDsToolBar(QToolBar):
         self.actiongrafico = QAction(self.grafico,"grafico",self.buttonPlot)
         self.actiongrafico.triggered.connect(self.buttonPlot.action_swap)
         self.actiongrafico.setObjectName("graph")
-        self.actiongrafico2x2 = QAction(self.grafico2x2,"grafico",self.buttonPlot)
-        self.actiongrafico2x2.triggered.connect(self.buttonPlot.action_swap)
-        self.actiongrafico2x2.setObjectName("graph22")
-        self.actiongraficos = QAction(self.graficos,"graficos",self.buttonPlot)
-        self.actiongraficos.triggered.connect(self.buttonPlot.action_swap)
-        self.actiongraficos.setObjectName("graphs")
-        self.actiongraficotable = QAction(self.graficotable,"grafico table",self.buttonPlot)
-        self.actiongraficotable.triggered.connect(self.buttonPlot.action_swap)
-        self.actiongraficotable.setObjectName("graphs")
 
         self.buttonPlot.setObjectName(self.actiongrafico.objectName())
         self.grafico = self.buttonPlot.icon()
-        self.buttonPlot.custom_buttonMenu.addActions([self.actiongrafico,
-                                                      self.actiongrafico2x2,
-                                                      self.actiongraficos,
-                                                      self.actiongraficotable])
+        self.buttonPlot.custom_buttonMenu.addActions([self.actiongrafico])
         self.addWidget(self.buttonPlot)
         self.addSeparator()
         ## tool bar - table button: fazer tabelas dos dados

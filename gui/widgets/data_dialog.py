@@ -234,7 +234,7 @@ class DataDialog(QDialog):
             und_name = self.getUndulatorName(filename)
             und_phase = self.getUndulatorPhase(filename)
             #line_name.setText(f"Data {(rows-2)+nr_oldfiles+i+1}")
-            line_name.setText(f"Data {und_name} Phase {und_phase}")
+            line_name.setText(f"{und_name} Phase {und_phase}")
             self.lines_names.append(line_name)
             
             spin_nr_periods = QSpinBox()

@@ -117,6 +117,7 @@ class AnalysisPushButton(QPushButton):
     def toggle_list_visibility(self):
 
         # se botao inicialmente estiver checked
+        #todo: transformar em painted button para abrir menu e mudar analises de modo mais simples
         if not self.isChecked():
             # analysis button automatically unchecks itself
 

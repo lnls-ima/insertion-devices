@@ -1544,9 +1544,48 @@ class FieldData(FieldSource):
         """Correct hall probe 03121 Bx crosstalk.
             Default values were measured in CNPEM.
 
+        The measured correction (2021) corresponds to the default values:
+            kx=None,
+            ky=[-0.006781104386361973,
+                -0.01675247563602003,
+                 7.568631573320983e-06],
+            kz=[-0.006170829583118335,
+                -0.016051627320478382,
+                 7.886674928668737e-06]
+        In which case:
+            ky are the polynomial coefficients from By x Bx curve.
+            kz are the polynomial coefficients from Bz x Bx curve.
+
+        A 2023 refinement utilizes the following coefficients:
+            kx=[1.1968435541606862e-05, 1.0000903755342276,
+                0.003902372429973103, 0.0015876826767971318,
+                -0.00011855122769391756, 0.00018042854166951708,
+                3.232522985657504e-05, -8.863091992783466e-05,
+                0.006797031584016086, -1.7400091098968548e-05],
+            ky=[2.460277578039647e-06, -0.0017171247799396315,
+                0.9997387421292917, -0.003778756411580486,
+                -9.401652170475417e-06, 0.0002770803364512977,
+                -0.00015972968246003868, -0.00010092368327927533,
+                -1.950583361213016e-05, -8.581623793815916e-06],
+            kz=[1.3856739048740362e-05, -0.012441651511780439,
+                -0.010944669938681267, 0.9950329773452086,
+                -0.00010605233698879774, -0.006723163190553383,
+                0.00010206404253645934, -3.1071386016166515e-05,
+                -3.5047938517653965e-06, -0.0005648410511115029])
+        In which case the correction is based on quadratic functions:
+            bx_corrected = func([bx, by, bz], kx)
+            by_corrected = func([by, by, bz], ky)
+            bz_corrected = func([bz, by, bz], kz)
+        In which the func returns a corrected field component:
+            k[0]                                    # constant terms
+          + k[1]*bx + k[2]*by + k[3]*bz             # linear terms
+          + k[4]*bx*bx + k[5]*bx*by + k[6]*bx*bz    #
+          + k[7]*by*by + k[8]*by*bz + k[9]*bz*bz    # quadratic terms
+
         Args:
-            ky (list): Polynomial coefficients from By x Bx curve.
-            kz (list): Polynomial coefficients from Bz x Bx curve.
+            kx (None or list, 3): Polynomial coefficients for bx.
+            ky (list, 3 or list, 6): Polynomial coefficients for by.
+            kz (list, 3 or list, 6): Polynomial coefficients for bz.
         """
 
         if (len(ky)==3) and (len(kz)==3):

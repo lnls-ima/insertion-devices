@@ -1,10 +1,4 @@
 
-from . import analysis_button
-from . import analysis_dialog
-from . import canvas
-from . import items
-from . import model_dialog
-from . import painted_button
-from . import projects
-from . import table_model
-from . import toolbar
+from . import menubar, toolbar, painted_button, analysis_button, projects, items
+from . import analysis_dialog, model_dialog, data_dialog, dialog_layouts
+from . import canvas, table_model

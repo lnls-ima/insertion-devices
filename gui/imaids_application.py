@@ -11,7 +11,6 @@ t = time.time()
 from  PyQt6.QtWidgets import   (QApplication,
                                 QMainWindow,
                                 QStatusBar,
-                                QMenuBar,
                                 QMessageBox,
                                 QDialog,
                                 QMenu)
@@ -23,7 +22,7 @@ dt = time.time()-t
 print('imports pyqt =',dt*1000,'ms')
 
 t = time.time()
-from widgets import analysis_dialog, model_dialog, projects, table_model, toolbar, canvas, data_dialog
+from widgets import analysis_dialog, model_dialog, projects, table_model, toolbar, canvas, data_dialog, menubar
 from widgets.items import ExploreItem
 dt = time.time()-t
 print('imports widgets =',dt*1000,'ms')
@@ -68,66 +67,24 @@ class MainWindow(QMainWindow):
 
         # ------------------- construcao do main menu bar ------------------- #
 
-        # main menu bar
-        self.menubar = QMenuBar(parent=self)
-        ## main menu bar - File menu
-        self.menuFile = self.menubar.addMenu("&File")
-        ### main menu bar - File menu - New Project action
-        self.actionNew_Project = QAction(QIcon("icons/icons/projection-screen--plus.png"),"New Project", self)
-        self.actionNew_Project.triggered.connect(lambda: self.projects.addTab())
-        self.actionNew_Project.setShortcut("Ctrl+N")
-        self.menuFile.addAction(self.actionNew_Project)
-        self.menuFile.addSeparator()
-        ### main menu bar - File menu - Open Data action
-        self.actionOpen_Data = QAction(QIcon("icons/icons/database-import.png"),"Open Data ...", self)
-        self.actionOpen_Data.triggered.connect(self.open_files)
-        self.actionOpen_Data.setShortcut("Ctrl+O")
-        self.menuFile.addAction(self.actionOpen_Data)
-        self.menuFile.addSeparator()
-        ### main menu bar - File menu - Generate Model action
-        self.actionGenerate_Model = QAction(QIcon("icons/icons/magnet-blue.png"),"Generate Model", self)
-        self.actionGenerate_Model.triggered.connect(self.model_generation)
-        self.actionGenerate_Model.setShortcut("Ctrl+M")
-        self.menuFile.addAction(self.actionGenerate_Model)
-        self.menuFile.addSeparator()
-        ### main menu bar - File menu - Exit action
-        self.actionExit = QAction(QIcon("icons/icons/door-open-out.png"),"Exit", self)
-        self.actionExit.triggered.connect(self.close)
-        self.actionExit.setShortcut("Alt+F4")
-        self.menuFile.addAction(self.actionExit)
-        ## main menu bar - Edit menu
-        self.menuEdit = self.menubar.addMenu("&Edit")
-        ### main menu bar - Edit menu - Analysis action
-        self.actionAnalysis = QAction(QIcon("icons/icons/beaker--pencil"),"Custom Analysis", self)
-        self.actionAnalysis.triggered.connect(self.edit_analysis_parameters)
-        self.menuEdit.addAction(self.actionAnalysis)
-        self.menuEdit.addSeparator()
-        '''### main menu bar - Edit menu - Undo action
-        self.actionUndo = QAction("Undo", self)
-        self.menuEdit.addAction(self.actionUndo)
-        self.menuEdit.addSeparator()
-        ### main menu bar - Edit menu - Redo action
-        self.actionRedo = QAction("Redo", self)
-        self.menuEdit.addAction(self.actionRedo)'''
-        ## main menu bar - View menu: contem opcoes de esconder widgets, tais como toolbar
-        self.menuView = self.menubar.addMenu("&View")
-        ### main menu bar - View menu - ToolBar action
+        # menu bar
+        self.menubar = menubar.IMAIDsMenuBar(parent=self)
+        ### menu bar - View menu - ToolBar action
         actionToolBar = QAction(QIcon("icons/icons/toolbox.png"),self.toolbar.objectName(), self, checkable=True)
         actionToolBar.setChecked(True)
-        actionToolBar.triggered.connect(self.toolbar.setVisible)
-        self.menuView.addAction(actionToolBar)
-        ### main menu bar - View menu - StatusBar action
+        self.menubar.menuView.addAction(actionToolBar)
+        ### menu bar - View menu - StatusBar action
         actionStatusBar = QAction(QIcon("icons/icons/ui-status-bar-blue.png"),self.statusbar.objectName(), self, checkable=True)
         actionStatusBar.setChecked(True)
+        self.menubar.menuView.addAction(actionStatusBar)
+        ## menu bar actions signals
+        self.menubar.actionNew_Project.triggered.connect(lambda: self.projects.addTab())
+        self.menubar.actionOpen_Data.triggered.connect(self.open_files)
+        self.menubar.actionGenerate_Model.triggered.connect(self.model_generation)
+        self.menubar.actionExit.triggered.connect(self.close)
+        self.menubar.actionAnalysis.triggered.connect(self.edit_analysis_parameters)
+        actionToolBar.triggered.connect(self.toolbar.setVisible)
         actionStatusBar.triggered.connect(self.statusbar.setVisible)
-        self.menuView.addAction(actionStatusBar)
-        ## main menu bar - Settings menu
-        self.menuSettings = self.menubar.addMenu("&Settings")
-        ### main menu bar - Settings menu - Apply action
-        self.actionApplyForAll = QAction(QIcon("icons/icons/wand-hat.png"),"Apply for All", self, checkable=True)
-        self.menuSettings.addAction(self.actionApplyForAll)
-        ## main menu bar - Help menu: documentacao da interface
-        self.menuHelp = self.menubar.addMenu("&Help")
 
 
         # --------------------- contrucao da main window --------------------- #
@@ -169,59 +126,34 @@ class MainWindow(QMainWindow):
             self.projects.currentWidget().filenames.append(filename)
             self.treeInsert(ID=ID, ID_type="Data",name=name)
 
-    #!: todo: passar criacao do objeto insertion device para dentro do dialog, um dos parametros do dialog vai ser o project tab atual
-    #!: vai ajudar na parte de passar os parametros
-    #!: ja vai poder colocar metodo accept la
     def model_generation(self):
         # todo: ter opcao de carregar arquivo com o conjunto de pontos para ter forma dos blocos
-        dialog = model_dialog.ModelDialog(parent=self)
-        answer = dialog.exec()
-        
-        if (answer == QDialog.DialogCode.Accepted) and (dialog.comboboxModels.currentText() != ''):
-            #print('modelo ok')
-            # valores usados nas spin boxes (parametros e posicoes dos cassetes)
-            ID_name, kwargs_model, kwargs_cassettes = dialog.get_values()
+        ID, name = model_dialog.ModelDialog.getSimulatedIDs(parent=self)
 
-            modelo_class = dialog.models_dict[dialog.comboboxModels.currentText()]
-            
-            ID = modelo_class(**kwargs_model)
-            #*: polemico, ja que usa-se mesmo padrao de nome para dado e modelo
-            #ID.name = ID_name
-            ID.set_cassete_positions(**kwargs_cassettes)
-
-            #ID.draw()
-
-            # *: podera' criar modelos iguais uns aos outros, entao nao precisa checar se ja foi adicionado
-            self.treeInsert(ID=ID,ID_type="Model", name=ID_name)
-            return
-        # elif answer == QDialog.DialogCode.Rejected:
-        #     print('model cancel')
-        #     return
+        if ID is not None:
+            self.treeInsert(ID=ID, ID_type="Model",name=name)
     
     #todo: maneira de passar children em vez de chamar esse metodo para todo arquivo e passar child
     #!: tree insert dentro de projects, como metodo da tree mesmo
     def treeInsert(self, ID, ID_type, name=''):
-
-        id_num = {"Data": 0, "Model": 1}
         
         if ID_type=="Data":
-            #childs = self.projects.currentWidget().tree.topLevelItem(id_num[ID_type]).childCount()+1
-            #ID.name = f'{ID_type} {childs}'
             ID.name = name
+            container = self.projects.currentWidget().tree.topLevelItem(0)
+            id_item = ExploreItem(ExploreItem.IDType.IDData, container, [ID.name, "FieldMap"])
         elif ID_type=="Model":
-            models_names = [device.rstrip(device.split()[-1]).rstrip() 
+            models_names = [device[:-2]
                             for device in self.projects.currentWidget().insertiondevices]
             num = models_names.count(name)+1
             ID.name = f'{name} {num}'
+            container = self.projects.currentWidget().tree.topLevelItem(1)
+            id_item = ExploreItem(ExploreItem.IDType.IDModel, container, [ID.name, "Model"])
 
         self.projects.currentWidget().insertiondevices[ID.name] = {"InsertionDeviceObject": ID}
-        #todo: type deve ser diferente de modelo para dado
-        
-        data_container = self.projects.currentWidget().tree.topLevelItem(id_num[ID_type])
-        data = ExploreItem(ExploreItem.IDType.IDData, data_container, [ID.name, "Table"])
-        data.setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
-        if not data_container.isExpanded():
-            self.projects.currentWidget().tree.expandItem(data_container)
+
+        id_item.setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
+        if not container.isExpanded():
+            self.projects.currentWidget().tree.expandItem(container)
     
     def closeEvent(self, event):
         answer = QMessageBox.question(self,
@@ -237,7 +169,7 @@ class MainWindow(QMainWindow):
 
     def applyAnalysis(self):
 
-        if self.actionApplyForAll.isChecked():
+        if self.menubar.actionApplyForAll.isChecked():
             #executar analises para todos
             for item in self.projects.currentWidget().tree.topLevelItem(0).children():
                 self.tree_item_clicked(item)

@@ -223,7 +223,7 @@ class ProjectWidget(QMainWindow):
         
         self.dockCommand = QDockWidget("Command Line",self)
         self.command_line = QLineEdit()
-        self.command_line.setContentsMargins(4, 0, 4, 0)
+        self.command_line.setContentsMargins(4, 0, 4, 4)
         self.dockCommand.setWidget(self.command_line)
 
         #todo: tentar depois deixar visuals dentro de dockwidget tambem, mas sem dar bugs
@@ -262,7 +262,7 @@ class ProjectsTabWidget(BasicTabWidget):
     projectAdded = pyqtSignal(int)
 
     def __init__(self,parent):
-        super().__init__(parent, leftSpace=20)
+        super().__init__(parent, leftSpace=22)
 
         self.setTabsClosable(False)
 
@@ -272,7 +272,8 @@ class ProjectsTabWidget(BasicTabWidget):
         #todo: passar action par toolbutton virar action tal como visto em sua documentacao
         #todo: passar + dos bultin icons ou algum icon que baixei
         self.PlusButton = QToolButton()
-        self.PlusButton.setText("+")
+        self.PlusButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        self.PlusButton.setIcon(QIcon("icons/icons/plus-button.png"))
         self.PlusButton.pressed.connect(self.addTab)
         self.setCornerWidget(self.PlusButton,corner=Qt.Corner.TopLeftCorner)
 

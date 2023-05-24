@@ -14,7 +14,7 @@ class UndulatorShimming():
 
     def __init__(
             self, zmin, zmax, znpts, cassettes,
-            block_type='v', segments_type='half_period',
+            block_type='v', block_mask=None, segments_type='half_period',
             energy=3.0, rkstep=0.5, xpos=0.0, ypos=0.0,
             zmin_pe=None, zmax_pe=None,
             include_pe=False, field_comp=None,
@@ -121,6 +121,8 @@ class UndulatorShimming():
         """
         if type(block_type) is str:
             block_type = {cassette:block_type for cassette in cassettes}
+        if type(block_mask) in [list, _np.ndarray, type(None)]:
+            block_mask = {cassette:block_mask for cassette in cassettes}
         for bt in block_type.values():
             if bt not in ('v', 'vpos', 'vneg', 'lon', 'vlpair', 'vlf', 'all'):
                 msg = 'Invalid block_type value. Valid options: '
@@ -144,6 +146,7 @@ class UndulatorShimming():
         self._znpts = int(znpts)
         self._cassettes = cassettes
         self._block_type = block_type
+        self._block_mask = block_mask
         self._segments_type = segments_type
         self._energy = energy
         self._rkstep = rkstep
@@ -181,6 +184,11 @@ class UndulatorShimming():
     def block_type(self):
         """String specifying which types of blocks will be used for shimming."""
         return self._block_type
+
+    @property
+    def block_mask(self):
+        """"""
+        return self._block_mask
 
     @property
     def segments_type(self):
@@ -938,6 +946,7 @@ class UndulatorShimming():
         else:
             cas = model.cassettes[cassette]
             cas_block_type = self.block_type[cassette]
+            block_mask = self.block_mask[cassette]
             mag = _np.array(cas.magnetization_list)
             blocks = _np.array(cas.blocks)
 
@@ -964,7 +973,7 @@ class UndulatorShimming():
             elif cas_block_type == 'vneg':
                 # negative y component (with sing) is predominant over mres_zx.
                 filt = regular_mag[:, 1]*(-1) > mres_zx
-            if cas_block_type == 'lon':
+            elif cas_block_type == 'lon':
                 # absolute y component value is NOT predominant over mres_zx.
                 filt = _np.abs(regular_mag[:, 1]) < mres_zx
             elif cas_block_type == 'vlf':
@@ -990,6 +999,10 @@ class UndulatorShimming():
                 for i in range(1, len(filt_single)):
                     filt.append((filt_single[i] or filt_single[i-1]))
 
+            # Apply mask to filter.
+            if block_mask is not None:
+                filt = _np.logical_and(filt, block_mask)
+            # Apply filter to blocks.
             shim_regular_blocks = regular_blocks[filt]
 
             # Shim elements are the  items which are going to be moved.

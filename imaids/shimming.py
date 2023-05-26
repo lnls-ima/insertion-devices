@@ -56,10 +56,22 @@ class UndulatorShimming():
                           (longitudinal) used for shimming. Both blocks of a
                           pair are displaced together by the same shift during
                           the shimming procedure.
-                Alternatively, this attribute may be passed as a dictionary,
-                    specifying a block type per cassette:
-                    e.g. {'cse':'v', 'cie':'vpos'}
+                |!| Alternatively, this attribute may be passed as a dictionary,
+                |!|     specifying a block type per cassette:
+                |!|     e.g. {'cse':'v', 'cie':'vpos'}
                 Defaults to 'v'.
+            block_mask (list or None, optional): If a list is provided, its
+                size should match the number of non-termination blocks, and
+                represents which blocks are movable.
+                E.g. For 8 non-termination blocks in the cassettes, the list:
+                     [True, False, False, True, True, True, True, False]
+                     will eliminate the 2nd, 3rd and last blocks from all
+                     the shimming list in all cassettes.
+                Defaults to None.
+                |!| Alternatively, this attribute may be passed as a dictionary,
+                |!|     specifying a specific mask per cassette:
+                |!|     e.g. {'cse': [True, True, True, True, ...],
+                |!|           'cie': [False, False, True, False, ...]}
             segments_type (str, optional): Defines how field zeros are used to
                 obtain segments limits. Such zeros are the zeros z positions of
                 a field component defined at the calc_segments method.
@@ -936,6 +948,14 @@ class UndulatorShimming():
                 during the shimming procedure.
                 In the all the other cases, each element represents a single
                 block, but the shape keeps 2-dimensional (Nx1).
+                If the block_mask attribute is not None, it is considered as
+                a list mask specifying which non-termination blocks are movable.
+                    E.g. if there are 4 normal blocks on a cassette and
+                         self.block_mask == [True, True, False, True]
+                         then, the 4th block is excluded from the shimming.
+                         If the 4th block had already not been identified as a
+                         shimming block considering cas_block_type, then the
+                         block_mask list would not have an effect.
         """
         if cassette == 'all':
 

@@ -1,43 +1,67 @@
 
-from PyQt6.QtWidgets import QPushButton, QFrame, QListWidget, QListWidgetItem, QCheckBox, QVBoxLayout
-from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt, QRect, pyqtSignal
+from PyQt6.QtWidgets import QPushButton, QFrame, QListWidget, QListWidgetItem, QCheckBox, QVBoxLayout, QDialog
+from PyQt6.QtGui import QIcon, QWindow
+from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QTimer
 
-from .items import AnalysisItem
+from .dialog_layouts import AnalysisLayout
 
 
-class AnalysisPushButton(QPushButton):
+class AnalysisItem(QListWidgetItem):
 
-    modeChanged = pyqtSignal(bool)
+    #*: da maneira implementada aqui, um subordinado pode ter outros subordinados
+    #*: e isso deve se comportar bem no menu
+    def __init__(self, superiors=[], subordinates=[], text='', parent=None,
+                 *args, **kwargs):
+        super().__init__(text, parent, *args, **kwargs)
 
-    def __init__(self, menu_parent, button_text, button_parent, *args, **kwargs):
-        super().__init__(text=button_text, parent=button_parent, *args, **kwargs)
+        self.superiors = superiors #list of superior items of this item
+        self.subordinates = subordinates #list of subordinate items of this item
+        
+    def isChecked(self) -> bool:
+        return bool(self.checkState() == Qt.CheckState.Checked)
 
-        # analysis button
-        ## analysis button - features
-        self.setCheckable(True)
-        self.setShortcut("Ctrl+A")
-        ## analysis button - signal
-        self.clicked.connect(self.toggle_list_visibility)
+    def hasSuperior(self) -> bool:
+        return bool(len(self.superiors))
+    
+    def isSuperiorsChecked(self) -> bool:
+        return sum([superior.checkState().value for superior in self.superiors])
 
+    def setSuperior(self, item: 'AnalysisItem'):
+        self.superiors = [item]
+
+    def hasSubordinate(self) -> bool:
+        return bool(len(self.subordinates))
+    
+    def setSubordinate(self, item: 'AnalysisItem'):
+        self.subordinates = [item]
+    
+    def setCheckState(self, state: Qt.CheckState) -> None:
+        
+        if self.hasSubordinate() and state.value: #desmarcar item e nao desmarcar seus subordinados
+        #if self.hasSubordinate(): #desmarcar item e desmarcar seus subordinados
+            [subordinate.setCheckState(state) for subordinate in self.subordinates]
+        return super().setCheckState(state)
+
+
+
+class AnalysisMenu(QFrame):
+    def __init__(self, parent=None):
+        super().__init__(parent, flags=Qt.WindowType.Popup)
 
         # analysis menu
 
         ## analysis menu - style
-        self.Menu = QFrame(parent=menu_parent)
-        self.Menu.setObjectName("frame")
-        self.Menu.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Sunken)
-        self.Menu.setLineWidth(1)
-        self.Menu.setStyleSheet("QFrame#frame{background-color: #f0f0f0}")
-        self.Menu.setHidden(True)
+        self.setObjectName("frame")
+        self.setStyleSheet("QFrame#frame{background-color: #f0f0f0; border: 1.2px solid #c0c0c0}")
         
         ## analysis menu - list
-        self.list = QListWidget(parent=self.Menu)
+        self.list = QListWidget(parent=self)
         self.list.setSelectionMode(QListWidget.SelectionMode.NoSelection)
         self.list.setStyleSheet("background-color: #f0f0f0")
 
         ### analysis menu - list - items:
         ### Create the items and automatically add them to the list widget
+        self.itemCrossTalk = AnalysisItem(text="Cross Talk",parent=self.list)
         self.itemMagneticField = AnalysisItem(text="Magnetic Field",parent=self.list)
         self.itemTrajectory = AnalysisItem(text="Trajectory",parent=self.list)
         self.itemPhaseError = AnalysisItem(text="Phase Error",parent=self.list)
@@ -47,7 +71,6 @@ class AnalysisPushButton(QPushButton):
         # multipolos e multipolos dinamicos em avaliacao
         self.itemRollOffPeaks = AnalysisItem(text="Roll Off Peaks",parent=self.list)
         self.itemRollOffAmp = AnalysisItem(text="Roll Off Amplitude",parent=self.list)
-        self.itemCrossTalk = AnalysisItem(text="Cross Talk",parent=self.list)
         # shimming fora, pois e' um calculo muito personalizado e que exige cuidado
         #self.Shimming = AnalysisItem(text="Shimming",parent=self.list)
         
@@ -70,7 +93,7 @@ class AnalysisPushButton(QPushButton):
         #self.list.itemChanged.connect(self.item_changed)
 
         self.changed = False
-        
+
         ## analysis menu - checkbox
         self.checkBoxSelectAll = QCheckBox("Select All",self)
         self.checkBoxSelectAll.clicked.connect(self.check_all_items)
@@ -79,31 +102,34 @@ class AnalysisPushButton(QPushButton):
         self.apply = QPushButton("Apply")
         self.apply.setShortcut(Qt.Key.Key_Return)
         self.apply.clicked.connect(self.applyHide)
+
+        ## analysis menu - hide timer
+        self.timerHide = QTimer()
+        self.timerHide.timeout.connect(lambda: self.timerHide.stop())
+        self.timerHide.setInterval(100)
         
         ## analysis menu - layout
-        layout = QVBoxLayout(self.Menu)
+        layout = QVBoxLayout(self)
         layout.addWidget(self.list)
         layout.addWidget(self.checkBoxSelectAll)
         layout.addWidget(self.apply)
 
 
+        self.installEventFilter(self)
+        #self.parent().installEventFilter(self)
+
+
+
 
     # FUNCTIONS
 
-    # analysis menu functions
-    ## list functions
+    # list functions
 
-    # checked items list
     def checkedItems(self):
         return [item for item in self.items if item.checkState()==Qt.CheckState.Checked]
-    # unchecked items list
+    
     def uncheckedItems(self):
         return [item for item in self.items if item.checkState()==Qt.CheckState.Unchecked]
-
-
-    # SLOTS
-
-    # analysis button slot
 
     def uncheckAnalysisMenu(self):
         # uncheck all checked list items
@@ -111,56 +137,12 @@ class AnalysisPushButton(QPushButton):
 
         # uncheck checkbox, items and remove wand icon
         if self.checkBoxSelectAll.isChecked():
-                self.checkBoxSelectAll.setChecked(False)
-                self.check_all_items(False)
-    
-    def toggle_list_visibility(self):
+            self.checkBoxSelectAll.setChecked(False)
+            self.check_all_items(False)
 
-        # se botao inicialmente estiver checked
-        #todo: transformar em painted button para abrir menu e mudar analises de modo mais simples
-        if not self.isChecked():
-            # analysis button automatically unchecks itself
+    # SLOTS
 
-            self.uncheckAnalysisMenu()
-
-            self.modeChanged.emit(True)
-
-        # se botao inicialmente estiver unchecked
-        else:
-            # uncheck the analysis button
-            self.setChecked(False)
-
-            # hide the menu
-            if self.Menu.isVisible():
-                self.Menu.setHidden(True)
-            
-            # expose the menu
-            else:
-                #?: desmarcar items apos desexibir e exibir novamente
-                # uncheck checkbox, items and remove wand icon if the menu was closed without apply analysis
-                # if self.checkBoxSelectAll.isChecked():
-                #     self.checkBoxSelectAll.setChecked(False)
-                #     self.check_all_items(False)
-                
-                # uncheck items if there is anyone checked after just close the menu without apply analysis
-                # items_checked = self.checkedItems()
-                # if len(items_checked):
-                #     for item in items_checked:
-                #         item.setCheckState(Qt.CheckState.Unchecked)
-                
-                # positionate the menu
-                topleft_corner = self.parent().mapToParent(self.geometry().bottomLeft())
-                self.Menu.setGeometry(QRect(topleft_corner.x()+1, topleft_corner.y(), 160, 220))
-                self.Menu.raise_()
-                self.Menu.setHidden(False)
-        
-        # restaura valor padrao de changed
-            self.changed = False
-    
-
-    # analysis menu slots
-
-    ## list slot
+    # list slot
 
     def item_clicked(self, item: AnalysisItem):
         print('item clicado')
@@ -197,6 +179,7 @@ class AnalysisPushButton(QPushButton):
 
         # restaurando changed ao seu valor padrao
         self.changed = False
+        
 
         # alterar ou nao icone do apply
         if len(self.checkedItems())==self.list.count():
@@ -206,7 +189,7 @@ class AnalysisPushButton(QPushButton):
             self.toggle_icon(state=0)
     
 
-    ## checkbox slot: check todos os items da lista
+    # checkbox slot: check todos os items da lista
 
     def check_all_items(self,checked):
         if checked:
@@ -223,7 +206,7 @@ class AnalysisPushButton(QPushButton):
         self.changed = False
     
 
-    ## apply button slots
+    # apply button slots
 
     # coloca ou tira icone da varinha do botao apply
     def toggle_icon(self,state):
@@ -234,8 +217,85 @@ class AnalysisPushButton(QPushButton):
     
     # funcionalidades do apply
     def applyHide(self):
-        
-        self.Menu.setHidden(True)
+        self.setHidden(True)
 
-        if self.checkedItems():
+    def eventFilter(self, obj, event: QEvent):
+
+        if event.type()==QEvent.Type.MouseButtonPress:
+
+            geometry = self.parent().geometry()
+            geometry.moveTo(0,-geometry.height())
+
+            if geometry.contains(event.pos()):
+                self.timerHide.start()
+            
+        return super().eventFilter(obj, event)
+
+
+class AnalysisPushButton(QPushButton):
+
+    modeChanged = pyqtSignal(bool)
+
+    def __init__(self, text, parent, *args, **kwargs):
+        super().__init__(text=text, parent=parent, *args, **kwargs)
+
+        # features
+        self.setCheckable(True)
+        self.setShortcut("Ctrl+A")
+        # signal
+        self.clicked.connect(self.showMenu)
+        # menu
+        
+        self.Menu = AnalysisMenu(parent=self)
+        self.Menu.apply.clicked.connect(self.applyChangeMode)
+
+    
+    def showMenu(self):
+        # se botao inicialmente estiver checked
+        #todo: transformar em painted button para abrir menu e mudar analises de modo mais simples
+        if not self.isChecked():
+            # analysis button automatically unchecks itself
+            self.Menu.uncheckAnalysisMenu()
+            self.modeChanged.emit(True)
+
+        # se botao inicialmente estiver unchecked
+        else:
+            # uncheck the analysis button
+            self.setChecked(False)
+            print('executou click botao')
+
+            # expose the menu
+            if not self.Menu.timerHide.isActive():
+                # positionate the menu
+                corner = self.parent().mapToGlobal(self.geometry().bottomLeft())
+                self.Menu.setGeometry(corner.x()+1, corner.y(), 160, 220)
+                self.Menu.show()
+
+            # restaura valor padrao de changed
+            self.Menu.changed = False
+    
+    def applyChangeMode(self):
+        if self.Menu.checkedItems():
             self.modeChanged.emit(False)
+
+
+
+class AnalysisDialog(QDialog):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.setWindowTitle("Analysis Parameters")
+
+        self.layoutAnalysis = AnalysisLayout(parent=self)
+
+        # signals
+        ## signal sent from Ok button to the handler accept of QDialog class
+        self.layoutAnalysis.buttonBox.accepted.connect(self.accept)
+        ## signal sent from Ok button to the handler reject of QDialog class
+        self.layoutAnalysis.buttonBox.rejected.connect(self.reject)
+
+
+    # def analysis_chose(self, index):
+    #     if index==1:
+
+        

@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QDialog, QFormLayout
 from imaids import models
 from .dialog_layouts import ModelLayout
 
-
+# todo: ter opcao de carregar arquivo com o conjunto de pontos para ter forma dos blocos
 class ModelDialog(QDialog):
 
     parameters_json = 'models_parameters.json'
@@ -93,7 +93,7 @@ class ModelDialog(QDialog):
         return model_name, parameters, cassette_positions
     
     @classmethod
-    def getSimulatedIDs(cls, parent=None):
+    def getSimulatedID(cls, parent=None):
 
         dialog = cls(parent)
         answer = dialog.exec()

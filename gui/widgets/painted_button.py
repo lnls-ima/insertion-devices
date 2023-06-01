@@ -7,8 +7,8 @@ class PaintedButton(QPushButton):
 
     modeChanged = pyqtSignal(bool)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, text="", parent=None, *args, **kwargs):
+        super().__init__(text, parent, *args, **kwargs)
 
         self.setCheckable(True)
 

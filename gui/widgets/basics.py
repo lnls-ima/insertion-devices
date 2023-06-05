@@ -1,9 +1,12 @@
 
 from PyQt6.QtWidgets import QTabWidget, QMenu, QInputDialog, QLineEdit, QWidget
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import pyqtSignal, Qt
 
 
 class BasicTabWidget(QTabWidget):
+
+    tabAdded = pyqtSignal(int)
+
     def __init__(self,parent=None, leftSpace=0):
         super().__init__(parent)
 
@@ -72,6 +75,7 @@ class BasicTabWidget(QTabWidget):
         #addTab adiciona a nova tab, mas mantem o usuario na tab inicial, nao na adicionada
         #para mudar para a tab adicionada, usar o setcurrentindex abaixo
         self.setCurrentIndex(i)
+        self.tabAdded.emit(i)
         return i
     
     def closeTab(self, i):

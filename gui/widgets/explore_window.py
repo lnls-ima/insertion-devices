@@ -253,7 +253,7 @@ class ExploreTreeWidget(QTreeWidget):
     def __init__(self, parent=None,*args,**kwargs):
         super().__init__(parent,*args,**kwargs)
 
-        self.whosSelected = []
+        self.itemsSelected = []
 
         self.itemSelectionChanged.connect(self.selection_changed)
         
@@ -284,20 +284,24 @@ class ExploreTreeWidget(QTreeWidget):
         selected_items = self.selectedItems()
 
         for item in selected_items:
-            if item not in self.whosSelected:
+            if item not in self.itemsSelected:
                 item.setBackground(0, QColor("lightgreen"))
                 item.setBackground(1, QColor("lightgreen"))
-        for item in self.whosSelected:
+        for item in self.itemsSelected:
             if item not in selected_items:
                 item.setBackground(0, QColor("white"))
                 item.setBackground(1, QColor("white"))
         
-        self.whosSelected = selected_items
+        self.itemsSelected = selected_items
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() in [Qt.Key.Key_Space,Qt.Key.Key_Return,Qt.Key.Key_Enter]:
-            self.selectReturned.emit(self.whosSelected)
-        elif event.key() in [Qt.Key.Key_G,Qt.Key.Key_P, Qt.Key.Key_T]:
+            self.selectReturned.emit(self.itemsSelected)
+        elif event.key() in [Qt.Key.Key_G,Qt.Key.Key_P, Qt.Key.Key_T,
+                             Qt.Key.Key_A, Qt.Key.Key_Backspace,
+                             Qt.Key.Key_1, Qt.Key.Key_2, Qt.Key.Key_3,
+                             Qt.Key.Key_4, Qt.Key.Key_5, Qt.Key.Key_6,
+                             Qt.Key.Key_7, Qt.Key.Key_8, Qt.Key.Key_9]:
             self.keyPressed.emit(event)
         else:
             return super().keyPressEvent(event)

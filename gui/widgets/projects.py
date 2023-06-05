@@ -15,8 +15,10 @@ from   PyQt6.QtCore   import   (Qt,
 
 from .basics import BasicTabWidget
 from .explore_window import ExploreItem, ExploreTreeWidget
-from .visual_elements import Canvas
+from .visual_elements import Canvas, Table
 from .visualization_window import VisualizationTabWidget
+
+import numpy as np
 
 
 
@@ -49,9 +51,29 @@ class ProjectWidget(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea,self.dockTree)
         self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea,self.dockCommand)
 
-    '''def projectTreeItemInfo(self, tree_item: ExploreItem):
+    def treeItemInfo(self, item: ExploreItem):
 
-        depth = tree_item.depth()
+        if item.type() is ExploreItem.IDType:
+
+            id_name = item.text(0)
+            id_dict = self.insertiondevices[id_name]
+            return item, id_name, id_dict
+        
+        elif item.type() is ExploreItem.AnalysisType:
+
+            *_, id_dict = self.treeItemInfo(item.parent())
+            analysis = item.text(0)
+            analysis_dict = id_dict[analysis]
+            return *_, id_dict, item, analysis, analysis_dict
+
+        elif item.flag() is ExploreItem.ResultType.ResultArray:
+
+            *_, analysis_dict = self.treeItemInfo(item.parent())
+            result = item.text(0)
+            result_arraynum = analysis_dict[result]
+            return *_, analysis_dict, item, result, result_arraynum
+
+        '''depth = tree_item.depth()
 
         id_name = tree_item.idName()
         id_dict = self.insertiondevices[id_name]
@@ -118,8 +140,7 @@ class ProjectWidget(QMainWindow):
             return True
         else:
             return False
-        
-    
+
     def drawItems(self, items: typing.List[ExploreItem]):
 
         visuals = self.visuals
@@ -128,7 +149,6 @@ class ProjectWidget(QMainWindow):
 
         if isModeAdd:
             chart = visuals.currentWidget()
-            hideAxesLabels = True
             legend = chart.ax.legend_
             old_handles = legend.legendHandles
             old_labels = [label.get_text() for label in legend.get_texts()]
@@ -141,73 +161,73 @@ class ProjectWidget(QMainWindow):
             item, = items
 
             if item.type() is ExploreItem.AnalysisType:
-
-                id_name = item.parent().text(0)
-                id_dict = self.insertiondevices[id_name]
-                analysis = item.item_type.value
-                analysis_dict = id_dict[analysis]
-
-                plot_text, legend = visuals.plotAnalysis(chart, id_name, item.flag(), analysis_dict)
-                dflt_title, dflt_ylabel, dflt_xlabel = plot_text
-                new_handles, new_labels = legend
+                analysis_info = self.treeItemInfo(item)
+                new_handles, new_labels = visuals.plotAnalysis(chart, analysis_info, isModeAdd)
             
             elif item.flag() is ExploreItem.ResultType.ResultArray:
-
-                id_name = item.parent().parent().text(0)
-                id_dict = self.insertiondevices[id_name]
-                analysis = item.parent().item_type.value
-                analysis_dict = id_dict[analysis]
-                result = item.text(0)
-                
-                hideAxesLabels = False
-                plot_text, legend = visuals.plotArray(chart,result,analysis_dict)
-                dflt_title, dflt_ylabel, dflt_xlabel = plot_text
-                new_handles, new_labels = legend
+                result_info = self.treeItemInfo(item)
+                new_handles, new_labels = visuals.plotArray(chart, result_info, isModeAdd)
 
         elif len(items)==2:
 
             #*: por enquanto so' plotar dados de mesma analise e mesmo mapa de campo
 
             x_item, y_item = items
-
-            id_name = x_item.parent().parent().text(0)
-            id_dict = self.insertiondevices[id_name]
-            analysis = x_item.parent().item_type.value
-            analysis_dict = id_dict[analysis]
-            x_label = x_item.text(0)
-            y_label = y_item.text(0)
-            x = analysis_dict[x_label]
-            y = analysis_dict[y_label]
-
-            plot_text, legend = visuals.plotPair(chart, id_name, x, x_label, y, y_label)
-            dflt_title, dflt_ylabel, dflt_xlabel = plot_text
-            new_handles, new_labels = legend
+            x_info = self.treeItemInfo(x_item)
+            y_info = self.treeItemInfo(y_item)
+            new_handles, new_labels = visuals.plotPair(chart, x_info, y_info, isModeAdd)
         
         chart.ax.legend(old_handles+new_handles, old_labels+new_labels)
 
         #maneira de nao criar nada se nao e' selecionado nada nos menus de traj e integral
-        if isModeAdd:
-            chart.ax.set_title("")
-            if hideAxesLabels:
-                chart.ax.set_xlabel("")
-                chart.ax.set_ylabel("")
-        else:
-            # default text
-            chart.ax.set_title(dflt_title)
-            chart.ax.set_ylabel(dflt_ylabel)
-            chart.ax.set_xlabel(dflt_xlabel)
-            # colocando grafico no self
-            self.visuals.addTab(chart, "Plot")
+        # colocando grafico no self
+        if not isModeAdd:
+            visuals.addTab(chart, "Plot")
         
         # Trigger the canvas to update and redraw
         chart.draw()
 
         chart.fig.tight_layout()
 
+    def displayTable(self, item: ExploreItem):
+        
+        # tabela: mapa de campo
+        if item.flag() is ExploreItem.IDType.IDData:
+
+            id_item = item
+            *_, id_dict = self.treeItemInfo(id_item)
+            
+            ID_meas = id_dict["InsertionDeviceObject"]
+            data = ID_meas._raw_data
+            header = ['X[mm]', 'Y[mm]', 'Z[mm]', 'Bx[T]', 'By[T]', 'Bz[T]']
+            
+        # tabela: analise
+        elif item.type() is ExploreItem.AnalysisType:
+
+            analysis_item = item
+            *_, analysis_dict = self.treeItemInfo(analysis_item)
+            
+            params_array = [param for param in analysis_dict.values()
+                                      if not isinstance(param, (int, float))]
+            data = np.array(params_array).T
+            header = list(analysis_dict.keys())
+            
+        # tabela: resultado
+        elif item.flag() is ExploreItem.ResultType.ResultArray:
+            
+            result_item = item
+            *_, result, result_array = self.treeItemInfo(result_item)
+
+            data = result_array.reshape(-1,1)
+            header = [result]
+
+        #contrucao da tabela
+        tabela = Table(data, header)
+
+        # colocando tabela no visuals
+        self.visuals.addTab(tabela, "Table")
 
 class ProjectsTabWidget(BasicTabWidget):
-
-    projectAdded = pyqtSignal(int)
 
     def __init__(self,parent):
         super().__init__(parent, leftSpace=22)
@@ -242,7 +262,6 @@ class ProjectsTabWidget(BasicTabWidget):
 
         # *: o abaixo sera feito na main_window, apos conectar com sinal
         #self.widget(i).tree.itemClicked.connect(self.on_item_clicked)
-        self.projectAdded.emit(i)
 
         return i
 

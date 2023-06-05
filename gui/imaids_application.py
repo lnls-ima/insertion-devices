@@ -18,7 +18,7 @@ print('imports pyqt =',dt*1000,'ms')
 
 t = time.time()
 from widgets import analysis, model_dialog, projects, window_bars, data_dialog
-from widgets.visual_elements import Table
+from widgets.visual_elements import Canvas, Table
 from widgets.explore_window import ExploreItem
 dt = time.time()-t
 print('imports widgets =',dt*1000,'ms')
@@ -29,14 +29,13 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.tabela = None
-
         # -------------- construcao de tab widgets de projetos -------------- #
 
         # projects tab widget
         self.projects = projects.ProjectsTabWidget(parent=self)
-        self.projects.projectAdded.connect(self.project_connect)
+        self.projects.tabAdded.connect(self.project_connect)
         self.projects.addTab(text='Project')
+        self.projects.currentWidget().visuals.tabAdded.connect(self.visuals_connect)
         
 
         # --------------------- construcao da status bar --------------------- #
@@ -78,10 +77,24 @@ class MainWindow(QMainWindow):
     # window slots
 
     def keyPressEvent(self, event) -> None:
+        visuals = self.projects.currentWidget().visuals
         if event.key() in [Qt.Key.Key_G,Qt.Key.Key_P]:
             self.toolbar.buttonPlot.modeChanged.emit(True)
         elif event.key() == Qt.Key.Key_T:
             self.toolbar.buttonTable.modeChanged.emit(True)
+        elif event.key() == Qt.Key.Key_A:
+            if isinstance(visuals.currentWidget(),Canvas):
+                visuals.changeIcon(not visuals.isModeAdd())
+        elif event.key() in [Qt.Key.Key_1, Qt.Key.Key_2, Qt.Key.Key_3,
+                             Qt.Key.Key_4, Qt.Key.Key_5, Qt.Key.Key_6,
+                             Qt.Key.Key_7, Qt.Key.Key_8, Qt.Key.Key_9]:
+            #print(event.key().__name__)
+            index = int(Qt.Key(event.key()).__str__()[-1])-1
+            if index < visuals.count():
+                visuals.setCurrentIndex(index)
+        elif event.key() == Qt.Key.Key_Backspace:
+            if visuals.currentWidget() is not None:
+                visuals.closeTab(visuals.currentIndex())
         else:
             return super().keyPressEvent(event)
 
@@ -176,57 +189,6 @@ class MainWindow(QMainWindow):
 
     # tool bar slots
 
-    #todo: a principio, displayTable na mainwindow, depois colocar em visuals
-    def displayTable(self, item: ExploreItem):
-
-        # tabela: mapa de campo
-        if item.flag() is ExploreItem.IDType.IDData:
-            id_item = item
-
-            id_name = id_item.text(0)
-            id_dict = self.projects.currentWidget().insertiondevices[id_name]
-            
-            ID_meas = id_dict["InsertionDeviceObject"]
-            data = ID_meas._raw_data
-            header = ['X[mm]', 'Y[mm]', 'Z[mm]', 'Bx[T]', 'By[T]', 'Bz[T]']
-            
-        # tabela: analise
-        elif item.type() is ExploreItem.AnalysisType:
-            analysis_item = item
-
-            id_name = analysis_item.parent().text(0)
-            id_dict = self.projects.currentWidget().insertiondevices[id_name]
-
-            analysis = analysis_item.item_type.value
-            analysis_dict = id_dict[analysis]
-            
-            params_array = [param for param in analysis_dict.values()
-                                      if not isinstance(param, (int, float))]
-            data = np.array(params_array).T
-            header = list(analysis_dict.keys())
-            
-        # tabela: resultado
-        elif item.flag() is ExploreItem.ResultType.ResultArray:
-            result_item = item
-
-            id_name = result_item.parent().parent().text(0)
-            id_dict = self.projects.currentWidget().insertiondevices[id_name]
-
-            analysis = result_item.parent().item_type.value
-            analysis_dict = id_dict[analysis]
-
-            result = result_item.text(0)
-            data = analysis_dict[result].reshape(-1,1)
-            header = [result]
-
-        #contrucao da tabela
-        self.tabela = Table(data, header)
-        self.tabela.selectReturned.connect(self.table_cells_returned)
-        self.tabela.keyPressed.connect(self.keyPressEvent)
-
-        # colocando tabela no visuals
-        self.projects.currentWidget().visuals.addTab(self.tabela, "Table")
-
 
     # project slots
 
@@ -240,15 +202,20 @@ class MainWindow(QMainWindow):
 
     def tree_item_clicked(self, item: ExploreItem, column=0):
 
-        # ----------------------------- analysis ----------------------------- #
+        analysis_menu = self.toolbar.buttonAnalysis.Menu
+        analysis_button = self.toolbar.buttonAnalysis
+        table_button = self.toolbar.buttonTable
+        project = self.projects.currentWidget()
 
-        if item.type() is ExploreItem.IDType:
+        # ----------------------------- analysis ----------------------------- #
+        #*: os items do menu podem ser colocados em outro lugar para nao 
+
+        if analysis_button.isChecked() and item.type() is ExploreItem.IDType:
 
             analysis_activated = []
 
             # Data ID correction: cross talk
-            if  self.toolbar.buttonAnalysis.isChecked() and \
-                self.toolbar.buttonAnalysis.Menu.itemCrossTalk.isChecked() and \
+            if  analysis_menu.itemCrossTalk.isChecked() and \
                 item.flag() is ExploreItem.IDType.IDData:
         
                 analysis_activated.append(ExploreItem.calcCross_Talk)
@@ -256,51 +223,39 @@ class MainWindow(QMainWindow):
             #IDs (measures or models) analysis
             
             # analise: campo magnetico
-            if  self.toolbar.buttonAnalysis.isChecked() and \
-                self.toolbar.buttonAnalysis.Menu.itemMagneticField.isChecked():
-                
+            if analysis_menu.itemMagneticField.isChecked():
                 analysis_activated.append(ExploreItem.calcMagnetic_Field)
             
             # analise: trajetoria
-            if  self.toolbar.buttonAnalysis.isChecked() and \
-                self.toolbar.buttonAnalysis.Menu.itemTrajectory.isChecked():
-
+            if analysis_menu.itemTrajectory.isChecked():
                 analysis_activated.append(ExploreItem.calcTrajectory)
 
             # analise: erro de fase
-            if  self.toolbar.buttonAnalysis.isChecked() and \
-                self.toolbar.buttonAnalysis.Menu.itemPhaseError.isChecked():
-                
+            if analysis_menu.itemPhaseError.isChecked():
                 analysis_activated.append(ExploreItem.calcPhase_Error)
 
             # analise: integrais de campo
-            if  self.toolbar.buttonAnalysis.isChecked() and \
-                self.toolbar.buttonAnalysis.Menu.itemIntegrals.isChecked():
-                
+            if analysis_menu.itemIntegrals.isChecked():
                 analysis_activated.append(ExploreItem.calcField_Integrals)
 
             # analise: roll off peaks
-            if  self.toolbar.buttonAnalysis.isChecked() and \
-                self.toolbar.buttonAnalysis.Menu.itemRollOffPeaks.isChecked():
-
+            if analysis_menu.itemRollOffPeaks.isChecked():
                 analysis_activated.append(ExploreItem.calcRoll_Off_Peaks)
             
             # analise: roll off amplitude
-            if  self.toolbar.buttonAnalysis.isChecked() and \
-                self.toolbar.buttonAnalysis.Menu.itemRollOffAmp.isChecked():
-
+            if analysis_menu.itemRollOffAmp.isChecked():
                 analysis_activated.append(ExploreItem.calcRoll_Off_Amplitude)
 
             if analysis_activated:
-                self.projects.currentWidget().analyzeItem(item,analysis_activated)
+                project.analyzeItem(item,analysis_activated)
 
         # ------------------------------ table ------------------------------ #
 
-        if self.toolbar.buttonTable.isChecked() and \
-            self.toolbar.buttonTable.objectName()==self.toolbar.actiontabela.objectName() and \
+        if  table_button.isChecked() and \
+            table_button.objectName()==self.toolbar.actiontabela.objectName() and \
             item.type() is not ExploreItem.ContainerType:
             
-            self.displayTable(item)
+            project.displayTable(item)
 
     def tree_items_returned(self, items):
         if self.toolbar.buttonPlot.isChecked():
@@ -327,6 +282,12 @@ class MainWindow(QMainWindow):
                 self.projects.currentWidget().drawItems(items)
 
     ## visuals slots
+
+    def visuals_connect(self, visual_idx):
+        visual = self.projects.currentWidget().visuals.widget(visual_idx)
+        if isinstance(visual, Table):
+            visual.selectReturned.connect(self.table_cells_returned)
+            visual.keyPressed.connect(self.keyPressEvent)
 
     def table_cells_returned(self, indexes):
         if  self.toolbar.buttonPlot.isChecked():

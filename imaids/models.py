@@ -1912,6 +1912,7 @@ class HybridPlanar(Planar):
             rectangular=False, longitudinal_distance=0.1,
             start_blocks_length='default', start_blocks_distance='default',
             end_blocks_length='default', end_blocks_distance='default',
+            start_poles='default', end_poles='default',
             name='hybrid_planar', **kwargs):
         """Create Hybrid planar model.
 
@@ -1981,6 +1982,12 @@ class HybridPlanar(Planar):
             pole_length = _utils.hybrid_undulator_pole_length(
                 gap, period_length)
 
+        if start_poles == 'default':
+            start_poles = None
+
+        if end_poles == 'default':
+            end_poles = None
+
         block_len = (
             period_length/2 - pole_length - 2*longitudinal_distance)
 
@@ -2014,6 +2021,7 @@ class HybridPlanar(Planar):
             start_blocks_distance=start_blocks_distance,
             end_blocks_length=end_blocks_length,
             end_blocks_distance=end_blocks_distance,
+            start_poles=start_poles, end_poles=end_poles,
             name=name, **kwargs)
 
 

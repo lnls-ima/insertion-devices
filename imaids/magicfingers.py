@@ -24,6 +24,8 @@ class MagicFingers(_fieldsource.FieldModel):
         group_rotation
         group_distance           
         nr_groups
+        row_distance
+        nr_rows
         device_rotation
         group_shift_list
         device_position
@@ -39,13 +41,15 @@ class MagicFingers(_fieldsource.FieldModel):
     """
     
     def __init__(
-            self, nr_blocks_group, block_shape, block_length, block_distance,
-            group_distance, nr_groups, magnetization_init_list,
-            ksipar=0.06, ksiper=0.17, group_rotation=_np.pi/2,
-            block_shift_list=None, group_shift_list=None,
-            device_rotation=0, device_position = 0,
-            block_subdivision=None, rectangular=False, 
-            init_radia_object=True, name='', block_names=None):        
+            self, nr_blocks_group, block_shape, block_length,
+            block_height, block_distance, block_nseg,
+            group_distance, nr_groups, row_distance, nr_rows,
+            magnetization_init_list, ksipar=0.06, ksiper=0.17,
+            group_rotation=_np.pi/2, block_shift_list=None,
+            group_shift_list=None, device_rotation=0,
+            device_position = 0, block_subdivision=None,
+            rectangular=False, init_radia_object=True,
+            cylinder=False, name='', block_names=None):
         """Pass and store attributes which define geometry and distribution
         of the blocks in the device and call radia object creation method.
 
@@ -72,6 +76,9 @@ class MagicFingers(_fieldsource.FieldModel):
                 the z=0 axis, after already being translated by group_distance
                 in the y- direction ("downwards"/"outwards"), thus arriving
                 at its desired radial and angular position.
+            row_distance (float): Distance between rows in global z direction
+                for each group. The same for all groups. In mm.
+            nr_rows (int): Number of rows forming the device.
             magnetization_init_list (list, nr_blocks_group*nr_groups x 3):
                 Magnetizations list for the device blocks. Block materials will
                 always be linear with (possibly) anisotropic permeability.
@@ -136,6 +143,8 @@ class MagicFingers(_fieldsource.FieldModel):
             ValueError: If block_distance is negative.
             ValueError: If group_distance is negative.
             ValueError: If nr_groups is < 1
+            ValueError: If row_distance is negative.
+            ValueError: If nr_rows is < 1
             ValueError: If number of magnetizations it not equal to the number
                 of blocks (nr_blocks_group x nr_groups).
             ValueError: If number of block shifts is not equal to the number
@@ -162,34 +171,44 @@ class MagicFingers(_fieldsource.FieldModel):
         if nr_groups < 1:
             raise ValueError('nr_groups must be >= 1.')
 
-        if len(magnetization_init_list) != nr_blocks_group*nr_groups:
+        if row_distance < 0:
+            raise ValueError('row_distance must be >= 0.')
+
+        if nr_rows < 1:
+            raise ValueError('nr_rows must be >= 1.')
+
+        if len(magnetization_init_list) != nr_blocks_group*nr_rows*nr_groups:
             raise ValueError(
                 'Invalid length for magnetization initialization list.')
 
         if block_shift_list is None:
-            block_shift_list = [0]*nr_blocks_group*nr_groups
-        elif len(block_shift_list) != nr_blocks_group*nr_groups:
+            block_shift_list = [0]*nr_blocks_group*nr_rows*nr_groups
+        elif len(block_shift_list) != nr_blocks_group*nr_rows*nr_groups:
             raise ValueError('Invalid length for list of block shifts.') 
         
         if group_shift_list is None:
-            group_shift_list = [0]*nr_groups
-        elif len(group_shift_list) != nr_groups:
+            group_shift_list = [0]*nr_rows*nr_groups
+        elif len(group_shift_list) != nr_rows*nr_groups:
             raise ValueError('Invalid length for list of group shifts.')
 
         if device_rotation >= 2*_np.pi/nr_groups:
             raise ValueError('device_rotation must be < 2pi/nr_groups.')
 
         if block_names is None:
-            block_names = ['']*nr_blocks_group*nr_groups
-        elif len(block_names) != nr_blocks_group*nr_groups:
+            block_names = ['']*nr_blocks_group*nr_rows*nr_groups
+        elif len(block_names) != nr_blocks_group*nr_rows*nr_groups:
             raise ValueError('Invalid length for block name list.') 
 
         self._nr_blocks_group = int(nr_blocks_group)
         self._block_shape = block_shape
         self._block_length = float(block_length)
+        self._block_height = float(block_height)
+        self._block_nseg = int(block_nseg)
         self._block_distance = float(block_distance)
         self._group_distance = float(group_distance)
-        self._nr_groups = int(nr_groups)        
+        self._nr_groups = int(nr_groups)
+        self._row_distance = float(row_distance)
+        self._nr_rows = int(nr_rows)
         self._magnetization_init_list = magnetization_init_list
         self._ksipar = ksipar
         self._ksiper = ksiper
@@ -199,7 +218,8 @@ class MagicFingers(_fieldsource.FieldModel):
         self._device_rotation = float(device_rotation)
         self._device_position = float(device_position)
         self._block_subdivision = block_subdivision
-        self._rectangular = rectangular        
+        self._rectangular = rectangular
+        self._cylinder = cylinder
         self.name = name # "public"/mutable, no need for @property method
         self._block_names = block_names
         
@@ -234,9 +254,19 @@ class MagicFingers(_fieldsource.FieldModel):
         return self._block_length
 
     @property
+    def block_height(self):
+        """Height of blocks forming a group [mm]."""
+        return self._block_height
+
+    @property
     def block_distance(self):
         """Distance between blocks inside a group [mm]."""
         return self._block_distance
+
+    @property
+    def block_nseg(self):
+        """Distance between blocks inside a group [mm]."""
+        return self._block_nseg
 
     @property
     def group_distance(self):
@@ -248,6 +278,16 @@ class MagicFingers(_fieldsource.FieldModel):
     def nr_groups(self):
         """Number of groups of blocks."""
         return self._nr_groups
+
+    @property
+    def row_distance(self):
+        """Distance between rows of blocks inside a group [mm]."""
+        return self._row_distance
+
+    @property
+    def nr_rows(self):
+        """Number of rows of blocks."""
+        return self._nr_rows
 
     @property
     def magnetization_init_list(self):
@@ -288,6 +328,11 @@ class MagicFingers(_fieldsource.FieldModel):
     def device_position(self):
         """Global shift in the Z direction (global coordinates) [mm]."""
         return self._device_position
+
+    @property
+    def block_cylinder(self):
+        """Global shift in the Z direction (global coordinates) [mm]."""
+        return self._block_cylinder
     
     @group_shift_list.setter
     def group_shift_list(self, new_group_shift_list):
@@ -300,7 +345,7 @@ class MagicFingers(_fieldsource.FieldModel):
         """
 
         # Test input.
-        if len(new_group_shift_list) != self.nr_groups:
+        if len(new_group_shift_list) != self.nr_rows*self.nr_groups:
             raise ValueError('Invalid length for list of group shifts.')
         
         # Define necessary movement for updating group positions.
@@ -328,6 +373,11 @@ class MagicFingers(_fieldsource.FieldModel):
         return self._rectangular
 
     @property
+    def cylinder(self):
+        """True if the shape is cylinder, False otherwise."""
+        return self._cylinder
+
+    @property
     def block_names(self):
         """List of Block names."""
         return self._block_names
@@ -340,7 +390,7 @@ class MagicFingers(_fieldsource.FieldModel):
     @property
     def nr_blocks_total(self):
         """Total number of blocks."""
-        return self.nr_blocks_group*self.nr_groups
+        return self.nr_blocks_group*self.nr_rows*self.nr_groups
 
     @property
     def group_length(self):
@@ -368,7 +418,7 @@ class MagicFingers(_fieldsource.FieldModel):
         coordinates, which is the result of all the translations and rotations
         applied to the blocks for setting up the magic fingers device.
         """
-        center_list = [block.center_point() for block in self._blocks]
+        center_list = [block.center_point for block in self._blocks]
         return center_list
 
     @property
@@ -381,6 +431,8 @@ class MagicFingers(_fieldsource.FieldModel):
             'block_distance': self.block_distance,
             'group_distance': self.group_distance,
             'nr_groups': self.nr_groups,
+            'row_distance': self.row_distance,
+            'nr_rows': self.nr_rows,
             'ksipar': self.ksipar,
             'ksiper': self.ksiper,
             'group_rotation': self.group_rotation,
@@ -389,6 +441,7 @@ class MagicFingers(_fieldsource.FieldModel):
             'device_rotation': self.device_rotation,
             'block_subdivision': self.block_subdivision,
             'rectangular': self.rectangular,
+            'cylinder': self.cylinder,
             'name': self.name,
             'block_names': list(self.block_names),
             'magnetization_list': list(self.magnetization_list),
@@ -439,7 +492,7 @@ class MagicFingers(_fieldsource.FieldModel):
         for idx_block, block in enumerate(self._blocks):
 
             idx_group = int(idx_block/self.nr_blocks_group)
-            xc, yc, zc = block.center_point()
+            xc, yc, zc = block.center_point
             mx, my, mz = block.magnetization
 
             table += '\n'
@@ -453,7 +506,7 @@ class MagicFingers(_fieldsource.FieldModel):
         distributed according to the object attributes.
         
         Args:
-            magnetization_init_list (list, nr_blocks_group*nr_groups x 3):
+            magnetization_init_list (list, nr_blocks_group*nr_rows*nr_groupsx3):
                 Magnetizations list for the device blocks (see documentation
                 for initialization methods for details). This might manual
                 input magnetizations or magnetizations read from a file saved
@@ -461,7 +514,7 @@ class MagicFingers(_fieldsource.FieldModel):
 
         Raises:
             ValueError: If number of magnetizations it not equal to the number
-                of blocks (nr_blocks_group x nr_groups).
+                of blocks (nr_blocks_group x nr_rows x nr_groups).
         """
 
         if self._radia_object is not None:
@@ -474,25 +527,40 @@ class MagicFingers(_fieldsource.FieldModel):
             raise ValueError('Invalid length for magnetizations list.')
 
         position_list = []
+        row_distance_z_list = []
+        row_distance_x_list = []
         group_rotation_z_list = []
 
         for idx_group in range(self.nr_groups):
-            for idx_block in range(self.nr_blocks_group):
-                # Generate position, WITHOUT SHIFTS.
-                position = idx_block*(self.block_length + self.block_distance)
-                position_list.append(position)
-                # Generate group rotation AROUND Z axis (for positioning
-                # the magic fingers as the desired circular array).
-                group_rotation_z_list.append(2*_np.pi*idx_group/self.nr_groups)
+            for idx_row in range(self.nr_rows):
+                for idx_block in range(self.nr_blocks_group):
+                    # Generate position, WITHOUT SHIFTS.
+                    position = idx_block*(self.block_distance)
+                    position_list.append(position)
+                    row_distance_z_list.append(idx_row*self.row_distance)
+                    if idx_row % 2 == 0:
+                        if idx_group % 2 == 0:
+                            row_distance_x_list.append(-self.block_length/2)
+                        else:
+                            row_distance_x_list.append(self.block_length/2)
+                    else:
+                        if idx_group %2 == 0:
+                            row_distance_x_list.append(self.block_length/2)
+                        else:
+                            row_distance_x_list.append(-self.block_length/2)
+                    # Generate group rotation AROUND Z axis (for positioning
+                    # the magic fingers as the desired circular array).
+                    group_rotation_z_list.append(2*_np.pi*idx_group/self.nr_groups)
 
         # Apply shift for centering positions list around z=0
         position_list = _np.array(position_list)
         position_list -= (position_list[0] + position_list[-1])/2
 
         self._blocks = []
-        for idx_block, (position, magnetization,
-                        group_rotation_z, block_shift) \
+        for idx_block, (position, magnetization, row_distance_x,
+                        row_distance_z, group_rotation_z, block_shift) \
             in enumerate(zip(position_list, magnetization_list,
+                             row_distance_x_list, row_distance_z_list,
                              group_rotation_z_list, self.block_shift_list)):
 
             # Get group index (used later for shifting groups)
@@ -500,11 +568,19 @@ class MagicFingers(_fieldsource.FieldModel):
 
             # Generate block with given magnetization and position
             # (position is already centered around z=0).
-            block = _blocks.Block(
-                self.block_shape, self.block_length, position, magnetization,
-                subdivision=self.block_subdivision,
-                rectangular=self.rectangular,
-                ksipar=self.ksipar, ksiper=self.ksiper)
+            if self.cylinder:
+                block = _blocks.Block(
+                    self.block_shape, self.block_length, position, magnetization,
+                    subdivision=self.block_subdivision,
+                    rectangular=self.rectangular,
+                    cylinder=self.cylinder,
+                    ksipar=self.ksipar, ksiper=self.ksiper)
+            else:
+                block = _blocks.Block(
+                    self.block_shape, self.block_length, position, magnetization,
+                    subdivision=self.block_subdivision,
+                    rectangular=self.rectangular,
+                    ksipar=self.ksipar, ksiper=self.ksiper)
 
             # --------- START of block positioning --------- #
 
@@ -528,6 +604,12 @@ class MagicFingers(_fieldsource.FieldModel):
 
             # Apply global device rotation around z axis.
             block.rotate([0,0,0], [0,0,1], self.device_rotation)
+
+            # Apply row shifts (in z direction)
+            block.shift([0,0,row_distance_z])
+
+            # Apply row shifts (in x direction)
+            block.shift([row_distance_x,0,0])
 
             # Apply group shifts (in z direction)
             block.shift([0,0,self.group_shift_list[idx_group]])

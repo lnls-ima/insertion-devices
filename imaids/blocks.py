@@ -223,7 +223,7 @@ class Block(_fieldsource.FieldModel):
     def __init__(
             self, shape, length, longitudinal_position,
             magnetization=[0, 1.37, 0], subdivision=None, rectangular=False,
-            name='', material=None, **kwargs):
+            cylinder=False, name='', material=None, **kwargs):
         """Create the radia object for a block with magnetization. 
 
         Args:
@@ -307,6 +307,8 @@ class Block(_fieldsource.FieldModel):
 
         self._rectangular = rectangular
 
+        self._cylinder = cylinder
+
         self._longitudinal_position = longitudinal_position
 
         if material is None:
@@ -369,6 +371,11 @@ class Block(_fieldsource.FieldModel):
         return self._rectangular
 
     @property
+    def cylinder(self):
+        """True if the shape is cylinder, False otherwise."""
+        return self._cylinder
+
+    @property
     def state(self):
         data = {
             'shape': self._shape,
@@ -377,6 +384,7 @@ class Block(_fieldsource.FieldModel):
             'magnetization': self._magnetization,
             'subdivision': self._subdivision,
             'rectangular': self._rectangular,
+            'cylinder': self._cylinder,
             'name': self.name,
         }
         data.update(self._material.state)
@@ -445,7 +453,24 @@ class Block(_fieldsource.FieldModel):
                 subblock = _rad.ObjDivMag(subblock, div, 'Frame->Lab')
                 subblock_list.append(subblock)
             self._radia_object = _rad.ObjCnt(subblock_list)
-
+        elif self._cylinder:
+            subblock_list = []
+            for div in self._subdivision:
+                subblock = _rad.ObjCylMag([0,0,self._longitudinal_position],
+                                                    1.5,
+                                                    8, 50, 'y',
+                                                    self._magnetization)
+                subblock = _rad.MatApl(subblock, self._material.radia_object)
+                subblock = _rad.ObjDivMag(subblock, div, 'Frame->Lab')
+                if self._magnetization == [0, 1e-10, 0]:
+                    #break
+                    _rad.ObjDrwAtr(subblock, [1, 1, 1], 0.00001)
+                elif self._magnetization == [0, 1.3, 0]:
+                    _rad.ObjDrwAtr(subblock, [0, 0.6, 0.7], 0.001)
+                else:
+                    _rad.ObjDrwAtr(subblock, [0.7, 0.2, 0.5], 0.001)
+                subblock_list.append(subblock)
+            self._radia_object = _rad.ObjCnt(subblock_list)
         else:
             subblock_list = []
             for shp, div in zip(self._shape, self._subdivision):
@@ -454,6 +479,7 @@ class Block(_fieldsource.FieldModel):
                     self._magnetization)
                 subblock = _rad.MatApl(subblock, self._material.radia_object)
                 subblock = _rad.ObjDivMag(subblock, div, 'Frame->Lab')
+                _rad.ObjDrwAtr(subblock, [0, 0.5, 1], 0.001)
                 subblock_list.append(subblock)
             self._radia_object = _rad.ObjCnt(subblock_list)
 

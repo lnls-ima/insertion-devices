@@ -1234,7 +1234,7 @@ class FieldModel(FieldSource):
         if self._radia_object is None:
             return False
 
-        _rad.ObjDrwAtr(self._radia_object, [0, 0.5, 1], 0.001)
+        #_rad.ObjDrwAtr(self._radia_object, [0, 0.5, 1], 0.001)
         _rad.ObjDrwOpenGL(self._radia_object)
         return True
 

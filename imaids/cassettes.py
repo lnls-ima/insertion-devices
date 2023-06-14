@@ -46,7 +46,7 @@ class Cassette(
             start_blocks_length=None, start_blocks_distance=None,
             end_blocks_length=None, end_blocks_distance=None,
             start_blocks_magnetization=None, end_blocks_magnetization=None,
-            start_poles=None, end_poles=None,
+            terminations_poles=False,
             name='', init_radia_object=True):
         """Gathers cassette properties from arguments and calls method for
             creating Radia object.
@@ -231,8 +231,7 @@ class Cassette(
 
         self._hybrid = hybrid
         if self._hybrid:
-            self._start_poles = start_poles
-            self._end_poles = end_poles
+            self._terminations_poles = terminations_poles
             if pole_shape is None:
                 pole_shape = block_shape
             if pole_length is None:
@@ -373,14 +372,9 @@ class Cassette(
         return _deepcopy(self._end_blocks_magnetization)
 
     @property
-    def start_poles(self):
-        """List of boolean values, True if object is pole, False otherwise."""
-        return self._start_poles
-
-    @property
-    def end_poles(self):
-        """List of boolean values, True if object is pole, False otherwise."""
-        return self._end_poles
+    def terminations_poles(self):
+        """Boolean value, True if there are poles on terminations"""
+        return self._terminations_poles
 
     @property
     def position_err(self):
@@ -636,13 +630,9 @@ class Cassette(
         magnetization_list = magnetization_list.tolist()
 
         if self.hybrid:
-            # Create pole list for terminations
-            if self.start_poles is not None and self.end_poles is not None:
-                start_poles = self.start_poles
-                end_poles = self.end_poles
-            else:
-                start_poles = [False]*int(self.nr_start_blocks)
-                end_poles = [False]*int(self.nr_end_blocks)
+            # Create list of terminations's poles
+            start_poles = [False]*int(self.nr_start_blocks)
+            end_poles = [False]*int(self.nr_end_blocks)
 
             # Magnetization of first core object.
             mag0 = magnetization_list[self.nr_start_blocks]
@@ -656,6 +646,10 @@ class Cassette(
                         self.nr_core_blocks/2),
                     self._end_blocks_length])
                 # is_pole_list if HYBRID and first core object is POLE
+                if self.terminations_poles:
+                    end_poles = [value if i % 2 == 0 else not value for i, value in enumerate(end_poles)]
+                    start_poles = end_poles[::-1]
+
                 self._is_pole_list = _utils.flatten([
                     start_poles,
                     [True, False]*int(self.nr_core_blocks/2),
@@ -668,9 +662,10 @@ class Cassette(
                         self.nr_core_blocks/2),
                     self._end_blocks_length])
                 # is_pole_list if HYBRID and first core object is BLOCK
-                if self.poles_on_terminations:
-                    start_poles = [not value for value in start_poles]
-                    end_poles = [not value for value in end_poles]
+                if self.terminations_poles:
+                    end_poles = [not value if i % 2 == 0 else value for i, value in enumerate(end_poles)]
+                    start_poles = end_poles[::-1]
+
                 self._is_pole_list = _utils.flatten([
                     start_poles,
                     [False, True]*int(self.nr_core_blocks/2),

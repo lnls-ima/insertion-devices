@@ -881,6 +881,20 @@ class Planar(_insertiondevice.InsertionDeviceModel):
         self._cassettes[name] = cs
 
         name = 'ci'
+        if 'start_blocks_magnetization' in self.cassette_properties.keys():
+            mags = self.cassette_properties['start_blocks_magnetization']
+            print(mags)
+            print()
+            mask = _np.array([1, 1, -1])
+            self.cassette_properties['start_blocks_magnetization'] =\
+                (mask*mags).tolist()
+            print(self.cassette_properties['start_blocks_magnetization'])
+        if 'end_blocks_magnetization' in self.cassette_properties.keys():
+            mags = self.cassette_properties['end_blocks_magnetization']
+            mask = _np.array([1, 1, -1])
+            self.cassette_properties['end_blocks_magnetization'] =\
+                (mask*mags).tolist()
+
         ci = _cassettes.Cassette(
             upper_cassette=False, name=name,
             nr_periods=self.nr_periods, period_length=self.period_length,

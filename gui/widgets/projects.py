@@ -29,7 +29,52 @@ class ProjectWidget(QMainWindow):
 
         self.filenames = []
         self.insertiondevices = {}
-        self.params = {}
+        self.params = {
+            "Magnetic Field": {
+                "x": 0,
+                "y": 0,
+                "z": np.arange(-900,900+0.5,0.5),
+                "nproc": None,
+                "chunksize": 100
+            },
+            "Trajectory": {
+                "energy": 3,
+                "r0": [0,0,-900,0,0,1],
+                "zmax": 900,
+                "rkstep": 0.5,
+                "dz": 0,
+                "on_axis_field": False
+            },
+            "Phase Error": {
+                "energy": 3,
+                "traj": "calculated",
+                "bx_amp": "calculated",
+                "by_amp": "calculated",
+                "skip_poles": 4,
+                "zmin": None,
+                "zmax": None,
+                "field_comp": None
+            },
+            "Field Integrals": {
+                "z_list": np.arange(-900,900+0.5,0.5),
+                "x": 0,
+                "y": 0,
+                "field_list": None,
+                "nproc": None,
+                "chunksize": 100
+            },
+            "Roll Off Peaks": {
+                "z": np.arange(-900,900+0.5,0.5),
+                "x": np.arange(-5,5+0.5,0.5),
+                "y": 0,
+                "field_comp": None
+            },
+            "Roll Off Amplitude": {
+                "z": np.arange(-900,900+0.5,0.5),
+                "x": np.arange(-5,5+0.5,0.5),
+                "y": 0
+            }
+        }
 
         self.visuals = VisualizationTabWidget()
 
@@ -115,21 +160,22 @@ class ProjectWidget(QMainWindow):
             #todo: checar item, nao o texto
             if analysis not in id_dict:
                 analysisType = ExploreItem.AnalysisType(analysis)
-                analysis_item = ExploreItem(analysisType, id_item, [f"{analysis}", "Analysis"])
+                analysis_item = ExploreItem(analysisType, id_item, [str(analysis), "Analysis"])
                 analysis_item.setTextAlignment(1,Qt.AlignmentFlag.AlignRight)
                 if not id_item.isExpanded():
                     self.tree.expandItem(id_item)
 
-                result_items = calcAnalysis(analysis_item, id_dict)
+                if analysis=="Cross Talk":
+                    result_items = calcAnalysis(analysis_item, id_dict)
+                    self.update_ids_dict_key(key=id_name, new_key=id_item.text(0))
+                else:
+                    result_items = calcAnalysis(analysis_item, id_dict, self.params[analysis])
                 [item.setTextAlignment(1,Qt.AlignmentFlag.AlignRight) for item in result_items]
             
             else:
                 QMessageBox.warning(self,
                                     f"Analysis Warning",
                                     f"{analysis} of ({id_name}) already calculated!")
-    
-            if analysis=="Cross Talk":
-                self.update_ids_dict_key(key=id_name, new_key=id_item.text(0))
 
     def update_ids_dict_key(self, key, new_key):
         ids_dict = self.insertiondevices
@@ -163,6 +209,9 @@ class ProjectWidget(QMainWindow):
             if item.type() is ExploreItem.AnalysisType:
                 analysis_info = self.treeItemInfo(item)
                 new_handles, new_labels = visuals.plotAnalysis(chart, analysis_info, isModeAdd)
+                if not (new_handles or new_labels):
+                    chart.deleteLater()
+                    return False
             
             elif item.flag() is ExploreItem.ResultType.ResultArray:
                 result_info = self.treeItemInfo(item)
@@ -189,6 +238,8 @@ class ProjectWidget(QMainWindow):
 
         chart.fig.tight_layout()
 
+        return True
+
     def displayTable(self, item: ExploreItem):
         
         # tabela: mapa de campo
@@ -198,7 +249,11 @@ class ProjectWidget(QMainWindow):
             *_, id_dict = self.treeItemInfo(id_item)
             
             ID_meas = id_dict["InsertionDeviceObject"]
-            data = ID_meas._raw_data
+            xyz_cols = ID_meas._raw_data[:,:3]
+            bx_col = ID_meas._bx.T.reshape(-1,1)
+            by_col = ID_meas._by.T.reshape(-1,1)
+            bz_col = ID_meas._bz.T.reshape(-1,1)
+            data = np.concatenate((xyz_cols,bx_col,by_col,bz_col),axis=1)
             header = ['X[mm]', 'Y[mm]', 'Z[mm]', 'Bx[T]', 'By[T]', 'Bz[T]']
             
         # tabela: analise
@@ -207,10 +262,13 @@ class ProjectWidget(QMainWindow):
             analysis_item = item
             *_, analysis_dict = self.treeItemInfo(analysis_item)
             
-            params_array = [param for param in analysis_dict.values()
-                                      if not isinstance(param, (int, float))]
-            data = np.array(params_array).T
-            header = list(analysis_dict.keys())
+            data = []
+            header = []
+            for param, content in analysis_dict.items():
+                if not isinstance(content, (int, float)):
+                    header.append(param)
+                    data.append(content)
+            data = np.array(data).T
             
         # tabela: resultado
         elif item.flag() is ExploreItem.ResultType.ResultArray:

@@ -1,6 +1,14 @@
 
-from PyQt6.QtWidgets import QTabWidget, QMenu, QInputDialog, QLineEdit, QWidget
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtWidgets import (QWidget,
+                             QTabWidget,
+                             QTabBar,
+                             QMenu,
+                             QInputDialog,
+                             QLineEdit,
+                             QStyle,
+                             QStylePainter,
+                             QStyleOptionTab)
+from PyQt6.QtCore import pyqtSignal, Qt, QRect, QPoint
 
 
 class BasicTabWidget(QTabWidget):
@@ -14,7 +22,7 @@ class BasicTabWidget(QTabWidget):
         #para o triggered saber a posicao da tab do menu
         self.tabPos = None
 
-        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.tabBar().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         #todo: descobrir o que o documentMode faz e se pode tirar esse comando ou nao
         self.setDocumentMode(True) # talvez possa ser desabilitado
         self.setMovable(True)
@@ -22,7 +30,7 @@ class BasicTabWidget(QTabWidget):
         
         self.tabCloseRequested.connect(self.closeTab)
         self.tabBarDoubleClicked.connect(self.start_rename)
-        self.customContextMenuRequested.connect(self.exec_context_menu)
+        self.tabBar().customContextMenuRequested.connect(self.exec_context_menu)
 
         self.menuContext = QMenu(self)
         actionRename = self.menuContext.addAction("Rename Tab")
@@ -31,7 +39,9 @@ class BasicTabWidget(QTabWidget):
 
     def exec_context_menu(self, pos):
         self.tabPos = pos
-        self.menuContext.exec(self.mapToGlobal(self.tabPos))
+        index = self.tabBar().tabAt(self.tabPos)
+        if index != -1:
+            self.menuContext.exec(self.mapToGlobal(self.tabPos))
     
     def rename_tab(self):
         
@@ -81,3 +91,40 @@ class BasicTabWidget(QTabWidget):
     def closeTab(self, i):
         self.widget(i).deleteLater()
 
+
+class VerticalTabBar(QTabBar):
+
+    def tabSizeHint(self, index):
+        s = QTabBar.tabSizeHint(self, index)
+        s.transpose()
+        return s
+
+    def paintEvent(self, event):
+        painter = QStylePainter(self)
+        opt = QStyleOptionTab()
+
+        for i in range(self.count()):
+            self.initStyleOption(opt, i)
+            painter.drawControl(QStyle.ControlElement.CE_TabBarTabShape, opt)
+            painter.save()
+
+            s = opt.rect.size()
+            s.transpose()
+            r = QRect(QPoint(), s)
+            r.moveCenter(opt.rect.center())
+            opt.rect = r
+
+            c = self.tabRect(i).center()
+            painter.translate(c)
+            painter.rotate(90)
+            painter.translate(-c)
+            painter.drawControl(QStyle.ControlElement.CE_TabBarTabLabel, opt)
+            painter.restore()
+
+
+class VerticalTabWidget(QTabWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        self.setTabBar(VerticalTabBar(self))
+        self.setTabPosition(QTabWidget.TabPosition.West)

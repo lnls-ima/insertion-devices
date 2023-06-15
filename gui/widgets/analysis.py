@@ -1,9 +1,18 @@
 
-from PyQt6.QtWidgets import QPushButton, QFrame, QListWidget, QListWidgetItem, QCheckBox, QVBoxLayout, QDialog
+from PyQt6.QtWidgets import (QPushButton,
+                             QFrame,
+                             QListWidget,
+                             QListWidgetItem,
+                             QCheckBox,
+                             QVBoxLayout,
+                             QDialog,
+                             QMessageBox)
 from PyQt6.QtGui import QIcon, QWindow
 from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QTimer
 
 from .dialog_layouts import AnalysisLayout
+
+import numpy as np
 
 
 class AnalysisItem(QListWidgetItem):
@@ -74,12 +83,9 @@ class AnalysisMenu(QFrame):
         # shimming fora, pois e' um calculo muito personalizado e que exige cuidado
         #self.Shimming = AnalysisItem(text="Shimming",parent=self.list)
         
-        self.itemMagneticField.setSuperior(self.itemIntegrals)
         self.itemTrajectory.setSuperior(self.itemPhaseError)
         self.itemPhaseError.setSubordinate(self.itemTrajectory)
-        #print('phase error tem subordinado:',self.itemPhaseError.hasSubordinate())
-        self.itemIntegrals.setSubordinate(self.itemMagneticField)
-        
+
         for i in range(self.list.count()):
             item = self.list.item(i)
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
@@ -279,23 +285,217 @@ class AnalysisPushButton(QPushButton):
             self.modeChanged.emit(False)
 
 
-
 class AnalysisDialog(QDialog):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+
+    default_params = {
+        "Magnetic Field": {"x": 0,
+                           "y": 0,
+                           "z": np.arange(-900,900+0.5,0.5),
+                           "nproc": None,
+                           "chunksize": 100},
+        "Trajectory": {"energy": 3,
+                       "r0": [0,0,-900,0,0,1],
+                       "zmax": 900,
+                       "rkstep": 0.5,
+                       "dz": 0,
+                       "on_axis_field": False},
+        "Phase Error": {"energy": 3,
+                        "traj": "calculated",
+                        "bx_amp": "calculated",
+                        "by_amp": "calculated",
+                        "skip_poles": 4,
+                        "zmin": None,
+                        "zmax": None,
+                        "field_comp": None},
+        "Field Integrals": {"z_list": np.arange(-900,900+0.5,0.5),
+                            "x": 0,
+                            "y": 0,
+                            "field_list": None,
+                            "nproc": None,
+                            "chunksize": 100},
+        "Roll Off Peaks": {"z": np.arange(-900,900+0.5,0.5),
+                           "x": np.arange(-5,5+0.5,0.5),
+                           "y": 0,
+                           "field_comp": None},
+        "Roll Off Amplitude": {"z": np.arange(-900,900+0.5,0.5),
+                               "x": np.arange(-5,5+0.5,0.5),
+                               "y": 0}
+    }
+
+    def __init__(self, params_kwargs, parent=None, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
 
         self.setWindowTitle("Analysis Parameters")
 
-        self.layoutAnalysis = AnalysisLayout(parent=self)
+        self.layoutAnalysis = AnalysisLayout(params_kwargs, parent=self)
 
         # signals
-        ## signal sent from Ok button to the handler accept of QDialog class
-        self.layoutAnalysis.buttonBox.accepted.connect(self.accept)
-        ## signal sent from Ok button to the handler reject of QDialog class
-        self.layoutAnalysis.buttonBox.rejected.connect(self.reject)
+        buttonBox = self.layoutAnalysis.buttonBox
+        buttonRestore = buttonBox.buttons()[2]
+        
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+        buttonRestore.clicked.connect(self.restore)
 
 
-    # def analysis_chose(self, index):
-    #     if index==1:
+    def restore(self):
+        self.layoutAnalysis.editMagneticField.set_values(self.default_params["Magnetic Field"])
+        self.layoutAnalysis.editTrajectory.set_values(self.default_params["Trajectory"])
+        self.layoutAnalysis.editPhaseError.set_values(self.default_params["Phase Error"])
+        self.layoutAnalysis.editIntegrals.set_values(self.default_params["Field Integrals"])
+        self.layoutAnalysis.editRollOffPeaks.set_values(self.default_params["Roll Off Peaks"])
+        self.layoutAnalysis.editRollOffAmp.set_values(self.default_params["Roll Off Amplitude"])
+
+    @classmethod
+    def updateParameters(cls, params_kwargs, parent=None):
+
+        dialog = cls(params_kwargs, parent)
+        answer = dialog.exec()
+
+        if answer==QDialog.DialogCode.Accepted:
+
+            field = dialog.layoutAnalysis.editMagneticField
+            traj = dialog.layoutAnalysis.editTrajectory
+            phaserr = dialog.layoutAnalysis.editPhaseError
+            integrals = dialog.layoutAnalysis.editIntegrals
+            rop = dialog.layoutAnalysis.editRollOffPeaks
+            roa = dialog.layoutAnalysis.editRollOffAmp
+
+            #MagneticField
+            x, y, z, nproc, chunksize = field.get_values()
+            params_kwargs["Magnetic Field"] = {"x": x,
+                                               "y": y,
+                                               "z": z,
+                                               "nproc": nproc,
+                                               "chunksize": chunksize}
+
+            #Trajectory
+            energy, r0, zmax, rkstep, dz, on_axis_field = traj.get_values()
+            params_kwargs["Trajectory"] = {"energy": energy,
+                                           "r0": r0,
+                                           "zmax": zmax,
+                                           "rkstep": rkstep,
+                                           "dz": dz,
+                                           "on_axis_field": on_axis_field}
+
+            #PhaseError
+            energy, skip_poles, zmin, zmax, field_comp = phaserr.get_values()
+            params_kwargs["Phase Error"] = {"energy": energy,
+                                            "traj": "calculated",
+                                            "bx_amp": "calculated",
+                                            "by_amp": "calculated",
+                                            "skip_poles": skip_poles,
+                                            "zmin": zmin,
+                                            "zmax": zmax,
+                                            "field_comp": field_comp}
+            
+            #Integrals
+            z_list, x, y, nproc, chunksize = integrals.get_values()
+            params_kwargs["Field Integrals"] = {"z_list": z_list,
+                                            "x": x,
+                                            "y": y,
+                                            "field_list": None,
+                                            "nproc": nproc,
+                                            "chunksize": chunksize}
+            
+            #RollOffPeaks
+            z, x, y, field_comp = rop.get_values()
+            params_kwargs["Roll Off Peaks"] = {"z": z,
+                                               "x": x,
+                                               "y": y,
+                                               "field_comp": field_comp}
+            
+            #RollOffAmp
+            z, x, y = roa.get_values()
+            params_kwargs["Roll Off Amplitude"] = {"z": z,
+                                                   "x": x,
+                                                   "y": y}
+        
+        return params_kwargs #*: retornar a mesma coisa, mesmo se nao houver edicao
+
+    def accept(self) -> None:
+
+        field = self.layoutAnalysis.editMagneticField
+        i = field.indexListChecked
+        phaserr = self.layoutAnalysis.editPhaseError
+        integrals = self.layoutAnalysis.editIntegrals
+        rop = self.layoutAnalysis.editRollOffPeaks
+        roa = self.layoutAnalysis.editRollOffAmp
+
+        StepZero = field.spins_step[i].value() == 0 or \
+                   integrals.spin_z_list_step.value() == 0 or \
+                   rop.spin_zstep.value() == 0 or \
+                   rop.spin_xstep.value() == 0
+
+        StartEqualEnd = \
+            field.spins_start[i].value() == field.spins_end[i].value() or \
+            integrals.spin_z_list_start.value() == integrals.spin_z_list_end.value() or \
+            rop.spin_zstart.value() == rop.spin_zend.value() or \
+            rop.spin_xstart.value() == rop.spin_xend.value() or \
+            roa.spin_zstart.value() == roa.spin_zend.value() or \
+            roa.spin_xstart.value() == roa.spin_zend.value()
+
+        StartGreaterEnd_StepPositive = \
+            (field.spins_start[i].value() > field.spins_end[i].value() and \
+             field.spins_step[i].value() > 0) or \
+            (integrals.spin_z_list_start.value() > integrals.spin_z_list_end.value() and \
+             integrals.spin_z_list_step.value() > 0) or \
+            (rop.spin_zstart.value() > rop.spin_zend.value() and \
+             rop.spin_zstep.value() > 0) or \
+            (rop.spin_xstart.value() > rop.spin_xend.value() and \
+             rop.spin_xstep.value() > 0) or \
+            (roa.spin_zstart.value() > roa.spin_zend.value() and \
+             roa.spin_zstep.value() > 0) or \
+            (roa.spin_xstart.value() > roa.spin_xend.value() and \
+             roa.spin_xstep.value() > 0)
+
+        StartLessEnd_StepNegative = \
+            (field.spins_start[i].value() < field.spins_end[i].value() and \
+             field.spins_step[i].value() < 0) or \
+            (integrals.spin_z_list_start.value() < integrals.spin_z_list_end.value() and \
+             integrals.spin_z_list_step.value() < 0) or \
+            (rop.spin_zstart.value() < rop.spin_zend.value() and \
+             rop.spin_zstep.value() < 0) or \
+            (rop.spin_xstart.value() < rop.spin_xend.value() and \
+             rop.spin_xstep.value() < 0) or \
+            (roa.spin_zstart.value() < roa.spin_zend.value() and \
+             roa.spin_zstep.value() < 0) or \
+            (roa.spin_xstart.value() < roa.spin_xend.value() and \
+             roa.spin_xstep.value() < 0)
+        
+        #todo: procurar maneira de permitir digitar apenas texto numerico
+        field_combotext = field.combo_nproc.currentText()
+        phaserr_zmintext = phaserr.combo_zmin.currentText()
+        phaserr_zmaxtext = phaserr.combo_zmax.currentText()
+        integrals_combotext = integrals.combo_nproc.currentText()
+        TextNumeric = \
+            field.combo_nproc.isTextNumeric(field_combotext) and \
+            phaserr.combo_zmin.isTextNumeric(phaserr_zmintext) and \
+            phaserr.combo_zmax.isTextNumeric(phaserr_zmaxtext) and \
+            integrals.combo_nproc.isTextNumeric(integrals_combotext)
+
+        if StepZero:
+            QMessageBox.critical(self,
+                                 "Critical Warning",
+                                 "The arrays must have nonzero steps!")
+        elif StartEqualEnd:
+            QMessageBox.critical(self,
+                                 "Critical Warning",
+                                 "The arrays must have different start and end points!")
+        #todo: caso do start menor e step negativo
+        elif StartGreaterEnd_StepPositive:
+            QMessageBox.critical(self,
+                                 "Critical Warning",
+                                 "Arrays with start greater than end must have negative step!")
+        elif StartLessEnd_StepNegative:
+            QMessageBox.critical(self,
+                                 "Critical Warning",
+                                 "Arrays with start less than end must have positive step!")
+        elif not TextNumeric:
+            QMessageBox.critical(self,
+                                 "Critical Warning",
+                                 "Numeric Combo Boxes must have numeric values!")
+        else:
+            return super().accept()
 
         

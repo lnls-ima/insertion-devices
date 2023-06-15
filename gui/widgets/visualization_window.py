@@ -103,14 +103,23 @@ class VisualizationTabWidget(BasicTabWidget):
 
         if analysis_item.flag() is ExploreItem.AnalysisType.MagneticField:
             
-            z, *B = list(analysis_dict.values())
+            x, y, z, *B = list(analysis_dict.values())
             B = np.array(B).T
 
-            B_lines = chart.ax.plot(z,B)
-
-            titleyxlabel.extend(["Magnetic Field", "Bx, By, Bz (T)", "z (mm)"])
-            legend_info = B_lines, [f"Bx of {id_name}",f"By of {id_name}",f"Bz of {id_name}"]
+            if not isinstance(z, (int, float)):
+                B_lines = chart.ax.plot(z,B)
+                titleyxlabel.extend(["Magnetic Field", "Bx, By, Bz (T)", "z (mm)"])
+            elif not isinstance(x, (int, float)):
+                B_lines = chart.ax.plot(x,B)
+                titleyxlabel.extend(["Magnetic Field", "Bx, By, Bz (T)", "x (mm)"])
+            elif not isinstance(y, (int, float)):
+                B_lines = chart.ax.plot(y,B)
+                titleyxlabel.extend(["Magnetic Field", "Bx, By, Bz (T)", "y (mm)"])
+            else:
+                return [], []
             
+            legend_info = B_lines, [f"Bx of {id_name}",f"By of {id_name}",f"Bz of {id_name}"]
+
         if analysis_item.flag() is ExploreItem.AnalysisType.Trajectory:
             
             x, y, z, dxds, dyds, dzds = analysis_dict.values()
@@ -123,7 +132,7 @@ class VisualizationTabWidget(BasicTabWidget):
             #todo: consertar pos para pegar canto superior direito do item
             action = menuIntegral.exec(QCursor.pos())
             if action is None:
-                return None
+                return [], []
             
             if action.text()=="Position Deviation":
                 traj_line = chart.ax.plot(z,x_y)
@@ -137,7 +146,7 @@ class VisualizationTabWidget(BasicTabWidget):
 
             titleyxlabel.append("z (mm)")
             legend_info = traj_line, Label
-            
+
         if  analysis_item.flag() is ExploreItem.AnalysisType.PhaseError:
 
             z_poles, phaserr, phaserr_rms = analysis_dict.values()
@@ -150,7 +159,7 @@ class VisualizationTabWidget(BasicTabWidget):
 
             titleyxlabel.extend(["Phase Error","Phase Error (deg)","z poles (mm)"])
             legend_info = phaserr_line+rms_line, [f"Phase Error of {id_name}",f"Phase Err RMS of {id_name}"]
-            
+
         if analysis_item.flag() is ExploreItem.AnalysisType.Integrals:
 
             z, ibx, iby, ibz, iibx, iiby, iibz = analysis_dict.values()
@@ -163,7 +172,7 @@ class VisualizationTabWidget(BasicTabWidget):
             #todo: consertar pos para pegar canto superior direito do item
             action = menuIntegral.exec(QCursor.pos())
             if action is None:
-                return []
+                return [], []
             
             if action.text()=="First Integral":
                 integral_line = chart.ax.plot(z,ib)
@@ -177,7 +186,17 @@ class VisualizationTabWidget(BasicTabWidget):
 
             titleyxlabel.append("z (mm)")
             legend_info = integral_line, Label
-        
+
+        if analysis_item.flag() is ExploreItem.AnalysisType.RollOffAmp:
+
+            x, y, *roa = analysis_dict.values()
+            roa = np.array(roa).T
+
+            roa_lines = chart.ax.plot(x,roa)
+            titleyxlabel.extend(["Roll Off Amplitude", "ROAx, ROAy, ROAz", "x (mm)"])
+            legend_info = roa_lines, [f"ROAx of {id_name}",f"ROAy of {id_name}",f"ROAz of {id_name}"]
+
+            
         if addMode:
             chart.ax.set_title("")
             chart.ax.set_ylabel("")

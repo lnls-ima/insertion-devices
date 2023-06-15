@@ -88,123 +88,161 @@ class ExploreItem(QTreeWidgetItem):
         return id_name
 
 
-    #ha metodo de QTreeWidgetItem para colocar child em si mesmo
-    #todo: conferir como e' implementado dentro de QTreeWidget. se cria-se QTreeWidget dentro dela mesma
-
-    #todo arg: params_dict_MagneticField
-    def calcMagnetic_Field(self, id_dict: dict):
+    @classmethod
+    def calcMagnetic_Field(cls, analysis_item, id_dict: dict, field_kwargs):
+        rtArray = cls.ResultType.ResultArray
+        rtNumber = cls.ResultType.ResultNumeric
 
         ID = id_dict["InsertionDeviceObject"]
-        B = ID.get_field(x=0, y=0, z=self.Z, nproc=None, chunksize=100)
+        x, y, z = field_kwargs["x"], field_kwargs["y"], field_kwargs["z"]
+        B = ID.get_field(**field_kwargs)
         Bx, By, Bz = B.T
-        id_dict[self.text(0)] = {"z [mm]": self.Z, "Bx [T]": Bx, "By [T]": By, "Bz [T]": Bz}
+        id_dict[analysis_item.text(0)] = {"x [mm]": x, "y [mm]": y, "z [mm]": z,
+                                          "Bx [T]": Bx, "By [T]": By, "Bz [T]": Bz}
 
-        result_items = [ExploreItem(ExploreItem.ResultType.ResultArray, self, ["z [mm]", "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ["Bx [T]", "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ["By [T]", "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ["Bz [T]", "List"])]
-        
+        numericCounter = 0
+        try:
+            x_item = cls(rtNumber, analysis_item, ["x [mm]", f"{x:.1f}"])
+            numericCounter += 1
+        except:
+            x_item = cls(rtArray, analysis_item, ["x [mm]", "List"])
+        try:
+            y_item = cls(rtNumber, analysis_item, ["y [mm]", f"{y:.1f}"])
+            numericCounter += 1
+        except:
+            y_item = cls(rtArray, analysis_item, ["y [mm]", "List"])
+        try:
+            z_item = cls(rtNumber, analysis_item, ["z [mm]", f"{z:.1f}"])
+            numericCounter += 1
+        except:
+            z_item = cls(rtArray, analysis_item, ["z [mm]", "List"])
+
+        if numericCounter == 3:
+            field_items = [cls(rtNumber, analysis_item, ["Bx [T]", f"{Bx[0]:.1f}"]),
+                           cls(rtNumber, analysis_item, ["By [T]", f"{By[0]:.1f}"]),
+                           cls(rtNumber, analysis_item, ["Bz [T]", f"{Bz[0]:.1f}"])]
+        else:
+            field_items = [cls(rtArray, analysis_item, ["Bx [T]", "List"]),
+                           cls(rtArray, analysis_item, ["By [T]", "List"]),
+                           cls(rtArray, analysis_item, ["Bz [T]", "List"])]
+
+        result_items = [x_item,y_item,z_item]+field_items
+
         return result_items
         
-    #todo arg: params_dict
-    def calcTrajectory(self, id_dict: dict):
+    @classmethod
+    def calcTrajectory(cls, analysis_item, id_dict: dict, traj_kwargs):
+        rtArray = cls.ResultType.ResultArray
 
         ID = id_dict["InsertionDeviceObject"]
-        #energy = 3 x0 = 0 y0 = 0 z0 = -900 dxds0 = 0 dyds0 = 0 dzds0 = 1 zmax = 900 rkstep = 0.5
-        traj = ID.calc_trajectory(self.energy,[self.x0,self.y0,self.z0,self.dxds0,self.dyds0,self.dzds0],self.zmax,self.rkstep, dz=0, on_axis_field=False)
+        traj = ID.calc_trajectory(**traj_kwargs)
         x, y, z, dxds, dyds, dzds = traj.T
-        id_dict[self.text(0)] = {"x [mm]": x, "y [mm]": y, "z [mm]": z, "x' [rad]": dxds, "y' [rad]": dyds, "z' [rad]": dzds}
+        id_dict[analysis_item.text(0)] = {"x [mm]": x, "y [mm]": y, "z [mm]": z,
+                                          "x' [rad]": dxds, "y' [rad]": dyds, "z' [rad]": dzds}
 
-        result_items = [ExploreItem(ExploreItem.ResultType.ResultArray, self, ["x [mm]", "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ["y [mm]", "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ["z [mm]", "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ["x' [rad]", "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ["y' [rad]", "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ["z' [rad]", "List"])]
+        result_items = [cls(rtArray, analysis_item, ["x [mm]", "List"]),
+                        cls(rtArray, analysis_item, ["y [mm]", "List"]),
+                        cls(rtArray, analysis_item, ["z [mm]", "List"]),
+                        cls(rtArray, analysis_item, ["x' [rad]", "List"]),
+                        cls(rtArray, analysis_item, ["y' [rad]", "List"]),
+                        cls(rtArray, analysis_item, ["z' [rad]", "List"])]
         
         return result_items
     
-    #todo arg: params_dict
-    def calcPhase_Error(self, id_dict: dict):
+    @classmethod
+    def calcPhase_Error(cls, analysis_item, id_dict: dict, phaserr_kwargs):
+        rtArray = cls.ResultType.ResultArray
+        rtNumber = cls.ResultType.ResultNumeric
 
         ID = id_dict["InsertionDeviceObject"]
-        traj_dict = id_dict[ExploreItem.AnalysisType.Trajectory.value]
+        traj_dict = id_dict[cls.AnalysisType.Trajectory.value]
         traj = np.array(list(traj_dict.values())).T
         bxamp, byamp, _, _ = ID.calc_field_amplitude()
         kh, kv = ID.calc_deflection_parameter(bxamp, byamp)
-        z_list, pe, pe_rms = ID.calc_phase_error(self.energy, traj, bxamp, byamp, self.skip_poles, zmin=None, zmax=None, field_comp=None)
+        energy = phaserr_kwargs["energy"]
+        skip_poles = phaserr_kwargs["skip_poles"]
+        zmin = phaserr_kwargs["zmin"]
+        zmax = phaserr_kwargs["zmax"]
+        field_comp = phaserr_kwargs["field_comp"]
+        z_list, pe, pe_rms = ID.calc_phase_error(energy, traj, bxamp, byamp, skip_poles, zmin, zmax, field_comp)
         #chaves do dicionario no membro direito devem ser iguais aos nomes usados nos respectivos items
-        id_dict[self.text(0)] = {"z poles [mm]": z_list, "PhaseErr [deg]": pe*180/np.pi, "RMS [deg]": pe_rms*180/np.pi}
+        id_dict[analysis_item.text(0)] = {"z poles [mm]": z_list, "PhaseErr [deg]": pe*180/np.pi, "RMS [deg]": pe_rms*180/np.pi}
 
-        result_items = [ExploreItem(ExploreItem.ResultType.ResultArray, self, ["z poles [mm]", "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ["PhaseErr [deg]", "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultNumeric, self, ["RMS [deg]", f"{pe_rms*180/np.pi:.1f}"]),
-                        ExploreItem(ExploreItem.ResultType.ResultNumeric, self, ["Bx Amp [T]", f"{bxamp:.1f}"]),
-                        ExploreItem(ExploreItem.ResultType.ResultNumeric, self, ["By Amp [T]", f"{byamp:.1f}"]),
-                        ExploreItem(ExploreItem.ResultType.ResultNumeric, self, ["Kh [T.mm]", f"{kh:.1f}"]),
-                        ExploreItem(ExploreItem.ResultType.ResultNumeric, self, ["Kv [T.mm]", f"{kv:.1f}"])]
+        result_items = [cls(rtArray, analysis_item, ["z poles [mm]", "List"]),
+                        cls(rtArray, analysis_item, ["PhaseErr [deg]", "List"]),
+                        cls(rtNumber, analysis_item, ["RMS [deg]", f"{pe_rms*180/np.pi:.1f}"]),
+                        cls(rtNumber, analysis_item, ["Bx Amp [T]", f"{bxamp:.1f}"]),
+                        cls(rtNumber, analysis_item, ["By Amp [T]", f"{byamp:.1f}"]),
+                        cls(rtNumber, analysis_item, ["Kh [T.mm]", f"{kh:.1f}"]),
+                        cls(rtNumber, analysis_item, ["Kv [T.mm]", f"{kv:.1f}"])]
         
         return result_items
         
-    #todo arg: params_dict
-    def calcField_Integrals(self, id_dict: dict):
+    @classmethod
+    def calcField_Integrals(cls, analysis_item, id_dict: dict, integrals_kwargs):
+        rtArray = cls.ResultType.ResultArray
+        rtNumber = cls.ResultType.ResultNumeric
 
         ID = id_dict["InsertionDeviceObject"]
-        #todo: conferir calculo de integrais de campo para modelos
-        #*: dependendendo de como for calculado o campo antes, pode nao ser possivel calcular as integrais
-        #*: apropriadamente, entao duplicarei o calculo de campo
-        B_dict = id_dict[ExploreItem.AnalysisType.MagneticField.value]
-        B = np.array(list(B_dict.values())[1:]).T
-        ib, iib = ID.calc_field_integrals(z_list=self.Z, field_list=B)
+        ib, iib = ID.calc_field_integrals(**integrals_kwargs)
         ibx, iby, ibz = ib.T
         iibx, iiby, iibz = iib.T
-        id_dict[self.text(0)] = {'z [mm]': self.Z,
-                                            'IBx [G.cm]': ibx, 'IBy [G.cm]': iby, 'IBz [G.cm]': ibz,
-                                            'IIBx [kG.cm2]': iibx, 'IIBy [kG.cm2]': iiby, 'IIBz [kG.cm2]': iibz}
+        id_dict[analysis_item.text(0)] = {'z [mm]': integrals_kwargs["z_list"],
+                                          'IBx [G.cm]': ibx, 'IBy [G.cm]': iby, 'IBz [G.cm]': ibz,
+                                          'IIBx [kG.cm2]': iibx, 'IIBy [kG.cm2]': iiby, 'IIBz [kG.cm2]': iibz}
 
-        result_items = [ExploreItem(ExploreItem.ResultType.ResultArray, self, ['z [mm]',  "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ['IBx [G.cm]',  "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ['IBy [G.cm]',  "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ['IBz [G.cm]',  "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ['IIBx [kG.cm2]', "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ['IIBy [kG.cm2]', "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ['IIBz [kG.cm2]', "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultNumeric, self, ['IBx T  [G.cm]',   f"{ibx[-1]:7.1f}"]),
-                        ExploreItem(ExploreItem.ResultType.ResultNumeric, self, ['IBy T  [G.cm]',   f"{iby[-1]:7.1f}"]),
-                        ExploreItem(ExploreItem.ResultType.ResultNumeric, self, ['IBz T  [G.cm]',   f"{ibz[-1]:7.1f}"]),
-                        ExploreItem(ExploreItem.ResultType.ResultNumeric, self, ['IIBx T [kG.cm2]', f"{iibx[-1]:7.1f}"]),
-                        ExploreItem(ExploreItem.ResultType.ResultNumeric, self, ['IIBy T [kG.cm2]', f"{iiby[-1]:7.1f}"]),
-                        ExploreItem(ExploreItem.ResultType.ResultNumeric, self, ['IIBz T [kG.cm2]', f"{iibz[-1]:7.1f}"])]
+        result_items = [cls(rtArray,  analysis_item, ['z [mm]',  "List"]),
+                        cls(rtArray,  analysis_item, ['IBx [G.cm]',  "List"]),
+                        cls(rtArray,  analysis_item, ['IBy [G.cm]',  "List"]),
+                        cls(rtArray,  analysis_item, ['IBz [G.cm]',  "List"]),
+                        cls(rtArray,  analysis_item, ['IIBx [kG.cm2]', "List"]),
+                        cls(rtArray,  analysis_item, ['IIBy [kG.cm2]', "List"]),
+                        cls(rtArray,  analysis_item, ['IIBz [kG.cm2]', "List"]),
+                        cls(rtNumber, analysis_item, ['IBx T  [G.cm]',   f"{ibx[-1]:7.1f}"]),
+                        cls(rtNumber, analysis_item, ['IBy T  [G.cm]',   f"{iby[-1]:7.1f}"]),
+                        cls(rtNumber, analysis_item, ['IBz T  [G.cm]',   f"{ibz[-1]:7.1f}"]),
+                        cls(rtNumber, analysis_item, ['IIBx T [kG.cm2]', f"{iibx[-1]:7.1f}"]),
+                        cls(rtNumber, analysis_item, ['IIBy T [kG.cm2]', f"{iiby[-1]:7.1f}"]),
+                        cls(rtNumber, analysis_item, ['IIBz T [kG.cm2]', f"{iibz[-1]:7.1f}"])]
         
         return result_items
         
-    #todo arg: params_dict
-    def calcRoll_Off_Peaks(self, id_dict: dict):
+    @classmethod
+    def calcRoll_Off_Peaks(cls, analysis_item, id_dict: dict, rop_kwargs):
+        rtArray = cls.ResultType.ResultArray
 
         ID = id_dict["InsertionDeviceObject"]
-        ropx, ropy, ropz = ID.calc_roll_off_peaks(z=self.Z,x=self.X,y=0,field_comp=None)
-        id_dict[self.text(0)] = {'ROPx': ropx,'ROPy': ropy,'ROPz': ropz}
+        ropx, ropy, ropz = ID.calc_roll_off_peaks(**rop_kwargs)
+        id_dict[analysis_item.text(0)] = {'ROPx': ropx,'ROPy': ropy,'ROPz': ropz}
 
-        result_items = [ExploreItem(ExploreItem.ResultType.ResultArray, self, ['ROPx',  "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ['ROPy',  "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ['ROPz',  "List"])]
+        result_items = [cls(rtArray, analysis_item, ['ROPx',  "List"]),
+                        cls(rtArray, analysis_item, ['ROPy',  "List"]),
+                        cls(rtArray, analysis_item, ['ROPz',  "List"])]
         
         return result_items
 
-    #todo arg: params_dict
-    def calcRoll_Off_Amplitude(self, id_dict: dict):
+    #todo: por que em certas fazes roai varia tanto em relacao aos demais
+    #porque o campo nessa componente e' quase nulo, o que faz o calculo produzir erros numericos
+    #todo: parte da janela de visualizacao deve permitir esconder ou mostrar linhas/legendas graficadas
+    @classmethod
+    def calcRoll_Off_Amplitude(cls, analysis_item, id_dict: dict, roa_kwargs):
+        rtArray = cls.ResultType.ResultArray
+        rtNumber = cls.ResultType.ResultNumeric
 
         ID = id_dict["InsertionDeviceObject"]
-        roax, roay, roaz = ID.calc_roll_off_amplitude(z=self.Z,x=self.X,y=0)
-        id_dict[self.text(0)] = {'ROAx': roax,'ROAy': roay,'ROAz': roaz}
+        x, y = roa_kwargs["x"], roa_kwargs["y"]
+        roax, roay, roaz = ID.calc_roll_off_amplitude(**roa_kwargs)
+        id_dict[analysis_item.text(0)] = {'x [mm]': x, 'y [mm]': y,
+                                          'ROAx': roax,'ROAy': roay,'ROAz': roaz}
 
-        result_items = [ExploreItem(ExploreItem.ResultType.ResultArray, self, ['ROAx',  "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ['ROAy',  "List"]),
-                        ExploreItem(ExploreItem.ResultType.ResultArray, self, ['ROAz',  "List"])]
+        result_items = [cls(rtArray, analysis_item, ['x [mm]',  "List"]),
+                        cls(rtNumber, analysis_item, ['y [mm]',  f"{y:.1f}"]),
+                        cls(rtArray, analysis_item, ['ROAx',  "List"]),
+                        cls(rtArray, analysis_item, ['ROAy',  "List"]),
+                        cls(rtArray, analysis_item, ['ROAz',  "List"])]
         
         return result_items
 
-    #todo arg: params_dict
     def calcCross_Talk(self, id_dict: dict):
     
         id_item = self.parent()
@@ -212,14 +250,14 @@ class ExploreItem(QTreeWidgetItem):
 
         ID = id_dict["InsertionDeviceObject"]
         ID.correct_angles(angxy=0.15, angxz=-0.21, angyx=-0.01,
-                            angyz=-0.02, angzx=0.01, angzy=-0.74)
+                          angyz=-0.02, angzx=0.01, angzy=-0.74)
         ky = [-0.006781104386361973,-0.01675247563602003,7.568631573320983e-06]
         kz = [-0.006170829583118335,-0.016051627320478382,7.886674928668737e-06]
         ID.correct_cross_talk(ky=ky,kz=kz)
         id_dict[self.text(0)] = {'angxy':  0.15, 'angxz': -0.21,
-                                            'angyx': -0.01, 'angyz': -0.02,
-                                            'angzx':  0.01, 'angzy': -0.74,
-                                            'ky': ky, 'kz': kz}
+                                 'angyx': -0.01, 'angyz': -0.02,
+                                 'angzx':  0.01, 'angzy': -0.74,
+                                 'ky': ky, 'kz': kz}
         
         self.delete()
         id_new_name = id_name+' C'
@@ -267,11 +305,13 @@ class ExploreTreeWidget(QTreeWidget):
         self.setMinimumWidth(self.parent().parent().width()*0.47)
 
         # 0: primeiro da lista top level
-        data_container = ExploreItem(ExploreItem.ContainerType.ContainerData, ["Data", "Container"])
+        ctnData = ExploreItem.ContainerType.ContainerData
+        data_container = ExploreItem(ctnData, ["Data", "Container"])
         self.insertTopLevelItem(0, data_container)
         self.topLevelItem(0).setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
         # 1: segundo da lista top level
-        model_container = ExploreItem(ExploreItem.ContainerType.ContainerModel, ["Models", "Container"])
+        ctnModel = ExploreItem.ContainerType.ContainerModel
+        model_container = ExploreItem(ctnModel, ["Models", "Container"])
         self.insertTopLevelItem(1, model_container)
         self.topLevelItem(1).setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
 

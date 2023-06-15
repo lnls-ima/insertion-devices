@@ -169,12 +169,10 @@ class MainWindow(QMainWindow):
 
     ## edit slots
 
-    #!: this method can be in the AnalysisDialog class
     def edit_analysis_parameters(self):
-        dialog = analysis.AnalysisDialog(parent=self)
-        answer = dialog.exec()
-        if answer == QDialog.DialogCode.Accepted:
-            print('edit ok')
+        project = self.projects.currentWidget()
+        analysis.AnalysisDialog.updateParameters(params_kwargs=project.params, parent=self)
+        #project.params = parameters_dict
     
     ## view slots
 
@@ -208,52 +206,38 @@ class MainWindow(QMainWindow):
         project = self.projects.currentWidget()
 
         # ----------------------------- analysis ----------------------------- #
-        #*: os items do menu podem ser colocados em outro lugar para nao 
 
         if analysis_button.isChecked() and item.type() is ExploreItem.IDType:
 
             analysis_activated = []
 
-            # Data ID correction: cross talk
-            if  analysis_menu.itemCrossTalk.isChecked() and \
-                item.flag() is ExploreItem.IDType.IDData:
-        
-                analysis_activated.append(ExploreItem.calcCross_Talk)
+            analysis_funcs = [ExploreItem.calcCross_Talk,
+                              ExploreItem.calcMagnetic_Field,
+                              ExploreItem.calcTrajectory,
+                              ExploreItem.calcPhase_Error,
+                              ExploreItem.calcField_Integrals,
+                              ExploreItem.calcRoll_Off_Peaks,
+                              ExploreItem.calcRoll_Off_Amplitude]
 
-            #IDs (measures or models) analysis
-            
-            # analise: campo magnetico
-            if analysis_menu.itemMagneticField.isChecked():
-                analysis_activated.append(ExploreItem.calcMagnetic_Field)
-            
-            # analise: trajetoria
-            if analysis_menu.itemTrajectory.isChecked():
-                analysis_activated.append(ExploreItem.calcTrajectory)
+            for menu_item, func in zip(analysis_menu.items,analysis_funcs):
+                if  menu_item.isChecked() and \
+                    ((menu_item is analysis_menu.itemCrossTalk and \
+                      item.flag() is ExploreItem.IDType.IDData) or \
+                     menu_item is not analysis_menu.itemCrossTalk):
 
-            # analise: erro de fase
-            if analysis_menu.itemPhaseError.isChecked():
-                analysis_activated.append(ExploreItem.calcPhase_Error)
+                    analysis_activated.append(func)
 
-            # analise: integrais de campo
-            if analysis_menu.itemIntegrals.isChecked():
-                analysis_activated.append(ExploreItem.calcField_Integrals)
-
-            # analise: roll off peaks
-            if analysis_menu.itemRollOffPeaks.isChecked():
-                analysis_activated.append(ExploreItem.calcRoll_Off_Peaks)
-            
-            # analise: roll off amplitude
-            if analysis_menu.itemRollOffAmp.isChecked():
-                analysis_activated.append(ExploreItem.calcRoll_Off_Amplitude)
-
-            if analysis_activated:
-                project.analyzeItem(item,analysis_activated)
+            project.analyzeItem(item,analysis_activated)
 
         # ------------------------------ table ------------------------------ #
 
+        #*: por enquanto sem roll off peaks, pois deveria haver uma tabela para cada pico
+        #*: por enquanto sem exibir tabela para apenas um numero
         if  table_button.isChecked() and \
             table_button.objectName()==self.toolbar.actiontabela.objectName() and \
-            item.type() is not ExploreItem.ContainerType:
+            item.type() is not ExploreItem.ContainerType and \
+            item.flag() is not ExploreItem.ResultType.ResultNumeric and \
+            item.flag() is not ExploreItem.AnalysisType.RollOffPeaks:
             
             project.displayTable(item)
 
@@ -263,9 +247,12 @@ class MainWindow(QMainWindow):
             if len(items) == 0:
                 print("nada selecionado")
 
+            #*: por enquanto sem roll off peaks, pois ha muitos graficos para
+            #*: cada coordenada
             elif len(items) == 1 and \
-                 items[0].type() is not ExploreItem.AnalysisType and \
-                 items[0].flag() is not ExploreItem.ResultType.ResultArray:
+                 (items[0].flag() is ExploreItem.AnalysisType.RollOffPeaks or \
+                  (items[0].type() is not ExploreItem.AnalysisType and \
+                   items[0].flag() is not ExploreItem.ResultType.ResultArray)):
                 
                 print("nao pode ser plotado")
 

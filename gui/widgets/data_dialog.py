@@ -33,6 +33,7 @@ class DataDialog(QDialog):
 
         self.spins_nr_periods = []
         self.spins_period_length = []
+        self.spins_gap = []
         #arquivos ja presentes no project
         self.oldfiles = filenames
         #novos arquivos
@@ -81,6 +82,7 @@ class DataDialog(QDialog):
     def loadedFilesParameters(self):
         return [self.getSpinsValues(self.spins_nr_periods),
                 self.getSpinsValues(self.spins_period_length),
+                self.getSpinsValues(self.spins_gap),
                 self.newfiles,
                 self.lines_names]
     
@@ -119,8 +121,11 @@ class DataDialog(QDialog):
             
             ID_list = []
             file_list = []
-            for nr_periods, period_length, filename in zip(*parameters):
-                ID = InsertionDeviceData(nr_periods=nr_periods, period_length=period_length,filename=filename)
+            for nr_periods, period_length, gap, filename in zip(*parameters):
+                ID = InsertionDeviceData(nr_periods=nr_periods,
+                                         period_length=period_length,
+                                         gap=gap,
+                                         filename=filename)
                 ID_list.append(ID)
                 file_list.append(filename)
 
@@ -136,7 +141,10 @@ class DataDialog(QDialog):
 
     def accept(self) -> None:
        
-        if 0 in self.getSpinsValues(self.spins_nr_periods)+self.getSpinsValues(self.spins_period_length):
+        if 0 in self.getSpinsValues(self.spins_nr_periods) + \
+                self.getSpinsValues(self.spins_period_length) + \
+                self.getSpinsValues(self.spins_gap):
+
             QMessageBox.critical(self,
                                  "Critical Warning",
                                  "All spin boxes must have values greater than 0!")
@@ -162,7 +170,7 @@ class DataDialog(QDialog):
         for i, file in enumerate(loaded_files):
 
             filename = os.path.basename(file)
-            line_name, spin_nr_periods, spin_period_length = self.layoutData.gridFiles_insertAfterRow(filename, i+rows)
+            line_name, spin_nr_periods, spin_period_length, spin_gap = self.layoutData.gridFiles_insertAfterRow(filename, i+rows)
 
             line_name.textChanged.connect(self.resize_to_content)
             und_name = self.getUndulatorName(filename)
@@ -176,11 +184,16 @@ class DataDialog(QDialog):
             if und_name in self.parameters:
                 spin_nr_periods.setValue(self.parameters[und_name]["nr_periods"])
                 spin_period_length.setValue(self.parameters[und_name]["period_length"])
+                spin_gap.setValue(self.parameters[und_name]["gap"])
+
             spin_nr_periods.valueChanged.connect(self.spin_all)
             self.spins_nr_periods.append(spin_nr_periods)
 
             spin_period_length.valueChanged.connect(self.spin_all)
             self.spins_period_length.append(spin_period_length)
+
+            spin_gap.valueChanged.connect(self.spin_all)
+            self.spins_gap.append(spin_gap)
     
     def resize_to_content(self):
         lineedit = self.sender()
@@ -202,8 +215,15 @@ class DataDialog(QDialog):
                         spin.setValue(value)
                         spin.blockSignals(False)
             # se a spin box e' de number of periods
-            else:
+            elif spinbox in self.spins_nr_periods:
                 for spin in self.spins_nr_periods:
+                    if spin != spinbox:
+                        # bloquear sinal, pois setValue emit valueChanged
+                        spin.blockSignals(True)
+                        spin.setValue(value)
+                        spin.blockSignals(False)
+            else:
+                for spin in self.spins_gap:
                     if spin != spinbox:
                         # bloquear sinal, pois setValue emit valueChanged
                         spin.blockSignals(True)

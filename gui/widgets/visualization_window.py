@@ -1,4 +1,3 @@
-import typing
 
 from PyQt6.QtWidgets import QMenu
 from PyQt6.QtGui import QAction, QIcon, QCursor
@@ -57,7 +56,8 @@ class VisualizationTabWidget(BasicTabWidget):
 
     def plotArray(self, chart: Canvas, result_info, addMode=False):
 
-        *_, result, result_array = result_info
+        result = result_info["result"]
+        result_array = result_info["result_arraynum"]
 
         result_line = chart.ax.plot(result_array)
 
@@ -74,8 +74,12 @@ class VisualizationTabWidget(BasicTabWidget):
     
     def plotPair(self, chart: Canvas, x_info, y_info, addMode=False):
 
-        id_item, id_name, *_, x_label, x = x_info
-        *_, y_label, y = y_info
+        id_name = x_info["id_name"]
+        x_label = x_info["result"]
+        x = x_info["result_arraynum"]
+        
+        y_label = y_info["result"]
+        y = y_info["result_arraynum"]
         
         line = chart.ax.plot(x,y)
 
@@ -98,7 +102,9 @@ class VisualizationTabWidget(BasicTabWidget):
     def plotAnalysis(self, chart: Canvas, analysis_info, addMode=False):
 
         #todo: no futuro, avaliar se uso analysis ou analysis_item para fazer as condicoes
-        id_item, id_name, *_, analysis_item, analysis, analysis_dict = analysis_info
+        id_name = analysis_info["id_name"]
+        analysis_item = analysis_info["analysis_item"]
+        analysis_dict = analysis_info["analysis_dict"]
         titleyxlabel = []
 
         if analysis_item.flag() is ExploreItem.AnalysisType.MagneticField:

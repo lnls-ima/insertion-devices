@@ -10,11 +10,13 @@ class PaintedButton(QPushButton):
     def __init__(self, text="", parent=None, *args, **kwargs):
         super().__init__(text, parent, *args, **kwargs)
 
+        self.selectedAction = None
+
         self.setCheckable(True)
 
         self.clicked.connect(self.button_clicked)
 
-        self.custom_buttonMenu = QMenu(self)
+        self.Menu = QMenu(self)
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -58,7 +60,8 @@ class PaintedButton(QPushButton):
 
 
     def show_menu(self):
-        self.custom_buttonMenu.popup(self.mapToGlobal(self.rect().bottomLeft()))
+        action = self.Menu.exec(self.mapToGlobal(self.rect().bottomLeft()))
+        self.selectedAction = action
     
     def action_swap(self):
 
@@ -66,7 +69,6 @@ class PaintedButton(QPushButton):
 
         self.setIcon(action.icon())
         self.setChecked(True)
-        self.setObjectName(action.objectName())
         # fazer swap da acao e ja mudar de botao
         self.modeChanged.emit(False)
 

@@ -2,21 +2,12 @@
 from enum import Enum
 from PyQt6 import sip
 import numpy as np
-from PyQt6.QtWidgets import QTreeWidgetItem, QTreeWidget
+from PyQt6.QtWidgets import QTreeWidgetItem, QTreeWidget, QMenu
 from PyQt6.QtGui import QColor, QKeyEvent
 from PyQt6.QtCore import pyqtSignal, Qt, QItemSelectionModel, QItemSelection
 
 
 class ExploreItem(QTreeWidgetItem):
-
-    energy = 3
-    x0, y0, z0 = 0, 0, -900
-    dxds0, dyds0, dzds0 = 0, 0, 1
-    zmax = 900
-    rkstep = 0.5
-    skip_poles = 4
-    Z = np.arange(-900,900,0.5)
-    X = np.linspace(-5, 5, 23)
 
     class ContainerType(Enum):
         ContainerData = 0
@@ -158,7 +149,6 @@ class ExploreItem(QTreeWidgetItem):
         traj_dict = id_dict[cls.AnalysisType.Trajectory.value]
         traj = np.array(list(traj_dict.values())).T
         bxamp, byamp, _, _ = ID.calc_field_amplitude()
-        kh, kv = ID.calc_deflection_parameter(bxamp, byamp)
         energy = phaserr_kwargs["energy"]
         skip_poles = phaserr_kwargs["skip_poles"]
         zmin = phaserr_kwargs["zmin"]
@@ -170,11 +160,7 @@ class ExploreItem(QTreeWidgetItem):
 
         result_items = [cls(rtArray, analysis_item, ["z poles [mm]", "List"]),
                         cls(rtArray, analysis_item, ["PhaseErr [deg]", "List"]),
-                        cls(rtNumber, analysis_item, ["RMS [deg]", f"{pe_rms*180/np.pi:.1f}"]),
-                        cls(rtNumber, analysis_item, ["Bx Amp [T]", f"{bxamp:.1f}"]),
-                        cls(rtNumber, analysis_item, ["By Amp [T]", f"{byamp:.1f}"]),
-                        cls(rtNumber, analysis_item, ["Kh [T.mm]", f"{kh:.1f}"]),
-                        cls(rtNumber, analysis_item, ["Kv [T.mm]", f"{kv:.1f}"])]
+                        cls(rtNumber, analysis_item, ["RMS [deg]", f"{pe_rms*180/np.pi:.1f}"])]
         
         return result_items
         
@@ -197,13 +183,7 @@ class ExploreItem(QTreeWidgetItem):
                         cls(rtArray,  analysis_item, ['IBz [G.cm]',  "List"]),
                         cls(rtArray,  analysis_item, ['IIBx [kG.cm2]', "List"]),
                         cls(rtArray,  analysis_item, ['IIBy [kG.cm2]', "List"]),
-                        cls(rtArray,  analysis_item, ['IIBz [kG.cm2]', "List"]),
-                        cls(rtNumber, analysis_item, ['IBx T  [G.cm]',   f"{ibx[-1]:7.1f}"]),
-                        cls(rtNumber, analysis_item, ['IBy T  [G.cm]',   f"{iby[-1]:7.1f}"]),
-                        cls(rtNumber, analysis_item, ['IBz T  [G.cm]',   f"{ibz[-1]:7.1f}"]),
-                        cls(rtNumber, analysis_item, ['IIBx T [kG.cm2]', f"{iibx[-1]:7.1f}"]),
-                        cls(rtNumber, analysis_item, ['IIBy T [kG.cm2]', f"{iiby[-1]:7.1f}"]),
-                        cls(rtNumber, analysis_item, ['IIBz T [kG.cm2]', f"{iibz[-1]:7.1f}"])]
+                        cls(rtArray,  analysis_item, ['IIBz [kG.cm2]', "List"])]
         
         return result_items
         
@@ -287,6 +267,7 @@ class ExploreTreeWidget(QTreeWidget):
 
     selectReturned = pyqtSignal(list)
     keyPressed = pyqtSignal(QKeyEvent)
+    noItemClicked = pyqtSignal()
 
     def __init__(self, parent=None,*args,**kwargs):
         super().__init__(parent,*args,**kwargs)
@@ -295,6 +276,7 @@ class ExploreTreeWidget(QTreeWidget):
 
         self.itemSelectionChanged.connect(self.selection_changed)
         
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)
         self.setColumnCount(2)
         self.setHeaderLabels(["Item", "Content"])
@@ -315,7 +297,14 @@ class ExploreTreeWidget(QTreeWidget):
         self.insertTopLevelItem(1, model_container)
         self.topLevelItem(1).setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
 
+        self.menuContextID = QMenu(self)
+        self.menuContextID.addAction("Summary")
+        self.menuContextID.addAction("Save field map")
 
+        self.menuContextTraj = QMenu(self)
+        self.menuContextTraj.addAction("Save Trajectory")
+
+    
     def topLevelItem(self, index: int) -> ExploreItem:
         return super().topLevelItem(index)
 
@@ -333,6 +322,14 @@ class ExploreTreeWidget(QTreeWidget):
                 item.setBackground(1, QColor("white"))
         
         self.itemsSelected = selected_items
+
+    
+    def mousePressEvent(self, event) -> None:
+        if not self.indexAt(event.pos()).isValid():
+            self.noItemClicked.emit()
+        print('clique na tree:',event.pos())
+        return super().mousePressEvent(event)
+
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() in [Qt.Key.Key_Space,Qt.Key.Key_Return,Qt.Key.Key_Enter]:

@@ -1,3 +1,4 @@
+import os
 import typing
 from PyQt6.QtWidgets import (QWidget,
                              QVBoxLayout,
@@ -12,11 +13,9 @@ from PyQt6.QtWidgets import (QWidget,
                              QDialogButtonBox,
                              QSpinBox,
                              QDoubleSpinBox,
-                             QScrollArea,
                              QGroupBox,
                              QSizePolicy,
-                             QRadioButton,
-                             QTabWidget)
+                             QRadioButton)
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 
@@ -30,6 +29,7 @@ import numpy as np
 fontConsolas8 = QFont("Consolas",8)
 fontConsolas10 = QFont("Consolas",10)
 fontConsolas14 = QFont("Consolas",14)
+fontMSSansSerif12 = QFont("MS Sans Serif",12)
 sizeFixed = QSizePolicy.Policy.Fixed
 sizePreferred = QSizePolicy.Policy.Preferred
 alignLeft = Qt.AlignmentFlag.AlignLeft
@@ -49,24 +49,24 @@ class DataLayout(QVBoxLayout):
 
         label_browse = QLabel("Browse for Data")
         label_files = QLabel("Files")
-        label_files.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        label_files.setAlignment(alignHCenter)
         label_files.setStyleSheet("font-weight: bold")
         label_names = QLabel("Names")
-        label_names.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        label_names.setAlignment(alignHCenter)
         label_names.setStyleSheet("font-weight: bold")
         label_nr_periods = QLabel("Number of Periods")
-        label_nr_periods.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        label_nr_periods.setAlignment(alignHCenter)
         label_nr_periods.setStyleSheet("font-weight: bold")
         label_period_length = QLabel("Period Length")
-        label_period_length.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        label_period_length.setAlignment(alignHCenter)
         label_period_length.setStyleSheet("font-weight: bold")
+        label_gap = QLabel("Gap")
+        label_gap.setAlignment(alignHCenter)
+        label_gap.setStyleSheet("font-weight: bold")
         
-        self.button_browse = QToolButton()
-        self.button_browse.setText("...")
-        #button_browse.setSizePolicy(QSizePolicy.Policy.Fixed,QSizePolicy.Policy.Fixed)
-        
+        self.button_browse = QToolButton(text="...")
 
-        self.checkbox_valuesforall = QCheckBox("Use period values change for all")
+        self.checkbox_valuesforall = QCheckBox("Use geometry values change for all")
         self.checkbox_valuesforall.setChecked(True)
         
 
@@ -80,6 +80,7 @@ class DataLayout(QVBoxLayout):
         self.gridFiles.addWidget(label_names,1,1)
         self.gridFiles.addWidget(label_nr_periods,1,2)
         self.gridFiles.addWidget(label_period_length,1,3)
+        self.gridFiles.addWidget(label_gap,1,4)
 
         ## dialog button box - buttons
         buttons = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
@@ -91,20 +92,23 @@ class DataLayout(QVBoxLayout):
         self.addWidget(self.buttonBox)
 
 
-    def gridFiles_insertAfterRow(self, filename: str, pre_row_index: int) -> typing.Tuple[QLineEdit, QSpinBox, QDoubleSpinBox]:
+    def gridFiles_insertAfterRow(self, filename: str, pre_row_index: int) -> typing.Tuple[QLineEdit, QSpinBox, QDoubleSpinBox, QDoubleSpinBox]:
         
         label_file = QLabel(filename)
         line_name = QLineEdit()
         spin_nr_periods = QSpinBox()
         spin_period_length = QDoubleSpinBox()
         spin_period_length.setSuffix(" mm")
+        spin_gap = QDoubleSpinBox()
+        spin_gap.setSuffix(" mm")
         
         self.gridFiles.addWidget(label_file,pre_row_index,0)
         self.gridFiles.addWidget(line_name,pre_row_index,1)
         self.gridFiles.addWidget(spin_nr_periods,pre_row_index,2)
         self.gridFiles.addWidget(spin_period_length,pre_row_index,3)
+        self.gridFiles.addWidget(spin_gap,pre_row_index,4)
 
-        return line_name, spin_nr_periods, spin_period_length
+        return line_name, spin_nr_periods, spin_period_length, spin_gap
     
 
 
@@ -414,6 +418,7 @@ class MagneticFieldEditWidget(QWidget):
             spin_coord = QDoubleSpinBox()
             spin_coord.setMinimum(-10000)
             spin_coord.setMaximum(10000)
+            spin_coord.setDecimals(3)
             spin_coord.setProperty("value",0)
             spin_coord.setSuffix(" mm")
             spin_coord.setSizePolicy(sizeFixed,sizeFixed)
@@ -421,6 +426,7 @@ class MagneticFieldEditWidget(QWidget):
             spin_start = QDoubleSpinBox()
             spin_start.setMinimum(-10000)
             spin_start.setMaximum(10000)
+            spin_start.setDecimals(3)
             spin_start.setProperty("value",0)
             spin_start.setSuffix(" mm")
             spin_start.setSizePolicy(sizeFixed,sizeFixed)
@@ -428,12 +434,14 @@ class MagneticFieldEditWidget(QWidget):
             spin_end = QDoubleSpinBox()
             spin_end.setMinimum(-10000)
             spin_end.setMaximum(10000)
+            spin_end.setDecimals(3)
             spin_end.setProperty("value",0)
             spin_end.setSuffix(" mm")
             self.spins_end[i] = spin_end
             spin_step = QDoubleSpinBox()
             spin_step.setMinimum(-10000)
             spin_step.setMaximum(10000)
+            spin_step.setDecimals(3)
             spin_step.setProperty("value",0)
             spin_step.setSingleStep(0.5)
             spin_step.setSuffix(" mm")
@@ -624,49 +632,61 @@ class TrajectoryEditWidget(QWidget):
         label_rightbracket.setSizePolicy(sizeFixed,sizePreferred)
         
         self.spin_energy = QDoubleSpinBox()
+        self.spin_energy.setDecimals(3)
         self.spin_energy.setProperty("value",energy)
         self.spin_energy.setSuffix(" GeV")
         self.spin_x0 = QDoubleSpinBox()
         self.spin_x0.setMinimum(-10000)
         self.spin_x0.setMaximum(10000)
+        self.spin_x0.setDecimals(3)
         self.spin_x0.setProperty("value",r0[0])
         self.spin_x0.setSuffix(" mm")
         self.spin_y0 = QDoubleSpinBox()
         self.spin_y0.setMinimum(-10000)
         self.spin_y0.setMaximum(10000)
+        self.spin_y0.setDecimals(3)
         self.spin_y0.setProperty("value",r0[1])
         self.spin_y0.setSuffix(" mm")
         self.spin_z0 = QDoubleSpinBox()
         self.spin_z0.setMinimum(-10000)
         self.spin_z0.setMaximum(10000)
+        self.spin_z0.setDecimals(3)
         self.spin_z0.setProperty("value",r0[2])
         self.spin_z0.setSuffix(" mm")
         self.spin_dxds0 = QDoubleSpinBox()
-        self.spin_dxds0.setMinimum(-1.5)
-        self.spin_dxds0.setMaximum(1.5)
+        self.spin_dxds0.setMinimum(-2)
+        self.spin_dxds0.setMaximum(2)
+        self.spin_dxds0.setDecimals(3)
         self.spin_dxds0.setProperty("value",r0[3])
         self.spin_dxds0.setSuffix(" rad")
         self.spin_dyds0 = QDoubleSpinBox()
-        self.spin_dyds0.setMinimum(-1.5)
-        self.spin_dyds0.setMaximum(1.5)
+        self.spin_dyds0.setMinimum(-2)
+        self.spin_dyds0.setMaximum(2)
+        self.spin_dyds0.setDecimals(3)
         self.spin_dyds0.setProperty("value",r0[4])
         self.spin_dyds0.setSuffix(" rad")
         self.spin_dzds0 = QDoubleSpinBox()
-        self.spin_dzds0.setMinimum(-1.5)
-        self.spin_dzds0.setMaximum(1.5)
+        self.spin_dzds0.setMinimum(-2)
+        self.spin_dzds0.setMaximum(2)
+        self.spin_dzds0.setDecimals(3)
         self.spin_dzds0.setProperty("value",r0[5])
         self.spin_dzds0.setSuffix(" rad")
         self.spin_zmax = QDoubleSpinBox()
         self.spin_zmax.setMinimum(-10000)
         self.spin_zmax.setMaximum(10000)
+        self.spin_zmax.setDecimals(3)
         self.spin_zmax.setProperty("value",zmax)
         self.spin_zmax.setSuffix(" mm")
         self.spin_zmax.setSizePolicy(sizeFixed,sizeFixed)
         self.spin_rkstep = QDoubleSpinBox()
+        self.spin_rkstep.setDecimals(3)
         self.spin_rkstep.setProperty("value",rkstep)
         self.spin_rkstep.setSingleStep(0.5)
         self.spin_rkstep.setSuffix(" mm")
         self.spin_dz = QDoubleSpinBox()
+        self.spin_dz.setMinimum(-100)
+        self.spin_dz.setMaximum(100)
+        self.spin_dz.setDecimals(3)
         self.spin_dz.setProperty("value",dz)
         self.spin_dz.setSuffix(" mm")
         self.combo_on_axis_field = QComboBox()
@@ -776,6 +796,7 @@ class PhaseErrorEditWidget(QWidget):
             gridPhaseError.addWidget(label_comma,row,4)
 
         self.spin_energy = QDoubleSpinBox()
+        self.spin_energy.setDecimals(3)
         self.spin_energy.setProperty("value",energy)
         self.spin_energy.setSuffix(" GeV")
         self.spin_energy.setSizePolicy(sizeFixed,sizeFixed)
@@ -892,26 +913,33 @@ class IntegralsEditWidget(QWidget):
         self.spin_z_list_start = QDoubleSpinBox()
         self.spin_z_list_start.setMinimum(-10000)
         self.spin_z_list_start.setMaximum(10000)
+        self.spin_z_list_start.setDecimals(3)
         self.spin_z_list_start.setSuffix(" mm")
         self.spin_z_list_start.setProperty("value",float(z_list[0]))
         self.spin_z_list_start.setSizePolicy(sizeFixed,sizeFixed)
         self.spin_z_list_end = QDoubleSpinBox()
         self.spin_z_list_end.setMinimum(-10000)
         self.spin_z_list_end.setMaximum(10000)
+        self.spin_z_list_end.setDecimals(3)
         self.spin_z_list_end.setSuffix(" mm")
         self.spin_z_list_end.setProperty("value",float(z_list[-1]))
         self.spin_z_list_step = QDoubleSpinBox()
         self.spin_z_list_step.setMinimum(-100)
         self.spin_z_list_step.setMaximum(100)
+        self.spin_z_list_step.setDecimals(3)
         self.spin_z_list_step.setSuffix(" mm")
         self.spin_z_list_step.setProperty("value",float(z_list[1]-z_list[0]))
         self.spin_z_list_step.setSingleStep(0.5)
         self.spin_x = QDoubleSpinBox()
+        self.spin_x.setMinimum(-10000)
+        self.spin_x.setMaximum(10000)
+        self.spin_x.setDecimals(3)
         self.spin_x.setSuffix(" mm")
         self.spin_x.setProperty("value",x)
         self.spin_y = QDoubleSpinBox()
         self.spin_y.setMinimum(-100)
         self.spin_y.setMaximum(100)
+        self.spin_y.setDecimals(3)
         self.spin_y.setSuffix(" mm")
         self.spin_y.setProperty("value",y)
         label_field_list_value = QLabel("None")
@@ -1015,39 +1043,46 @@ class RollOffPeaksEditWidget(QWidget):
         self.spin_zstart = QDoubleSpinBox()
         self.spin_zstart.setMinimum(-10000)
         self.spin_zstart.setMaximum(10000)
+        self.spin_zstart.setDecimals(3)
         self.spin_zstart.setSuffix(" mm")
         self.spin_zstart.setProperty("value",float(z[0]))
         self.spin_zstart.setSizePolicy(sizeFixed,sizeFixed)
         self.spin_zend = QDoubleSpinBox()
         self.spin_zend.setMinimum(-10000)
         self.spin_zend.setMaximum(10000)
+        self.spin_zend.setDecimals(3)
         self.spin_zend.setSuffix(" mm")
         self.spin_zend.setProperty("value",float(z[-1]))
         self.spin_zstep = QDoubleSpinBox()
         self.spin_zstep.setMinimum(-100)
         self.spin_zstep.setMaximum(100)
+        self.spin_zstep.setDecimals(3)
         self.spin_zstep.setSuffix(" mm")
         self.spin_zstep.setProperty("value",float(z[1]-z[0]))
         self.spin_zstep.setSingleStep(0.5)
         self.spin_xstart = QDoubleSpinBox()
         self.spin_xstart.setMinimum(-10000)
         self.spin_xstart.setMaximum(10000)
+        self.spin_xstart.setDecimals(3)
         self.spin_xstart.setSuffix(" mm")
         self.spin_xstart.setProperty("value",float(x[0]))
         self.spin_xend = QDoubleSpinBox()
         self.spin_xend.setMinimum(-10000)
         self.spin_xend.setMaximum(10000)
+        self.spin_xend.setDecimals(3)
         self.spin_xend.setSuffix(" mm")
         self.spin_xend.setProperty("value",float(x[-1]))
         self.spin_xstep = QDoubleSpinBox()
         self.spin_xstep.setMinimum(-100)
         self.spin_xstep.setMaximum(100)
+        self.spin_xstep.setDecimals(3)
         self.spin_xstep.setSuffix(" mm")
         self.spin_xstep.setProperty("value",float(x[1]-x[0]))
         self.spin_xstep.setSingleStep(0.5)
         self.spin_y = QDoubleSpinBox()
         self.spin_y.setMinimum(-1000)
         self.spin_y.setMaximum(1000)
+        self.spin_y.setDecimals(3)
         self.spin_y.setSuffix(" mm")
         self.spin_y.setProperty("value",y)
         self.combo_field_comp = NumericComboBox(nums_list=["0","1"])
@@ -1155,39 +1190,46 @@ class RollOffAmpEditWidget(QWidget):
         self.spin_zstart = QDoubleSpinBox()
         self.spin_zstart.setMinimum(-10000)
         self.spin_zstart.setMaximum(10000)
+        self.spin_zstart.setDecimals(3)
         self.spin_zstart.setSuffix(" mm")
         self.spin_zstart.setProperty("value",float(z[0]))
         self.spin_zstart.setSizePolicy(sizeFixed,sizeFixed)
         self.spin_zend = QDoubleSpinBox()
         self.spin_zend.setMinimum(-10000)
         self.spin_zend.setMaximum(10000)
+        self.spin_zend.setDecimals(3)
         self.spin_zend.setSuffix(" mm")
         self.spin_zend.setProperty("value",float(z[-1]))
         self.spin_zstep = QDoubleSpinBox()
         self.spin_zstep.setMinimum(-100)
         self.spin_zstep.setMaximum(100)
+        self.spin_zstep.setDecimals(3)
         self.spin_zstep.setSuffix(" mm")
         self.spin_zstep.setProperty("value",float(z[1]-z[0]))
         self.spin_zstep.setSingleStep(0.5)
         self.spin_xstart = QDoubleSpinBox()
         self.spin_xstart.setMinimum(-10000)
         self.spin_xstart.setMaximum(10000)
+        self.spin_xstart.setDecimals(3)
         self.spin_xstart.setSuffix(" mm")
         self.spin_xstart.setProperty("value",float(x[0]))
         self.spin_xend = QDoubleSpinBox()
         self.spin_xend.setMinimum(-10000)
         self.spin_xend.setMaximum(10000)
+        self.spin_xend.setDecimals(3)
         self.spin_xend.setSuffix(" mm")
         self.spin_xend.setProperty("value",float(x[-1]))
         self.spin_xstep = QDoubleSpinBox()
         self.spin_xstep.setMinimum(-100)
         self.spin_xstep.setMaximum(100)
+        self.spin_xstep.setDecimals(3)
         self.spin_xstep.setSuffix(" mm")
         self.spin_xstep.setProperty("value",float(x[1]-x[0]))
         self.spin_xstep.setSingleStep(0.5)
         self.spin_y = QDoubleSpinBox()
         self.spin_y.setMinimum(-10000)
         self.spin_y.setMaximum(10000)
+        self.spin_y.setDecimals(3)
         self.spin_y.setSuffix(" mm")
         self.spin_y.setProperty("value",y)
 
@@ -1251,7 +1293,7 @@ class RollOffAmpEditWidget(QWidget):
 
 
 
-
+#todo: conferir o que pode ser negativo e o que nao pode
 class AnalysisLayout(QVBoxLayout):
     def __init__(self, params_kwargs, parent=None):
         super().__init__(parent)
@@ -1285,3 +1327,119 @@ class AnalysisLayout(QVBoxLayout):
 
         self.addWidget(tabs)
         self.addWidget(self.buttonBox)
+
+
+
+
+class SaveLayout(QVBoxLayout):
+    def __init__(self, file, parent=None):
+        super().__init__(parent)
+
+        hboxSaveFormat = QHBoxLayout()
+
+        labelSaveFmt = QLabel("Save for: ")
+        self.comboFormats = QComboBox()
+        self.comboFormats.addItems(["imaids","Spectra"])
+
+        hboxSaveFormat.addWidget(labelSaveFmt)
+        hboxSaveFormat.addWidget(self.comboFormats)
+        hboxSaveFormat.addStretch()
+
+        groupFieldMap = QGroupBox("Field map grid")
+        
+        gridFieldMap = QGridLayout(groupFieldMap)
+
+        label_xrange = QLabel("x range:")
+        label_yrange = QLabel("y range:")
+        label_zrange = QLabel("z range:")
+        label_start = QLabel("start")
+        label_end = QLabel("end")
+        label_step = QLabel("step")
+
+        default_start = [-5,0,-900]
+        default_end   = [ 5,0, 900]
+        default_step  = [ 1,0, 0.5]
+        self.spins_start = []
+        self.spins_end = []
+        self.spins_step = []
+        for i in [0,1,2]:
+            spin_start = QDoubleSpinBox()
+            spin_start.setMinimum(-10000)
+            spin_start.setMaximum(10000)
+            spin_start.setProperty("value",default_start[i])
+            spin_start.setSingleStep(3)
+            spin_start.setSuffix(" mm")
+            self.spins_start.append(spin_start)
+            spin_end = QDoubleSpinBox()
+            spin_end.setMinimum(-10000)
+            spin_end.setMaximum(10000)
+            spin_end.setProperty("value",default_end[i])
+            spin_end.setSingleStep(3)
+            spin_end.setSuffix(" mm")
+            self.spins_end.append(spin_end)
+            spin_step = QDoubleSpinBox()
+            spin_step.setMinimum(-1000)
+            spin_step.setMaximum(1000)
+            spin_step.setProperty("value",default_step[i])
+            spin_step.setSingleStep(3)
+            spin_step.setSuffix(" mm")
+            self.spins_step.append(spin_step)
+
+            gridFieldMap.addWidget(spin_start,i+1,1)
+            gridFieldMap.addWidget(spin_end,i+1,2)
+            gridFieldMap.addWidget(spin_step,i+1,3)
+
+        gridFieldMap.addWidget(label_start,0,1,alignCenter)
+        gridFieldMap.addWidget(label_end,0,2,alignCenter)
+        gridFieldMap.addWidget(label_step,0,3,alignCenter)
+        gridFieldMap.addWidget(label_xrange,1,0,alignRight)
+        gridFieldMap.addWidget(label_yrange,2,0,alignRight)
+        gridFieldMap.addWidget(label_zrange,3,0,alignRight)
+
+        filename = os.path.basename(file)
+        filedir = os.path.dirname(file)
+        
+        hboxFileDestiny = QHBoxLayout()
+
+        labelDest = QLabel("File Destination")
+        self.buttonBrowseDest = QToolButton()
+        self.buttonBrowseDest.setText("...")
+
+        hboxFileDestiny.addWidget(labelDest)
+        hboxFileDestiny.addWidget(self.buttonBrowseDest)
+        hboxFileDestiny.addStretch()
+        
+        hboxFileDir = QHBoxLayout()
+
+        labelDir = QLabel("File Directory:")
+        self.lineDir = QLineEdit()
+        self.lineDir.setText(filedir)
+        
+        hboxFileDir.addWidget(labelDir)
+        hboxFileDir.addWidget(self.lineDir)
+        
+        hboxFileName = QHBoxLayout()
+
+        labelName = QLabel("File Name:")
+        self.lineName = QLineEdit()
+        self.lineName.setText(filename)
+        
+        hboxFileName.addWidget(labelName)
+        hboxFileName.addWidget(self.lineName)
+
+        
+
+        # botoes a serem usados
+        buttons = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        # criando os botoes
+        self.buttonBox = QDialogButtonBox(buttons)
+        
+
+        self.addLayout(hboxSaveFormat)
+        self.addWidget(groupFieldMap)
+        self.addLayout(hboxFileDestiny)
+        self.addLayout(hboxFileDir)
+        self.addLayout(hboxFileName)
+        self.addWidget(self.buttonBox)
+
+        self.setContentsMargins(6,6,6,4)

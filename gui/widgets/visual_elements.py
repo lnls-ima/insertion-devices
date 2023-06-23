@@ -5,8 +5,7 @@ from PyQt6.QtCore import (Qt,
                           QModelIndex,
                           pyqtSignal,
                           QItemSelection,
-                          QItemSelectionModel,
-                          QItemSelectionRange)
+                          QItemSelectionModel)
 from PyQt6.QtWidgets import QTableView, QWidget, QVBoxLayout
 
 import matplotlib

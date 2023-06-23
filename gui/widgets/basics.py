@@ -7,7 +7,11 @@ from PyQt6.QtWidgets import (QWidget,
                              QLineEdit,
                              QStyle,
                              QStylePainter,
-                             QStyleOptionTab)
+                             QStyleOptionTab,
+                             QVBoxLayout,
+                             QToolButton,
+                             QLayout)
+
 from PyQt6.QtCore import pyqtSignal, Qt, QRect, QPoint
 
 
@@ -47,7 +51,9 @@ class BasicTabWidget(QTabWidget):
         
         index = self.tabBar().tabAt(self.tabPos)
 
-        new_text, ok = QInputDialog.getText(self, 'Rename Item', 'Enter new name:', text=self.tabText(index))
+        new_text, ok = QInputDialog.getText(
+            self, 'Rename Item', 'Enter new name:', text=self.tabText(index)
+        )
         
         if ok:
             self.setTabText(index, new_text)
@@ -74,7 +80,9 @@ class BasicTabWidget(QTabWidget):
 
     def resize_to_content(self):
         X_margin = 15
-        self.edit.setFixedWidth(10+X_margin+self.edit.fontMetrics().boundingRect(self.edit.text()).width())
+        self.edit.setFixedWidth(
+            10+X_margin+self.edit.fontMetrics().boundingRect(self.edit.text()).width()
+        )
 
     def finish_rename(self):
         self.setTabText(self.editting_tab, self.edit.text())
@@ -128,3 +136,68 @@ class VerticalTabWidget(QTabWidget):
         
         self.setTabBar(VerticalTabBar(self))
         self.setTabPosition(QTabWidget.TabPosition.West)
+
+
+class CollapsibleBox(QWidget):
+    def __init__(self, title=""):
+        super().__init__()
+
+        self.setContentsMargins(0,0,0,0) #!
+
+        self.vbox = QVBoxLayout(self)
+        self.vbox.setSpacing(0) #!
+        self.vbox.setContentsMargins(0,0,0,0) #!
+
+        self.button = QToolButton(text=title, checkable=True, checked=False)
+
+        self.button.setStyleSheet("border: none")
+        self.button.setToolButtonStyle(
+            Qt.ToolButtonStyle.ToolButtonTextBesideIcon
+        )
+        self.button.setArrowType(Qt.ArrowType.RightArrow)
+        self.button.clicked.connect(self.setContentExpanded)
+
+        self.content = QWidget()
+        self.content.setHidden(True)
+
+        self.vbox.addWidget(self.button)
+        self.vbox.addWidget(self.content)
+
+    def setContentExpanded(self, expand):
+
+        right = Qt.ArrowType.RightArrow
+        down = Qt.ArrowType.DownArrow
+
+        self.button.setChecked(expand)
+        self.button.setArrowType(down if expand else right)
+        self.content.setHidden(not expand)
+    
+    def isExpanded(self) -> bool:
+        return not self.content.isHidden()
+
+    def widget(self):
+        return self.content
+
+    def cleanContent(self):
+
+        if type(self.content) is not QWidget:
+            self.content.deleteLater()
+
+        lay = self.content.layout()
+        if lay is not None:
+            lay.deleteLater()
+
+    def setWidget(self, widget: QWidget):
+        self.cleanContent()
+        self.content = widget
+
+        self.vbox.insertWidget(1,self.content)
+        self.content.setHidden(True)
+
+    def setContentLayout(self, layout: QLayout):
+        self.cleanContent()
+        self.content = QWidget()
+        self.content.setLayout(layout)
+
+        self.vbox.insertWidget(1,self.content)
+        self.content.setHidden(True)

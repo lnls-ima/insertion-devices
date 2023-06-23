@@ -3,15 +3,13 @@ import time
 
 t = time.time()
 import sys
-import numpy as np
 dt = time.time()-t
 print('imports menores =',dt*1000,'ms')
 
 t = time.time()
 from  PyQt6.QtWidgets import   (QApplication,
                                 QMainWindow,
-                                QMessageBox,
-                                QDialog)
+                                QMessageBox)
 from   PyQt6.QtCore   import    Qt
 dt = time.time()-t
 print('imports pyqt =',dt*1000,'ms')
@@ -88,8 +86,7 @@ class MainWindow(QMainWindow):
         elif event.key() in [Qt.Key.Key_1, Qt.Key.Key_2, Qt.Key.Key_3,
                              Qt.Key.Key_4, Qt.Key.Key_5, Qt.Key.Key_6,
                              Qt.Key.Key_7, Qt.Key.Key_8, Qt.Key.Key_9]:
-            #print(event.key().__name__)
-            index = int(Qt.Key(event.key()).__str__()[-1])-1
+            index = int(str(Qt.Key(event.key()))[-1])-1
             if index < visuals.count():
                 visuals.setCurrentIndex(index)
         elif event.key() == Qt.Key.Key_Backspace:
@@ -109,6 +106,7 @@ class MainWindow(QMainWindow):
         self.menubar.actionExit.triggered.connect(self.close)
         self.menubar.actionAnalysis.triggered.connect(self.edit_analysis_parameters)
         self.menubar.actionDockTree.triggered.connect(self.setDockVisible)
+        self.menubar.actionDockSummary.triggered.connect(self.setDockVisible)
         self.menubar.actionDockCommand.triggered.connect(self.setDockVisible)
         self.menubar.actionToolBar.triggered.connect(self.toolbar.setVisible)
         self.menubar.actionStatusBar.triggered.connect(self.statusbar.setVisible)
@@ -116,19 +114,20 @@ class MainWindow(QMainWindow):
     def update_menu(self):
         project = self.projects.currentWidget()
         self.menubar.actionDockTree.setChecked(project.dockTree.isVisible())
+        self.menubar.actionDockSummary.setChecked(project.dockSummary.isVisible())
         self.menubar.actionDockCommand.setChecked(project.dockCommand.isVisible())
         self.menubar.actionToolBar.setChecked(self.toolbar.isVisible())
     
     ## file slots
 
     def open_files(self, checked):
+        project = self.projects.currentWidget()
 
-        ID_list, filenames, name_list = data_dialog.DataDialog.getOpenFileIDs(files=self.projects.currentWidget().filenames, parent=self)
+        ID_list, filenames, name_list = data_dialog.DataDialog.getOpenFileIDs(files=project.filenames, parent=self)
         
         for ID, filename, name in zip(ID_list, filenames, name_list):
-            project = self.projects.currentWidget()
             project.filenames.append(filename)
-            project.insertiondevices[name] = {"InsertionDeviceObject": ID}
+            project.insertiondevices[name] = {"InsertionDeviceObject": ID, "filename": filename}
             project.tree.insertID(ID=ID, IDType=ExploreItem.IDType.IDData,name=name)
 
     def model_generation(self):
@@ -181,6 +180,8 @@ class MainWindow(QMainWindow):
         dock_name = self.sender().objectName()
         if "Tree" in dock_name:
             project.dockTree.setVisible(visible)
+        elif "Summary" in dock_name:
+            project.dockSummary.setVisible(visible)
         elif "Command" in dock_name:
             project.dockCommand.setVisible(visible)
 
@@ -203,6 +204,7 @@ class MainWindow(QMainWindow):
         analysis_menu = self.toolbar.buttonAnalysis.Menu
         analysis_button = self.toolbar.buttonAnalysis
         table_button = self.toolbar.buttonTable
+        save_action = self.toolbar.actionSave
         project = self.projects.currentWidget()
 
         # ----------------------------- analysis ----------------------------- #
@@ -234,12 +236,24 @@ class MainWindow(QMainWindow):
         #*: por enquanto sem roll off peaks, pois deveria haver uma tabela para cada pico
         #*: por enquanto sem exibir tabela para apenas um numero
         if  table_button.isChecked() and \
-            table_button.objectName()==self.toolbar.actiontabela.objectName() and \
+            table_button.selectedAction.text()=="Table" and \
             item.type() is not ExploreItem.ContainerType and \
             item.flag() is not ExploreItem.ResultType.ResultNumeric and \
             item.flag() is not ExploreItem.AnalysisType.RollOffPeaks:
-            
+
             project.displayTable(item)
+
+        # ------------------------------- save ------------------------------- #
+
+        if  save_action.isChecked() and \
+            item.flag() is ExploreItem.IDType.IDData:
+
+            project.saveFieldMap(item)
+
+
+        # ----------------------------- summary ----------------------------- #
+
+        project.update_summary(item)
 
     def tree_items_returned(self, items):
         if self.toolbar.buttonPlot.isChecked():

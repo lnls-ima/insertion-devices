@@ -1,8 +1,7 @@
 
-from PyQt6 import QtGui
 from PyQt6.QtWidgets import QStatusBar, QToolBar, QMenuBar
 from PyQt6.QtGui import QIcon, QAction
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtCore import pyqtSignal
 
 from . import analysis, painted_button
 
@@ -20,8 +19,6 @@ class ToolBar(QToolBar):
 
     def __init__(self, title='', parent=None):
         super().__init__(title, parent)
-
-        self.setWindowModality(Qt.WindowModality.NonModal)
 
         #todo: consertar posicao do analysis menu para tornar True abaixo
         self.setMovable(False)
@@ -44,6 +41,11 @@ class ToolBar(QToolBar):
         self.actionCursor.setCheckable(True)
         self.actionCursor.triggered.connect(self.mode_swap) #todo: ver como e' o bool que manda
         self.addAction(self.actionCursor)
+        ## tool bar - save action: salvar tabelas dos mapas de campo
+        self.actionSave = QAction(QIcon("icons/icons/database-export.png"),"Save",self)
+        self.actionSave.setCheckable(True)
+        self.actionSave.triggered.connect(self.mode_swap)
+        self.addAction(self.actionSave)
         self.addSeparator()
         ## tool bar - analysis button: executar analise de dados
         self.buttonAnalysis = analysis.AnalysisPushButton(text="Analysis",
@@ -59,11 +61,9 @@ class ToolBar(QToolBar):
 
         self.actiongrafico = QAction(self.grafico,"grafico",self.buttonPlot)
         self.actiongrafico.triggered.connect(self.buttonPlot.action_swap)
-        self.actiongrafico.setObjectName("graph")
+        self.buttonPlot.selectedAction = self.actiongrafico
+        self.buttonPlot.Menu.addActions([self.actiongrafico])
 
-        self.buttonPlot.setObjectName(self.actiongrafico.objectName())
-        self.grafico = self.buttonPlot.icon()
-        self.buttonPlot.custom_buttonMenu.addActions([self.actiongrafico])
         self.addWidget(self.buttonPlot)
         self.addSeparator()
         ## tool bar - table button: fazer tabelas dos dados
@@ -73,25 +73,20 @@ class ToolBar(QToolBar):
         self.whoChecked = self.buttonTable
         self.buttonTable.setIcon(self.tabela)
 
-        self.actiontabela = QAction(self.tabela,"tabela")
+        self.actiontabela = QAction(self.tabela,"Table")
         self.actiontabela.triggered.connect(self.buttonTable.action_swap)
-        self.actiontabela.setObjectName("tabela")
         self.actiondog = QAction(self.dog,"cachorro")
         self.actiondog.triggered.connect(self.buttonTable.action_swap)
-        self.actiondog.setObjectName("dog")
         self.actioncat = QAction(self.cat,"gato")
         self.actioncat.triggered.connect(self.buttonTable.action_swap)
-        self.actioncat.setObjectName("cat")
         self.actionbug = QAction(self.bug,"inseto")
         self.actionbug.triggered.connect(self.buttonTable.action_swap)
-        self.actionbug.setObjectName("bug")
-
-        self.buttonTable.setObjectName(self.actiontabela.objectName())
-        self.tabela = self.buttonTable.icon()
-        self.buttonTable.custom_buttonMenu.addActions([self.actiontabela,
+        self.buttonTable.selectedAction = self.actiontabela
+        self.buttonTable.Menu.addActions([self.actiontabela,
                                                        self.actioncat,
                                                        self.actiondog,
                                                        self.actionbug])
+        
         self.addWidget(self.buttonTable)
 
     def mode_swap(self,isSelfUnchecking):
@@ -100,7 +95,9 @@ class ToolBar(QToolBar):
 
         self.whoChecked.setChecked(False)
 
-        if toolbar_button==self.whoChecked and isSelfUnchecking:
+        if  toolbar_button==self.whoChecked and (isSelfUnchecking or \
+            type(toolbar_button) is QAction):
+            
             self.actionCursor.setChecked(True)
             self.whoChecked = self.actionCursor
 
@@ -177,6 +174,11 @@ class MenuBar(QMenuBar):
         self.actionDockTree.setObjectName("dockTree")
         self.actionDockTree.setChecked(True)
         self.menuView.addAction(self.actionDockTree)
+        ## View menu - DockSummary action
+        self.actionDockSummary = QAction("Summary Window", self, checkable=True)
+        self.actionDockSummary.setObjectName("dockSummary")
+        self.actionDockSummary.setChecked(True)
+        self.menuView.addAction(self.actionDockSummary)
         ## View menu - DockCommand action
         self.actionDockCommand = QAction("Command Line", self, checkable=True)
         self.actionDockCommand.setObjectName("dockCommand")

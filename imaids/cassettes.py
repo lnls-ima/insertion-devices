@@ -129,6 +129,10 @@ class Cassette(
             end_blocks_magnetization (list, Lx3, optional): Nested list of
                 end blocks magnetizations. Analogous to corresponding list for
                 start blocks list. In Tesla, defaults to None.
+            terminations_poles (bool): If True, the block-pole-block-pole
+                sequence in a hybrid cassette extends to the termination
+                blocks. If False, all termination blocks are non-pole blocks.
+                Defaults to False.
             name (str, optional): Name labeling the cassette. Defaults to ''.
             init_radia_object (bool, optional): If True, Radia object is
                 created at object initialization. Defaults to True.

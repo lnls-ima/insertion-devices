@@ -1733,7 +1733,7 @@ class PAPU(APU):
         block_len = period_length/4 - longitudinal_distance
         lenghts = [block_len/4, block_len/4, block_len/4,
                    block_len/4, block_len/4, block_len/4, block_len]
-        distances = [6, 0, 2.9, 1, 0, 0.2, 0.2]
+        distances = [6, 0, 2.4, 1, 0, 0.2, 0.2]
 
         if start_blocks_length == 'default':
             start_blocks_length = lenghts

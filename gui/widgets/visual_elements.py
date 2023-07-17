@@ -116,8 +116,7 @@ class Table(QTableView):
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() in [Qt.Key.Key_Space,Qt.Key.Key_Return,Qt.Key.Key_Enter]:
             self.selectReturned.emit(self.selectedIndexes())
-        elif event.key() in [Qt.Key.Key_G, Qt.Key.Key_P, Qt.Key.Key_T,
-                             Qt.Key.Key_A, Qt.Key.Key_Backspace,
+        elif event.key() in [Qt.Key.Key_A, Qt.Key.Key_Backspace,
                              Qt.Key.Key_1, Qt.Key.Key_2, Qt.Key.Key_3,
                              Qt.Key.Key_4, Qt.Key.Key_5, Qt.Key.Key_6,
                              Qt.Key.Key_7, Qt.Key.Key_8, Qt.Key.Key_9]:

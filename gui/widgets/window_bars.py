@@ -13,6 +13,8 @@ class StatusBar(QStatusBar):
     def __init__(self):
         super().__init__()
 
+        self.setContentsMargins(0,0,0,6)
+
 class ToolBar(QToolBar):
 
     name = "Tool Bar"
@@ -37,12 +39,14 @@ class ToolBar(QToolBar):
         # tool bar
         self.setObjectName(self.name)
         ## tool bar - cursor action: explore window without affect items
-        self.actionCursor = QAction(QIcon("icons/icons/cursor.png"),"Cursor",self)
+        self.actionCursor = QAction(QIcon("icons/icons/cursor.png"),"<b>Cursor</b> (C)<br>Select item or tab",self)
+        self.actionCursor.setShortcut("C")
         self.actionCursor.setCheckable(True)
         self.actionCursor.triggered.connect(self.mode_swap) #todo: ver como e' o bool que manda
         self.addAction(self.actionCursor)
         ## tool bar - save action: salvar tabelas dos mapas de campo
-        self.actionSave = QAction(QIcon("icons/icons/database-export.png"),"Save",self)
+        self.actionSave = QAction(QIcon("icons/icons/database-export.png"),"<b>Save</b> (S)<br>Select Data ID item or Analysis item",self)
+        self.actionSave.setShortcut("S")
         self.actionSave.setCheckable(True)
         self.actionSave.triggered.connect(self.mode_swap)
         self.addAction(self.actionSave)
@@ -50,12 +54,15 @@ class ToolBar(QToolBar):
         ## tool bar - analysis button: executar analise de dados
         self.buttonAnalysis = analysis.AnalysisPushButton(text="Analysis",
                                                                  parent=self)
+        self.buttonAnalysis.setToolTip("<b>Analysis</b> (Ctrl+A)<br>Click to open the menu.<br>Choose the analysis, apply and finally select the ID item")
         #self.buttonAnalysis.apply.clicked.connect(self.aplicar_AnalysisForAll)
         self.buttonAnalysis.modeChanged.connect(self.mode_swap)
         self.addWidget(self.buttonAnalysis)
         self.addSeparator()
         ## tool bar - plot button: fazer graficos dos dados
         self.buttonPlot = painted_button.PaintedButton("Plot")
+        self.buttonPlot.setShortcut("G")
+        self.buttonPlot.setToolTip("<b>Plot</b> (G)<br>Select or Analysis item or one result item or two result items, then press spacebar")
         self.buttonPlot.modeChanged.connect(self.mode_swap)
         self.buttonPlot.setIcon(self.grafico)
 
@@ -68,6 +75,8 @@ class ToolBar(QToolBar):
         self.addSeparator()
         ## tool bar - table button: fazer tabelas dos dados
         self.buttonTable = painted_button.PaintedButton("Table")
+        self.buttonTable.setShortcut("T")
+        self.buttonTable.setToolTip("<b>Table</b> (T)<br>Click over an item (ID, Analysis or Result)")
         self.buttonTable.modeChanged.connect(self.mode_swap)
         self.buttonTable.setChecked(True)
         self.whoChecked = self.buttonTable
@@ -146,7 +155,7 @@ class MenuBar(QMenuBar):
         self.menuFile.addAction(self.actionOpen_Data)
         self.menuFile.addSeparator()
         ## File menu - Generate Model action
-        self.actionGenerate_Model = QAction(iconGenerate_Model,"Generate Model", self)
+        self.actionGenerate_Model = QAction(iconGenerate_Model,"Generate Model ...", self)
         self.actionGenerate_Model.setShortcut("Ctrl+M")
         self.menuFile.addAction(self.actionGenerate_Model)
         self.menuFile.addSeparator()
@@ -157,7 +166,7 @@ class MenuBar(QMenuBar):
         # Edit menu
         self.menuEdit = self.addMenu("&Edit")
         ## Edit menu - Analysis action
-        self.actionAnalysis = QAction(iconAnalysis,"Custom Analysis", self)
+        self.actionAnalysis = QAction(iconAnalysis,"Custom Analysis ...", self)
         self.menuEdit.addAction(self.actionAnalysis)
         self.menuEdit.addSeparator()
         '''## Edit menu - Undo action
@@ -169,6 +178,9 @@ class MenuBar(QMenuBar):
         self.menuEdit.addAction(self.actionRedo)'''
         # View menu: contem opcoes de esconder widgets, tais como toolbar
         self.menuView = self.addMenu("&View")
+        ## View menu - file action
+        self.actionFile = QAction("Data Filenames", self, checkable=True)
+        self.menuView.addAction(self.actionFile)
         ## View menu - DockTree action
         self.actionDockTree = QAction("Explore Window", self, checkable=True)
         self.actionDockTree.setObjectName("dockTree")
@@ -199,6 +211,9 @@ class MenuBar(QMenuBar):
         self.menuSettings.addAction(self.actionApplyForAll)
         # Help menu: documentacao da interface
         self.menuHelp = self.addMenu("&Help")
+        ## Help menu - Manual action
+        self.actionManual = QAction("Manual")
+        self.menuHelp.addAction(self.actionManual)
 
     def mousePressEvent(self, event) -> None:
         self.clicked.emit()

@@ -332,6 +332,7 @@ class AnalysisDialog(QDialog):
         # signals
         buttonBox = self.layoutAnalysis.buttonBox
         buttonRestore = buttonBox.buttons()[2]
+        buttonRestore.setToolTip("Restore the parameters values to default")
         
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)

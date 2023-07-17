@@ -41,6 +41,7 @@ class ExploreItem(QTreeWidgetItem):
         #*: manipulado
 
         self.item_type = item_type
+        self.status_tip = ""
 
     def delete(self):
         sip.delete(self)
@@ -57,6 +58,9 @@ class ExploreItem(QTreeWidgetItem):
     
     def parent(self) -> 'ExploreItem':
         return super().parent()
+
+    def set_Status_Tip(self) -> None:
+        self.setStatusTip(0,self.status_tip)
     
     def depth(self):
         
@@ -272,12 +276,15 @@ class ExploreTreeWidget(QTreeWidget):
     def __init__(self, parent=None,*args,**kwargs):
         super().__init__(parent,*args,**kwargs)
 
+        self.files_visible = False
+
         self.itemsSelected = []
 
         self.itemSelectionChanged.connect(self.selection_changed)
         
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)
+        self.setMouseTracking(True)
         self.setColumnCount(2)
         self.setHeaderLabels(["Item", "Content"])
         #self.setHeaderHidden(True)
@@ -289,11 +296,13 @@ class ExploreTreeWidget(QTreeWidget):
         # 0: primeiro da lista top level
         ctnData = ExploreItem.ContainerType.ContainerData
         data_container = ExploreItem(ctnData, ["Data", "Container"])
+        data_container.setStatusTip(0,"Container for the undulator field maps data loaded")
         self.insertTopLevelItem(0, data_container)
         self.topLevelItem(0).setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
         # 1: segundo da lista top level
         ctnModel = ExploreItem.ContainerType.ContainerModel
         model_container = ExploreItem(ctnModel, ["Models", "Container"])
+        model_container.setStatusTip(0,"Container for the undulator models constructed")
         self.insertTopLevelItem(1, model_container)
         self.topLevelItem(1).setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
 
@@ -304,6 +313,8 @@ class ExploreTreeWidget(QTreeWidget):
         self.menuContextTraj = QMenu(self)
         self.menuContextTraj.addAction("Save Trajectory")
 
+    def isFilesVisible(self):
+        return self.files_visible
     
     def topLevelItem(self, index: int) -> ExploreItem:
         return super().topLevelItem(index)
@@ -334,8 +345,7 @@ class ExploreTreeWidget(QTreeWidget):
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() in [Qt.Key.Key_Space,Qt.Key.Key_Return,Qt.Key.Key_Enter]:
             self.selectReturned.emit(self.itemsSelected)
-        elif event.key() in [Qt.Key.Key_G,Qt.Key.Key_P, Qt.Key.Key_T,
-                             Qt.Key.Key_A, Qt.Key.Key_Backspace,
+        elif event.key() in [Qt.Key.Key_A, Qt.Key.Key_Backspace,
                              Qt.Key.Key_1, Qt.Key.Key_2, Qt.Key.Key_3,
                              Qt.Key.Key_4, Qt.Key.Key_5, Qt.Key.Key_6,
                              Qt.Key.Key_7, Qt.Key.Key_8, Qt.Key.Key_9]:
@@ -344,13 +354,15 @@ class ExploreTreeWidget(QTreeWidget):
             return super().keyPressEvent(event)
         
 
-    def insertID(self, ID, IDType: ExploreItem.IDType, name=''):
-        
+    def insertID(self, ID, IDType: ExploreItem.IDType, filename='', name=''):
+
         ID.name = name
 
         if IDType.value:
             container = self.topLevelItem(0)
             id_item = ExploreItem(IDType, container, [ID.name, "FieldMap"])
+            filename = "../"+"/".join(filename.split("/")[3:])
+            id_item.status_tip = "File: "+filename
         else:
             container = self.topLevelItem(1)
             id_item = ExploreItem(IDType, container, [ID.name, "Model"])

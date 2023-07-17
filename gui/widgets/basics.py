@@ -37,6 +37,7 @@ class BasicTabWidget(QTabWidget):
         self.tabBar().customContextMenuRequested.connect(self.exec_context_menu)
 
         self.menuContext = QMenu(self)
+        self.menuContext.setToolTipsVisible(True)
         actionRename = self.menuContext.addAction("Rename Tab")
         actionRename.triggered.connect(self.rename_tab)
 

@@ -16,6 +16,7 @@ class VisualizationTabWidget(BasicTabWidget):
         super().__init__(leftSpace=-1)
 
         self.actionActiveAdd = QAction("Add Mode")
+        self.actionActiveAdd.setToolTip("Change canvas mode.<br><b>Plus:</b> This canvas accepts new plots<br><b>No plus:</b> This canvas don't accept new plots")
         self.actionActiveAdd.setCheckable(True)
         self.actionActiveAdd.setVisible(False)
         self.actionActiveAdd.triggered.connect(self.changeIcon)
@@ -196,10 +197,10 @@ class VisualizationTabWidget(BasicTabWidget):
         if analysis_item.flag() is ExploreItem.AnalysisType.RollOffAmp:
 
             x, y, *roa = analysis_dict.values()
-            roa = np.array(roa).T
+            roa = 100*np.array(roa).T
 
             roa_lines = chart.ax.plot(x,roa)
-            titleyxlabel.extend(["Roll Off Amplitude", "ROAx, ROAy, ROAz", "x (mm)"])
+            titleyxlabel.extend(["Roll Off Amplitude", "ROAx, ROAy, ROAz (%)", "x (mm)"])
             legend_info = roa_lines, [f"ROAx of {id_name}",f"ROAy of {id_name}",f"ROAz of {id_name}"]
 
             

@@ -12,13 +12,13 @@ class SaveDialog(QDialog):
 
         self.file = file
 
-        
+
 
         self.setWindowTitle("Save Field Map")
 
         self.layoutSave = SaveLayout(file, self)
 
-        self.setMinimumWidth(self.layoutSave.lineName.width()*0.43)
+        self.setMinimumWidth(282)
 
         self.layoutSave.buttonBrowseDest.clicked.connect(lambda checked: self.saveAs(file))
         self.layoutSave.buttonBox.accepted.connect(self.accept)

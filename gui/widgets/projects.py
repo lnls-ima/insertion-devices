@@ -410,6 +410,8 @@ class ProjectsTabWidget(BasicTabWidget):
 
         # plus button: abrir novo projeto
         self.PlusButton = QToolButton()
+        self.PlusButton.setShortcut("+")
+        self.PlusButton.setToolTip("New Project (+)")
         self.PlusButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         self.PlusButton.setIcon(QIcon("icons/icons/plus-button.png"))
         self.PlusButton.pressed.connect(self.addTab)

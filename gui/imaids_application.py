@@ -29,12 +29,10 @@ class MainWindow(QMainWindow):
 
         # -------------- construcao de tab widgets de projetos -------------- #
 
-        # projects tab widget
         self.projects = projects.ProjectsTabWidget(parent=self)
         self.projects.tabAdded.connect(self.project_connect)
         self.projects.addTab(text='Project')
-        self.projects.currentWidget().visuals.tabAdded.connect(self.visuals_connect)
-        
+
 
         # --------------------- construcao da status bar --------------------- #
 
@@ -71,27 +69,29 @@ class MainWindow(QMainWindow):
 
     
     # SLOTS
-    
+
     # window slots
 
     def keyPressEvent(self, event) -> None:
         visuals = self.projects.currentWidget().visuals
-        if event.key() in [Qt.Key.Key_G,Qt.Key.Key_P]:
-            self.toolbar.buttonPlot.modeChanged.emit(True)
-        elif event.key() == Qt.Key.Key_T:
-            self.toolbar.buttonTable.modeChanged.emit(True)
-        elif event.key() == Qt.Key.Key_A:
+
+        # Visualization Window shortcuts
+        ## add mode
+        if event.key() == Qt.Key.Key_A:
             if isinstance(visuals.currentWidget(),Canvas):
                 visuals.changeIcon(not visuals.isModeAdd())
+        ## visuals tab
         elif event.key() in [Qt.Key.Key_1, Qt.Key.Key_2, Qt.Key.Key_3,
                              Qt.Key.Key_4, Qt.Key.Key_5, Qt.Key.Key_6,
                              Qt.Key.Key_7, Qt.Key.Key_8, Qt.Key.Key_9]:
             index = int(str(Qt.Key(event.key()))[-1])-1
             if index < visuals.count():
                 visuals.setCurrentIndex(index)
+        ## erase visuals current tab
         elif event.key() == Qt.Key.Key_Backspace:
             if visuals.currentWidget() is not None:
                 visuals.closeTab(visuals.currentIndex())
+
         else:
             return super().keyPressEvent(event)
 
@@ -105,6 +105,7 @@ class MainWindow(QMainWindow):
         self.menubar.actionGenerate_Model.triggered.connect(self.model_generation)
         self.menubar.actionExit.triggered.connect(self.close)
         self.menubar.actionAnalysis.triggered.connect(self.edit_analysis_parameters)
+        self.menubar.actionFile.triggered.connect(self.setFilesVisible)
         self.menubar.actionDockTree.triggered.connect(self.setDockVisible)
         self.menubar.actionDockSummary.triggered.connect(self.setDockVisible)
         self.menubar.actionDockCommand.triggered.connect(self.setDockVisible)
@@ -116,7 +117,7 @@ class MainWindow(QMainWindow):
         self.menubar.actionDockTree.setChecked(project.dockTree.isVisible())
         self.menubar.actionDockSummary.setChecked(project.dockSummary.isVisible())
         self.menubar.actionDockCommand.setChecked(project.dockCommand.isVisible())
-        self.menubar.actionToolBar.setChecked(self.toolbar.isVisible())
+        self.menubar.actionFile.setChecked(project.tree.isFilesVisible())
     
     ## file slots
 
@@ -128,7 +129,7 @@ class MainWindow(QMainWindow):
         for ID, filename, name in zip(ID_list, filenames, name_list):
             project.filenames.append(filename)
             project.insertiondevices[name] = {"InsertionDeviceObject": ID, "filename": filename}
-            project.tree.insertID(ID=ID, IDType=ExploreItem.IDType.IDData,name=name)
+            project.tree.insertID(ID=ID, IDType=ExploreItem.IDType.IDData, filename=filename, name=name)
 
     def model_generation(self):
         
@@ -161,7 +162,7 @@ class MainWindow(QMainWindow):
             #executar analises para todos
             project = self.projects.currentWidget()
             for item in project.tree.topLevelItem(0).children():
-                self.tree_item_clicked(item)
+                self._exec_analysis(item)
 
         elif self.toolbar.buttonAnalysis.Menu.checkedItems():
             self.toolbar.buttonAnalysis.setChecked(True)
@@ -174,6 +175,16 @@ class MainWindow(QMainWindow):
         #project.params = parameters_dict
     
     ## view slots
+
+    def setFilesVisible(self, visible):
+        tree = self.projects.currentWidget().tree
+        data_items = tree.topLevelItem(0).children()
+        for item in data_items:
+            tree.files_visible = visible
+            if visible:
+                item.set_Status_Tip()
+            else:
+                item.setStatusTip(0,"")
 
     def setDockVisible(self, visible):
         project = self.projects.currentWidget()
@@ -196,43 +207,48 @@ class MainWindow(QMainWindow):
         project.tree.itemClicked.connect(self.tree_item_clicked)
         project.tree.selectReturned.connect(self.tree_items_returned)
         project.tree.keyPressed.connect(self.keyPressEvent)
+        project.visuals.tabAdded.connect(self.visuals_connect)
 
     ## tree slots
 
+    def _exec_analysis(self, item):
+        
+        analysis_menu = self.toolbar.buttonAnalysis.Menu
+        project = self.projects.currentWidget()
+
+        analysis_activated = []
+        analysis_funcs = [ExploreItem.calcCross_Talk,
+                          ExploreItem.calcMagnetic_Field,
+                          ExploreItem.calcTrajectory,
+                          ExploreItem.calcPhase_Error,
+                          ExploreItem.calcField_Integrals,
+                          ExploreItem.calcRoll_Off_Peaks,
+                          ExploreItem.calcRoll_Off_Amplitude]
+
+        for menu_item, func in zip(analysis_menu.items,analysis_funcs):
+            if  menu_item.isChecked() and \
+                ((menu_item is analysis_menu.itemCrossTalk and \
+                    item.flag() is ExploreItem.IDType.IDData) or \
+                    menu_item is not analysis_menu.itemCrossTalk):
+
+                analysis_activated.append(func)
+
+        project.analyzeItem(item,analysis_activated)
+
     def tree_item_clicked(self, item: ExploreItem, column=0):
 
-        analysis_menu = self.toolbar.buttonAnalysis.Menu
         analysis_button = self.toolbar.buttonAnalysis
         table_button = self.toolbar.buttonTable
         save_action = self.toolbar.actionSave
         project = self.projects.currentWidget()
 
         # ----------------------------- analysis ----------------------------- #
-
         if analysis_button.isChecked() and item.type() is ExploreItem.IDType:
 
-            analysis_activated = []
+            self._exec_analysis(item)
 
-            analysis_funcs = [ExploreItem.calcCross_Talk,
-                              ExploreItem.calcMagnetic_Field,
-                              ExploreItem.calcTrajectory,
-                              ExploreItem.calcPhase_Error,
-                              ExploreItem.calcField_Integrals,
-                              ExploreItem.calcRoll_Off_Peaks,
-                              ExploreItem.calcRoll_Off_Amplitude]
-
-            for menu_item, func in zip(analysis_menu.items,analysis_funcs):
-                if  menu_item.isChecked() and \
-                    ((menu_item is analysis_menu.itemCrossTalk and \
-                      item.flag() is ExploreItem.IDType.IDData) or \
-                     menu_item is not analysis_menu.itemCrossTalk):
-
-                    analysis_activated.append(func)
-
-            project.analyzeItem(item,analysis_activated)
 
         # ------------------------------ table ------------------------------ #
-
         #*: por enquanto sem roll off peaks, pois deveria haver uma tabela para cada pico
         #*: por enquanto sem exibir tabela para apenas um numero
         if  table_button.isChecked() and \
@@ -243,16 +259,14 @@ class MainWindow(QMainWindow):
 
             project.displayTable(item)
 
-        # ------------------------------- save ------------------------------- #
 
+        # ------------------------------- save ------------------------------- #
         if  save_action.isChecked() and \
             item.flag() is ExploreItem.IDType.IDData:
 
             project.saveFieldMap(item)
 
-
         # ----------------------------- summary ----------------------------- #
-
         project.update_summary(item)
 
     def tree_items_returned(self, items):

@@ -15,7 +15,8 @@ from PyQt6.QtWidgets import (QWidget,
                              QDoubleSpinBox,
                              QGroupBox,
                              QSizePolicy,
-                             QRadioButton)
+                             QRadioButton,
+                             QTextEdit)
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 
@@ -129,7 +130,7 @@ class ModelGroupBox(QGroupBox):
         self.label_period_length = QLabel("Period Length:")
         self.label_gap = QLabel("Gap Length:")
         self.label_longitudinal_distance = QLabel("Longitudinal Distance:")
-        self.label_mr = QLabel("Magnetization Remanent:") #todo: mudar nome
+        self.label_mr = QLabel("Magnetization Remanent Field:") #todo: mudar nome
 
         self.spin_nr_periods = QSpinBox(parent=self)
         self.spin_nr_periods.setObjectName("nr_periods")
@@ -253,7 +254,8 @@ class ModelLayout(QVBoxLayout):
         
         self.layoutModelNaming = QHBoxLayout()
         
-        self.labelModelNaming = QLabel("Name model label:")
+        self.labelModelNaming = QLabel("Label:")
+        self.labelModelNaming.setToolTip("Model label name to appear in the Explore Window")
         self.lineModelNaming = QLineEdit()
         
 
@@ -1338,6 +1340,7 @@ class SaveLayout(QVBoxLayout):
         hboxSaveFormat = QHBoxLayout()
 
         labelSaveFmt = QLabel("Save for: ")
+        labelSaveFmt.setToolTip("Choose the data format")
         self.comboFormats = QComboBox()
         self.comboFormats.addItems(["imaids","Spectra"])
 

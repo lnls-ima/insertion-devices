@@ -164,7 +164,7 @@ class Block(_fieldsource.FieldModel):
                 [-8.957738927679571, -17.3142528],
                 [8.957738927679571, -17.3142528],
                 [8.9, -17.9]],
-            
+
             [
                 [-8.957738927679571, -18.4857472],
                 [-8.9, -17.9],
@@ -196,7 +196,7 @@ class Block(_fieldsource.FieldModel):
                 [11.25, -24.6464466],
                 [11.25, -20.828736]]],
                 }
-            
+
 
     PREDEFINED_SUBDIVISION = {
         'delta_prototype': [[3, 3, 2], [3, 3, 2]],
@@ -210,13 +210,13 @@ class Block(_fieldsource.FieldModel):
         'papu': [[3,3,2], [3,3,2]],
         'hybrid_block': [[3, 3, 3]],
         'hybrid_pole': [[6, 6, 3]],
-        'delta_sabia_smooth': [[3, 3, 2], [1, 1, 2], 
-               [1, 1, 2], [1, 1, 2], [1, 1, 2], 
-               [1, 1, 2], [1, 1, 2], [1, 1, 2], 
+        'delta_sabia_smooth': [[3, 3, 2], [1, 1, 2],
+               [1, 1, 2], [1, 1, 2], [1, 1, 2],
+               [1, 1, 2], [1, 1, 2], [1, 1, 2],
                [1, 1, 2], [1, 1, 2], [1, 1, 2], [1, 1, 2]],
-        'delta_carnauba_smooth': [[3, 3, 2], [1, 1, 1], 
-               [1, 1, 1], [1, 1, 1], [1, 1, 1], 
-               [1, 1, 1], [1, 1, 1], [1, 1, 1], 
+        'delta_carnauba_smooth': [[3, 3, 2], [1, 1, 1],
+               [1, 1, 1], [1, 1, 1], [1, 1, 1],
+               [1, 1, 1], [1, 1, 1], [1, 1, 1],
                [1, 1, 1], [1, 1, 1], [1, 1, 1], [2, 2, 2]]
     }
 
@@ -224,7 +224,7 @@ class Block(_fieldsource.FieldModel):
             self, shape, length, longitudinal_position,
             magnetization=[0, 1.37, 0], subdivision=None, rectangular=False,
             cylinder=False, name='', material=None, **kwargs):
-        """Create the radia object for a block with magnetization. 
+        """Create the radia object for a block with magnetization.
 
         Args:
             shape (list, Mx2 or NxMx2): nested list specifying cross sections
@@ -233,10 +233,10 @@ class Block(_fieldsource.FieldModel):
                 The N lists of points represent subblocks which will be grouped
                 in a single container Radia object. Subblocks are useful for
                 specifying a non-convex block as composed by convex subblocks.
-                This argument also defines the block position in the x,y plane. 
+                This argument also defines the block position in the x,y plane.
                 For N=1 (no subblocks), a Mx2 list of points may be provided.
             length (float): block longitudinal (z) length in mm. Must be a
-                positive number. If the length is 0, the radia object will 
+                positive number. If the length is 0, the radia object will
                 not be created.
             longitudinal_position (float): longitudinal (z) position of the
                 block center in mm. Transversal (xy) position is defined by
@@ -249,13 +249,13 @@ class Block(_fieldsource.FieldModel):
                 If material=None, the default material is linear and uses this
                 argument for determining the magnetization modulus as well.
                 Can be set to [0, 0, 0]. Defaults to [0, 1.37, 0].
-            subdivision (list, 3 or Nx3, optional): nested list specifying 
+            subdivision (list, 3 or Nx3, optional): nested list specifying
                 the number of subdivisions of each subblock in the cartesian
                 directions [x, y, z].
                 For N=1 (no subblocks), a len=3 [x, y, z] list may be provided.
                 Defaults to None (no subdivision).
-            rectangular (bool, optional): If True the block is created using 
-                the radia function ObjRecMag. If False the block is create 
+            rectangular (bool, optional): If True the block is created using
+                the radia function ObjRecMag. If False the block is create
                 using the radia function ObjThckPgn. Either way, cross-section
                 and thickness of the block must be specifyed by the shape
                 and length attributes. Defaults to False.
@@ -486,14 +486,14 @@ class Block(_fieldsource.FieldModel):
     def get_geometry_bounding_box(self):
         """Geometrical limits (bounding box) of Block's input geometry
             (shape and length).
-        
+
         Returns:
             numpy.ndarray, 3x2: Array of the form:
                 [[xmin, xmax], [ymin,ymax], [zmin,zmax]]
                 where the min and max values are the coordinates' upper and
                 lower bounds for the points forming the block geometry.
         """
-        
+
         points = _np.concatenate(self.shape, axis=0)
         x = points[:,0]
         y = points[:,1]

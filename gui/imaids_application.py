@@ -114,10 +114,11 @@ class MainWindow(QMainWindow):
 
     def update_menu(self):
         project = self.projects.currentWidget()
+        self.menubar.actionFile.setChecked(project.tree.isFilesVisible())
         self.menubar.actionDockTree.setChecked(project.dockTree.isVisible())
         self.menubar.actionDockSummary.setChecked(project.dockSummary.isVisible())
         self.menubar.actionDockCommand.setChecked(project.dockCommand.isVisible())
-        self.menubar.actionFile.setChecked(project.tree.isFilesVisible())
+        self.menubar.actionToolBar.setChecked(self.toolbar.isVisible())
     
     ## file slots
 
@@ -173,7 +174,7 @@ class MainWindow(QMainWindow):
         project = self.projects.currentWidget()
         analysis.AnalysisDialog.updateParameters(params_kwargs=project.params, parent=self)
         #project.params = parameters_dict
-    
+
     ## view slots
 
     def setFilesVisible(self, visible):

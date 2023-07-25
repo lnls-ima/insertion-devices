@@ -1,4 +1,5 @@
 
+from PyQt6 import QtGui
 from PyQt6.QtWidgets import (QWidget,
                              QTabWidget,
                              QTabBar,
@@ -10,10 +11,57 @@ from PyQt6.QtWidgets import (QWidget,
                              QStyleOptionTab,
                              QVBoxLayout,
                              QToolButton,
-                             QLayout)
+                             QLayout,
+                             QMainWindow,
+                             QDockWidget)
 
 from PyQt6.QtCore import pyqtSignal, Qt, QRect, QPoint
 
+
+'''
+class ProjectMainWindow(QMainWindow):
+
+    dockAdded = pyqtSignal()
+
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+
+        self.dockwidgetleft = None
+        self.dockwidgetright = None
+        self.dockwidgettop = None
+        self.dockwidgetbottom = None
+
+    def dockWidget(self, area: Qt.DockWidgetArea):
+        dockwidget = None
+        if area is Qt.DockWidgetArea.LeftDockWidgetArea:
+            dockwidget = self.dockwidgetleft
+        elif area is Qt.DockWidgetArea.RightDockWidgetArea:
+            dockwidget = self.dockwidgetright
+        elif area is Qt.DockWidgetArea.TopDockWidgetArea:
+            dockwidget = self.dockwidgettop
+        elif area is Qt.DockWidgetArea.BottomDockWidgetArea:
+            dockwidget = self.dockwidgetbottom
+        return dockwidget
+
+
+    def addDockWidget(self, area: Qt.DockWidgetArea, dockwidget: QDockWidget) -> None:
+        dockwidget_old = self.dockWidget(area)
+
+        super().addDockWidget(area, dockwidget)
+        self.dockAdded.emit()
+        
+        if area is Qt.DockWidgetArea.LeftDockWidgetArea:
+            self.dockwidgetleft = dockwidget
+        elif area is Qt.DockWidgetArea.RightDockWidgetArea:
+            self.dockwidgetright = dockwidget
+        elif area is Qt.DockWidgetArea.TopDockWidgetArea:
+            self.dockwidgettop = dockwidget
+        elif area is Qt.DockWidgetArea.BottomDockWidgetArea:
+            self.dockwidgetbottom = dockwidget
+
+        if dockwidget_old:
+            self.tabifyDockWidget(dockwidget,dockwidget_old)
+'''
 
 class BasicTabWidget(QTabWidget):
 

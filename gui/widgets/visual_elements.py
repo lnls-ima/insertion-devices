@@ -133,21 +133,16 @@ class Canvas(QWidget):
         super().__init__()
 
         self.fig, self.ax = plt.subplots(dpi=dpi)
+        # perform the axes adjustment each time the figure is redrawn
+        self.fig.set_tight_layout(True)
         self.figure = FigureCanvas(self.fig)
 
-        self.figure.mpl_connect('draw_event',self.on_draw)
-
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(self)
 
         toolbar = NavigationToolbar(self.figure, self)
 
         layout.addWidget(toolbar)
         layout.addWidget(self.figure)
 
-        self.setLayout(layout)
-    
     def draw(self):
         self.figure.draw()
-    
-    def on_draw(self, event):
-        self.fig.tight_layout()

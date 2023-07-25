@@ -85,7 +85,9 @@ class ProjectWidget(QMainWindow):
         self.dockSummary = QDockWidget("Summary Window",self)
         self.summary = SummaryWidget()
         self.dockSummary.setWidget(self.summary)
-        
+
+        self.visuals.dockFigOptions.setHidden(True)
+
         self.dockCommand = QDockWidget("Command Line",self)
         self.command_line = QLineEdit()
         self.command_line.setContentsMargins(4, 0, 4, 4)
@@ -95,6 +97,7 @@ class ProjectWidget(QMainWindow):
         self.setCentralWidget(self.visuals)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea,self.dockTree)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea,self.dockSummary)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea,self.visuals.dockFigOptions)
         self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea,self.dockCommand)
 
     
@@ -187,27 +190,22 @@ class ProjectWidget(QMainWindow):
 
         if isModeAdd:
             chart = visuals.currentWidget()
-            legend = chart.ax.legend_
-            old_handles = legend.legendHandles
-            old_labels = [label.get_text() for label in legend.get_texts()]
         else:
             chart = Canvas()
             chart.ax.grid(visible=True)
-            old_handles, old_labels = [], []
 
         if len(items)==1:
             item, = items
 
             if item.type() is ExploreItem.AnalysisType:
                 analysis_info = self.treeItemInfo(item)
-                new_handles, new_labels = visuals.plotAnalysis(chart, analysis_info, isModeAdd)
-                if not (new_handles or new_labels):
-                    chart.deleteLater()
+                plot = visuals.plotAnalysis(chart, analysis_info, isModeAdd)
+                if not plot:
                     return False
             
             elif item.flag() is ExploreItem.ResultType.ResultArray:
                 result_info = self.treeItemInfo(item)
-                new_handles, new_labels = visuals.plotArray(chart, result_info, isModeAdd)
+                visuals.plotArray(chart, result_info, isModeAdd)
 
         elif len(items)==2:
 
@@ -216,9 +214,10 @@ class ProjectWidget(QMainWindow):
             x_item, y_item = items
             x_info = self.treeItemInfo(x_item)
             y_info = self.treeItemInfo(y_item)
-            new_handles, new_labels = visuals.plotPair(chart, x_info, y_info, isModeAdd)
+            visuals.plotPair(chart, x_info, y_info, isModeAdd)
         
-        chart.ax.legend(old_handles+new_handles, old_labels+new_labels)
+        #chart.ax.legend(old_handles+new_handles, old_labels+new_labels)
+        chart.ax.legend()
 
         #maneira de nao criar nada se nao e' selecionado nada nos menus de traj e integral
         # colocando grafico no self
@@ -227,10 +226,6 @@ class ProjectWidget(QMainWindow):
         
         # Trigger the canvas to update and redraw
         chart.draw()
-
-        chart.fig.tight_layout()
-
-        return True
 
     def displayTable(self, item: ExploreItem):
         

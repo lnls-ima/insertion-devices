@@ -389,7 +389,7 @@ class Block(_fieldsource.FieldModel):
     def draw_color(self):
         """RGB color used for draw method."""
         if self.draw_color_component is None:
-            return [0.8, 0.9, 0.7] # standard blue color.
+            return [0.8, 0.9, 0.7] # standard color.
         else:
             magnetization_array = _np.array(self._magnetization)
             component = magnetization_array[self.draw_color_component]
@@ -397,11 +397,11 @@ class Block(_fieldsource.FieldModel):
                                                 # the smallest epsilon for a
                                                 # flaot) may mean 0.0.
             if component > eps:
-                return [0.8, 0.9, 0.7] # pink
+                return [0, 0.6, 0.7] # blue-ish.
             elif component < -1*eps:
-                return [0.7, 0.2, 0.5] # blue
+                return [0.7, 0.2, 0.5] # pink-ish.
             else:
-                return [0.8, 0.8, 0.8] # light gray
+                return [0.8, 0.8, 0.8] # light gray.
 
     @property
     def state(self):

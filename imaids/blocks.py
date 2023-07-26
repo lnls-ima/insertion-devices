@@ -223,7 +223,8 @@ class Block(_fieldsource.FieldModel):
     def __init__(
             self, shape, length, longitudinal_position,
             magnetization=[0, 1.37, 0], subdivision=None, rectangular=False,
-            cylinder=False, name='', material=None, **kwargs):
+            cylinder=False, name='', material=None,
+            draw_color_component=None, **kwargs):
         """Create the radia object for a block with magnetization.
 
         Args:
@@ -265,6 +266,13 @@ class Block(_fieldsource.FieldModel):
                 Default material is created with default arguments (including
                 linear=True) except for the magnetization modulus, which is
                 defined as the modulus of the magnetization vector argument.
+            draw_color_component (int, optional): integer for magnetization
+                component used for determining draw colors.
+                e.g. if draw_color_component == 1, the y component is used for
+                     assigning draw color, being of one color if My > 0, of
+                     another color if My < 0 and of a neutral color if My = 0.
+                Defaults to None, meaning no magnetization-related coloring
+                    scheme (default color to all blocks).
             **kwargs: if material==None additional keyword arguments are passed
                 to the Material initialization, overriding default arguments.
                 Default magnetization can not be overwridden, in this case
@@ -310,6 +318,8 @@ class Block(_fieldsource.FieldModel):
         self._cylinder = cylinder
 
         self._longitudinal_position = longitudinal_position
+
+        self.draw_color_component = draw_color_component
 
         if material is None:
             self._use_default_material = True
@@ -374,6 +384,24 @@ class Block(_fieldsource.FieldModel):
     def cylinder(self):
         """True if the shape is cylinder, False otherwise."""
         return self._cylinder
+
+    @property
+    def draw_color(self):
+        """RGB color used for draw method."""
+        if self.draw_color_component is None:
+            return [0.8, 0.9, 0.7] # standard blue color.
+        else:
+            magnetization_array = _np.array(self._magnetization)
+            component = magnetization_array[self.draw_color_component]
+            eps = 10*_np.finfo(_np.float64).eps # Very small number (10 times
+                                                # the smallest epsilon for a
+                                                # flaot) may mean 0.0.
+            if component > eps:
+                return [0.8, 0.9, 0.7] # pink
+            elif component < -1*eps:
+                return [0.7, 0.2, 0.5] # blue
+            else:
+                return [0.8, 0.8, 0.8] # light gray
 
     @property
     def state(self):
@@ -452,6 +480,7 @@ class Block(_fieldsource.FieldModel):
                 subblock = _rad.MatApl(subblock, self._material.radia_object)
                 subblock = _rad.ObjDivMag(subblock, div, 'Frame->Lab')
                 subblock_list.append(subblock)
+                _rad.ObjDrwAtr(subblock, self.draw_color)
             self._radia_object = _rad.ObjCnt(subblock_list)
         elif self._cylinder:
             subblock_list = []
@@ -462,14 +491,8 @@ class Block(_fieldsource.FieldModel):
                                                     self._magnetization)
                 subblock = _rad.MatApl(subblock, self._material.radia_object)
                 subblock = _rad.ObjDivMag(subblock, div, 'Frame->Lab')
-                if self._magnetization == [0, 1e-10, 0]:
-                    #break
-                    _rad.ObjDrwAtr(subblock, [1, 1, 1], 0.00001)
-                elif self._magnetization == [0, 1.3, 0]:
-                    _rad.ObjDrwAtr(subblock, [0, 0.6, 0.7], 0.001)
-                else:
-                    _rad.ObjDrwAtr(subblock, [0.7, 0.2, 0.5], 0.001)
                 subblock_list.append(subblock)
+                _rad.ObjDrwAtr(subblock, self.draw_color)
             self._radia_object = _rad.ObjCnt(subblock_list)
         else:
             subblock_list = []
@@ -479,8 +502,8 @@ class Block(_fieldsource.FieldModel):
                     self._magnetization)
                 subblock = _rad.MatApl(subblock, self._material.radia_object)
                 subblock = _rad.ObjDivMag(subblock, div, 'Frame->Lab')
-                _rad.ObjDrwAtr(subblock, [0, 0.5, 1], 0.001)
                 subblock_list.append(subblock)
+                _rad.ObjDrwAtr(subblock, self.draw_color)
             self._radia_object = _rad.ObjCnt(subblock_list)
 
     def get_geometry_bounding_box(self):

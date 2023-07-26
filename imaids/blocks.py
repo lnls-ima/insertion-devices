@@ -319,7 +319,7 @@ class Block(_fieldsource.FieldModel):
 
         self._longitudinal_position = longitudinal_position
 
-        self.draw_color_component = draw_color_component
+        self._draw_color_component = draw_color_component
 
         if material is None:
             self._use_default_material = True

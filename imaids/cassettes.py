@@ -46,7 +46,7 @@ class Cassette(
             start_blocks_length=None, start_blocks_distance=None,
             end_blocks_length=None, end_blocks_distance=None,
             start_blocks_magnetization=None, end_blocks_magnetization=None,
-            name='', init_radia_object=True):
+            draw_color_component=None, name='', init_radia_object=True):
         """Gathers cassette properties from arguments and calls method for
             creating Radia object.
 
@@ -128,7 +128,12 @@ class Cassette(
             end_blocks_magnetization (list, Lx3, optional): Nested list of
                 end blocks magnetizations. Analogous to corresponding list for
                 start blocks list. In Tesla, defaults to None.
-            name (str, optional): Name labeling the cassette. Defaults to ''.             
+            name (str, optional): Name labeling the cassette. Defaults to ''.     
+            draw_color_component (int, optional): integer for magnetization
+                component used for determining draw colors for blocks.
+                Passed to Block objects, see Block documentation for details.
+                Defaults to None, meaning no magnetization-related coloring
+                    scheme (default color to all blocks).        
             init_radia_object (bool, optional): If True, Radia object is
                 created at object initialization. Defaults to True.
             
@@ -245,6 +250,7 @@ class Cassette(
         self._block_subdivision = block_subdivision
         self._ksipar = ksipar
         self._ksiper = ksiper
+        self._draw_color_component = draw_color_component
         self.name = name
 
         # Attributes not directly given by __init__ arguments
@@ -467,6 +473,11 @@ class Cassette(
         return distance_list
 
     @property
+    def draw_color_component(self):
+        """Magnetization component used for determining block color."""
+        return self._draw_color_component
+
+    @property
     def state(self):
         """Dictionary representing cassette properties"""
         data = {
@@ -687,7 +698,8 @@ class Cassette(
                     self._pole_shape, length, position, [0, 0, 0],
                     subdivision=self._pole_subdivision,
                     rectangular=self._rectangular,
-                    material=self._pole_material)
+                    material=self._pole_material,
+                    draw_color_component=self.draw_color_component)
             else:
                 #BLOCK: magnetization vector (direction and modulus) is passed
                 #       to blocks.Block object, defining magnetization modulus
@@ -700,7 +712,8 @@ class Cassette(
                     self._block_shape, length, position, magnetization,
                     subdivision=self._block_subdivision,
                     rectangular=self._rectangular,
-                    ksipar=self._ksipar, ksiper=self._ksiper)
+                    ksipar=self._ksipar, ksiper=self._ksiper,
+                    draw_color_component=self.draw_color_component)
             self._blocks.append(block)
 
         for idx, block in enumerate(self._blocks):

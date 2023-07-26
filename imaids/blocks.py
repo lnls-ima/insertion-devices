@@ -386,6 +386,11 @@ class Block(_fieldsource.FieldModel):
         return self._cylinder
 
     @property
+    def draw_color_component(self):
+        """Magnetization component used for determining block color."""
+        return self._draw_color_component
+
+    @property
     def draw_color(self):
         """RGB color used for draw method."""
         if self.draw_color_component is None:

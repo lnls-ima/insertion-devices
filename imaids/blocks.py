@@ -228,17 +228,20 @@ class Block(_fieldsource.FieldModel):
         """Create the radia object for a block with magnetization.
 
         Args:
-            shape (list, Mx2 or NxMx2): nested list specifying cross sections
-                of N subblocks in (x,y) as N lists of M points. Each M points
-                list should define vertex points of a convex polyhedron. In mm.
-                The N lists of points represent subblocks which will be grouped
-                in a single container Radia object. Subblocks are useful for
-                specifying a non-convex block as composed by convex subblocks.
-                This argument also defines the block position in the x,y plane.
-                For N=1 (no subblocks), a Mx2 list of points may be provided.
-            length (float): block longitudinal (z) length in mm. Must be a
-                positive number. If the length is 0, the radia object will
-                not be created.
+            shape (list, Mx2, NxMx2 or float):
+                If cylinder is False, shape is a nested list specifying cross
+                    sections of N subblocks in (x,y) as N lists of M points.
+                    Each M points list should define vertex points of a convex
+                    polyhedron. In mm.
+                    - Subblocks are grouped in a container, and are useful for
+                      specifying a non-convex blocks as convex subblocks.
+                    - For N=1, a Mx2 list of points may be provided.
+                If cylinder is True, the shape parameter is the base radius.
+            length (float):
+                If cylinder is False, block longitudinal (z) length in mm.
+                If cylinder is True, cylinder height (y), in mm.
+                Must be a positive number, If the length is 0, the radia
+                object will not be created.
             longitudinal_position (float): longitudinal (z) position of the
                 block center in mm. Transversal (xy) position is defined by
                 the points position in the shape attribute.
@@ -255,11 +258,19 @@ class Block(_fieldsource.FieldModel):
                 directions [x, y, z].
                 For N=1 (no subblocks), a len=3 [x, y, z] list may be provided.
                 Defaults to None (no subdivision).
+                For a cylinder block, one must input only one subdivision,
+                triple, since cylinders do not support subblocks (as a [x,y,z]
+                or a [[x,y,z]] list).
             rectangular (bool, optional): If True the block is created using
                 the radia function ObjRecMag. If False the block is create
                 using the radia function ObjThckPgn. Either way, cross-section
                 and thickness of the block must be specifyed by the shape
                 and length attributes. Defaults to False.
+            cylinder (bool, optional): If True the a cylinder block will be
+                created with bases of radii given by "shape", in mm, parallel
+                to the XZ plane, with "length", in mm, aligned with the y axis.
+                Cylinder is centerd in the [0, 0, longitudinal_position] point.
+                Defaults to False.
             name (str, optional): Block label. Defaults to ''.
             material (Material, optional): Material object to apply to block.
                 Defaults to None, in which case a default material is used.
@@ -282,35 +293,48 @@ class Block(_fieldsource.FieldModel):
 
         Raises:
             ValueError: if the block length is a negative number.
+            ValueError: if block is a cylinder and shape is not float or int.
             ValueError: if the length of the magnetization list is different
                 from three.
             ValueError: if the lengths of block_sudivision and block_shape
                 arguments (numbers of subblocks) are inconsistent.
         """
-        if _utils.depth(shape) != 3:
-            self._shape = [shape]
+        if cylinder:
+            if type(shape) not in [int, float]:
+                msg = 'Shape parameter represents the radious in the case of a'
+                msg += ' cylinder and must be an int or a float.        '
+                raise ValueError(msg)
+            else:
+                self._shape = shape
         else:
-            self._shape = shape
+            if _utils.depth(shape) != 3:
+                self._shape = [shape]
+            else:
+                self._shape = shape
 
         if length < 0:
-            raise ValueError('The block length must be a positive number.')
+            raise ValueError('The length must be a positive number.')
         self._length = length
 
         self._check_magnetization(magnetization)
         self._magnetization = magnetization
 
-        if subdivision is None or len(subdivision) == 0:
-            sub = [[1, 1, 1]]*len(self._shape)
+        if subdivision is None:
+            if not cylinder:
+                sub = [[1, 1, 1]]*len(self._shape)
+            else:
+                sub = [[1,1,1]]
         else:
             sub = subdivision
 
         if _utils.depth(sub) != 2:
             sub = [sub]
 
-        if len(sub) != len(self._shape):
-            raise ValueError(
-                'Inconsistent length between block_sudivision ' +
-                'and block_shape arguments.')
+        if not cylinder:
+            if len(sub) != len(self._shape):
+                raise ValueError(
+                    'Inconsistent length between block_sudivision ' +
+                    'and block_shape arguments.')
         self._subdivision = sub
 
         self._rectangular = rectangular
@@ -490,10 +514,10 @@ class Block(_fieldsource.FieldModel):
         elif self._cylinder:
             subblock_list = []
             for div in self._subdivision:
+                # There will be only one _subdivision elements in this case.
                 subblock = _rad.ObjCylMag([0,0,self._longitudinal_position],
-                                                    1.5,
-                                                    8, 50, 'y',
-                                                    self._magnetization)
+                                            self._shape, self._length, 64, 'y',
+                                            self._magnetization)
                 subblock = _rad.MatApl(subblock, self._material.radia_object)
                 subblock = _rad.ObjDivMag(subblock, div, 'Frame->Lab')
                 subblock_list.append(subblock)

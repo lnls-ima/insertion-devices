@@ -223,7 +223,7 @@ class Block(_fieldsource.FieldModel):
     def __init__(
             self, shape, length, longitudinal_position,
             magnetization=[0, 1.37, 0], subdivision=None, rectangular=False,
-            cylinder=False, name='', material=None,
+            cylinder=False, cylinder_nseg=64, name='', material=None,
             draw_color_component=None, **kwargs):
         """Create the radia object for a block with magnetization.
 
@@ -271,6 +271,9 @@ class Block(_fieldsource.FieldModel):
                 to the XZ plane, with "length", in mm, aligned with the y axis.
                 Cylinder is centerd in the [0, 0, longitudinal_position] point.
                 Defaults to False.
+            cylinder_nseg (int, optional): Number os segments at the cylinder
+                side, equal to the number of vertices at its circular bases.
+                Defaults to 64.
             name (str, optional): Block label. Defaults to ''.
             material (Material, optional): Material object to apply to block.
                 Defaults to None, in which case a default material is used.
@@ -338,11 +341,9 @@ class Block(_fieldsource.FieldModel):
         self._subdivision = sub
 
         self._rectangular = rectangular
-
         self._cylinder = cylinder
-
+        self._cylinder_nseg = cylinder_nseg
         self._longitudinal_position = longitudinal_position
-
         self._draw_color_component = draw_color_component
 
         if material is None:
@@ -408,6 +409,11 @@ class Block(_fieldsource.FieldModel):
     def cylinder(self):
         """True if the shape is cylinder, False otherwise."""
         return self._cylinder
+
+    @property
+    def cylinder_nseg(self):
+        """Number of segments at the cylindrical side surface."""
+        return self._cylinder_nseg
 
     @property
     def draw_color_component(self):
@@ -516,7 +522,8 @@ class Block(_fieldsource.FieldModel):
             for div in self._subdivision:
                 # There will be only one _subdivision elements in this case.
                 subblock = _rad.ObjCylMag([0,0,self._longitudinal_position],
-                                            self._shape, self._length, 64, 'y',
+                                            self._shape, self._length,
+                                            self._cylinder_nseg, 'y',
                                             self._magnetization)
                 subblock = _rad.MatApl(subblock, self._material.radia_object)
                 subblock = _rad.ObjDivMag(subblock, div, 'Frame->Lab')

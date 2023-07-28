@@ -1,10 +1,12 @@
+import os
 import typing
 
 from  PyQt6.QtWidgets import   (QMainWindow,
                                 QLineEdit,
                                 QToolButton,
                                 QDockWidget,
-                                QMessageBox)
+                                QMessageBox,
+                                QInputDialog)
 from   PyQt6.QtGui    import    QIcon
 from   PyQt6.QtCore   import   Qt, QPoint
 
@@ -24,9 +26,22 @@ class ProjectWidget(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.filenames = []
         self.insertiondevices = {}
         self.params = {
+            "Cross Talk": {
+                "angles": {
+                    "angxy":0.15,
+                    "angxz":-0.21,
+                    "angyx":-0.01,
+                    "angyz":-0.02,
+                    "angzx":0.01,
+                    "angzy":-0.74
+                },
+                "cross_talk":{
+                    "ky": [-0.006781104386361973,-0.01675247563602003,7.568631573320983e-06],
+                    "kz": [-0.006170829583118335,-0.016051627320478382,7.886674928668737e-06]
+                }
+            },
             "Magnetic Field": {
                 "x": 0,
                 "y": 0,
@@ -73,6 +88,9 @@ class ProjectWidget(QMainWindow):
             }
         }
 
+        userhome = os.path.expanduser('~')
+        self.lastpath = f"{userhome}\\Documents"
+
         self.visuals = VisualizationTabWidget()
 
         self.dockTree = QDockWidget("Explore Window",self)
@@ -90,7 +108,7 @@ class ProjectWidget(QMainWindow):
 
         self.dockCommand = QDockWidget("Command Line",self)
         self.command_line = QLineEdit()
-        self.command_line.setContentsMargins(4, 0, 4, 4)
+        self.command_line.setContentsMargins(4, 0, 4, 0)
         self.dockCommand.setWidget(self.command_line)
 
         #todo: tentar depois deixar visuals dentro de dockwidget tambem, mas sem dar bugs
@@ -112,40 +130,43 @@ class ProjectWidget(QMainWindow):
         elif item.type() is ExploreItem.IDType:
 
             id_name = item.text(0)
-            id_dict = self.insertiondevices[id_name]
+            id_dict = self.insertiondevices[id(item)]
             return {"id_item": item, "id_name": id_name, "id_dict": id_dict}
         
         elif item.type() is ExploreItem.AnalysisType:
             info = self.treeItemInfo(item.parent())
             id_dict = info["id_dict"]
 
-            info["analysis_item"] = item
             analysis = item.text(0)
-            info["analysis"] = analysis
             analysis_dict = id_dict[analysis]
-            info["analysis_dict"] = analysis_dict
+            info.update({"analysis_item": item, "analysis": analysis,
+                         "analysis_dict": analysis_dict})
             return info
 
         elif item.type() is ExploreItem.ResultType:
             info = self.treeItemInfo(item.parent())
             analysis_dict = info["analysis_dict"]
 
-            info["result_item"] = item
             result = item.text(0)
-            info["result"] = result
             result_arraynum = analysis_dict[result]
-            info["result_arraynum"] = result_arraynum
+            info.update({"result_item": item, "result": result,
+                         "result_arraynum": result_arraynum})
             return info
 
-    def countIDnames(self, IDname):
-        models_names = [device[:-2] for device in self.insertiondevices]
-        num = models_names.count(IDname)+1
-        return num
+    def countIDnames(self, IDname, IDType: ExploreItem.IDType):
+        ID_names = []
+        for id_dict in self.insertiondevices.values():
+            if IDType.value:
+                ID_names.append(id_dict["item"].text(0))
+            else:
+                ID_names.append(id_dict["item"].text(0)[:-2])
+        return ID_names.count(IDname)
 
-    def analyzeItem(self, id_item: ExploreItem, analysis_actived: list):
+    def analyzeItem(self, ID_item: ExploreItem, analysis_actived: list):
+        mainwindow = self.parent().parent().parent()
 
-        id_name = id_item.text(0)
-        id_dict = self.insertiondevices[id_name]
+        id_name = ID_item.text(0)
+        id_dict = self.insertiondevices[id(ID_item)]
 
         for calcAnalysis in analysis_actived:
             analysis = calcAnalysis.__name__.lstrip("calc").replace("_"," ")
@@ -155,16 +176,15 @@ class ProjectWidget(QMainWindow):
             #todo: checar item, nao o texto
             if analysis not in id_dict:
                 analysisType = ExploreItem.AnalysisType(analysis)
-                analysis_item = ExploreItem(analysisType, id_item, [str(analysis), "Analysis"])
+                analysis_item = ExploreItem(analysisType, ID_item, [analysis, "Analysis"])
                 analysis_item.setTextAlignment(1,Qt.AlignmentFlag.AlignRight)
-                if not id_item.isExpanded():
-                    self.tree.expandItem(id_item)
+                if not ID_item.isExpanded():
+                    self.tree.expandItem(ID_item)
 
-                if analysis=="Cross Talk":
-                    result_items = calcAnalysis(analysis_item, id_dict)
-                    self.update_ids_dict_key(key=id_name, new_key=id_item.text(0))
-                else:
-                    result_items = calcAnalysis(analysis_item, id_dict, self.params[analysis])
+                #mainwindow.statusbar.showMessage(f"Running {analysis}",1000)
+                result_items = calcAnalysis(analysis_item, id_dict, self.params[analysis])
+                #mainwindow.statusbar.showMessage(f"{analysis} done!",1000)
+                # self.update_ids_dict_key(key=id_name, new_key=ID_item.text(0))
                 [item.setTextAlignment(1,Qt.AlignmentFlag.AlignRight) for item in result_items]
             
             else:
@@ -172,15 +192,15 @@ class ProjectWidget(QMainWindow):
                                     f"Analysis Warning",
                                     f"{analysis} of ({id_name}) already calculated!")
 
-    def update_ids_dict_key(self, key, new_key):
-        ids_dict = self.insertiondevices
+    # def update_ids_dict_key(self, key, new_key):
+    #     ids_dict = self.insertiondevices
 
-        if key in ids_dict:
-            value = ids_dict.pop(key)
-            ids_dict[new_key] = value
-            return True
-        else:
-            return False
+    #     if key in ids_dict:
+    #         value = ids_dict.pop(key)
+    #         ids_dict[new_key] = value
+    #         return True
+    #     else:
+    #         return False
 
     def drawItems(self, items: typing.List[ExploreItem]):
 
@@ -191,7 +211,7 @@ class ProjectWidget(QMainWindow):
         if isModeAdd:
             chart = visuals.currentWidget()
         else:
-            chart = Canvas()
+            chart = Canvas(parent=self.visuals)
             chart.ax.grid(visible=True)
 
         if len(items)==1:
@@ -274,19 +294,28 @@ class ProjectWidget(QMainWindow):
         # colocando tabela no visuals
         self.visuals.addTab(tabela, "Table")
 
+    #todo: passar pra tree
     def open_context(self, pos):
 
         item = self.tree.itemAt(pos)
         position = self.mapToGlobal(pos)+QPoint(1,49)
 
         if item is not None:
-            if item.flag() is ExploreItem.IDType.IDData:
-                action = self.tree.menuContextID.exec(position) #todo: consertar pos
-                if action:
-                    if action.text()=="Save field map":
-                        self.saveFieldMap(item)
-                    elif action.text()=="Summary":
-                        self.summaryID(item)
+            if item.type() is ExploreItem.IDType:
+                if item.flag() is ExploreItem.IDType.IDData:
+                    action = self.tree.menuContextIDData.exec(position) #todo: consertar pos
+                    if action:
+                        if action.text()=="Rename ...":
+                            self.tree.rename_item(item)
+                        elif action.text()=="Summary ...":
+                            self.summaryID(item)
+                        elif action.text()=="Save field map ...":
+                            self.saveFieldMap(item) #todo: passar pra ExploreItem
+                else:
+                    action = self.tree.menuContextIDModel.exec(position)
+                    if action:
+                        self.tree.rename_item(item)
+
 
             elif item.flag() is ExploreItem.AnalysisType.Trajectory:
                 action = self.tree.menuContextTraj.exec(position)
@@ -301,7 +330,9 @@ class ProjectWidget(QMainWindow):
         ID = id_dict["InsertionDeviceObject"]
         file = id_dict["filename"]
 
-        if id_name[-2:]==" C":
+        correct = id_dict.get("Cross Talk")
+        print(correct)
+        if correct:
             i = file.find("Fieldmap")+len("Fieldmap")
             file = file[:i]+"Corrected"+file[i:]
 
@@ -351,6 +382,7 @@ class ProjectWidget(QMainWindow):
                 line = line_fmt.format(x, y, z, dxds, dyds, dzds)
                 electrontraj.write(line)
 
+    #todo: mudar para exibir o widget que ja existe no dock
     def summaryID(self, item: ExploreItem):
 
         id_dict = self.treeItemInfo(item)["id_dict"]
@@ -366,6 +398,7 @@ class ProjectWidget(QMainWindow):
             dialog.summary.update_integrals(integrals)
         dialog.exec()
 
+    #todo: passar para summary widget
     def update_summary(self, item: ExploreItem):
         id_dict = self.treeItemInfo(item).get("id_dict")
         if id_dict is None:

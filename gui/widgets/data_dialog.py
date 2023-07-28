@@ -34,6 +34,7 @@ class DataDialog(QDialog):
         self.spins_nr_periods = []
         self.spins_period_length = []
         self.spins_gap = []
+        self.checks_correction = []
         #arquivos ja presentes no project
         self.oldfiles = filenames
         #novos arquivos
@@ -54,9 +55,6 @@ class DataDialog(QDialog):
 
     # FUNCTIONS
 
-    def getSpinsValues(self, spin_list):
-        return [spin.value() for spin in spin_list]
-    
     def check_files(self, files):
 
         reloaded_files = []
@@ -80,12 +78,28 @@ class DataDialog(QDialog):
         return loaded_files
 
     def loadedFilesParameters(self):
-        return [self.getSpinsValues(self.spins_nr_periods),
-                self.getSpinsValues(self.spins_period_length),
-                self.getSpinsValues(self.spins_gap),
-                self.newfiles,
-                self.lines_names]
+        IDs_params = []
+        for (line_name,
+             new_file,
+             spin_nr_periods,
+             spin_period_length,
+             spin_gap,
+             check_correction) in zip(self.lines_names,
+                                      self.newfiles,
+                                      self.spins_nr_periods,
+                                      self.spins_period_length,
+                                      self.spins_gap,
+                                      self.checks_correction):
+            
+            IDs_params.append([line_name.text(),
+                               new_file,
+                               spin_nr_periods.value(),
+                               spin_period_length.value(),
+                               spin_gap.value(),
+                               check_correction.isChecked()])
+        return IDs_params
     
+    #todo: trocar undulator por ID
     def getUndulatorName(self,filename):
         models = list(self.parameters.keys())
         
@@ -108,7 +122,13 @@ class DataDialog(QDialog):
             return phase
         else:
             return "N"
-        
+
+    def isUndulatorCorrected(self, filename):
+        corrected = False
+        if "Corrected" in filename:
+            corrected = True
+        return corrected
+    
     @classmethod
     def getOpenFileIDs(cls, files=[] ,parent=None):
         
@@ -117,64 +137,88 @@ class DataDialog(QDialog):
         
         if answer == QDialog.DialogCode.Accepted:
             
-            *parameters, name_lines = dialog.loadedFilesParameters()
-            
-            ID_list = []
-            file_list = []
-            for nr_periods, period_length, gap, filename in zip(*parameters):
-                ID = InsertionDeviceData(nr_periods=nr_periods,
-                                         period_length=period_length,
-                                         gap=gap,
-                                         filename=filename)
-                ID_list.append(ID)
-                file_list.append(filename)
+            IDs_params = []
+            files_fail = []
+            for name, *args, correct in dialog.loadedFilesParameters():
+                filename, nr_periods, period_length, gap = args
+                try:
+                    ID = InsertionDeviceData(nr_periods=nr_periods,
+                                             period_length=period_length,
+                                             gap=gap,
+                                             filename=filename)
+                    IDs_params.append([ID,filename,name,correct])
+                except:
+                    files_fail.append(os.path.basename(filename))
+            if files_fail:
+                QMessageBox.critical(dialog,
+                                     "Insertion Device Fail",
+                                     f"Incompatible format in files loaded! They are:\n{files_fail}")
 
-            name_list = [line.text() for line in name_lines]
-
-            return ID_list, file_list, name_list
+            return IDs_params
         
         if answer == QDialog.DialogCode.Rejected:
-            return [], [], []
+            return []
 
 
     # SLOTS
 
     def accept(self) -> None:
-       
-        if 0 in self.getSpinsValues(self.spins_nr_periods) + \
-                self.getSpinsValues(self.spins_period_length) + \
-                self.getSpinsValues(self.spins_gap):
+        
+        invalid_spin = 0 in [spin.value() for spin in self.spins_nr_periods] + \
+                            [spin.value() for spin in self.spins_period_length] + \
+                            [spin.value() for spin in self.spins_gap]
+        invalid_line = True in [line.text()=="" or line.text().isspace()
+                                    for line in self.lines_names]
 
+        if invalid_spin:
             QMessageBox.critical(self,
                                  "Critical Warning",
                                  "All spin boxes must have values greater than 0!")
+        elif invalid_line:
+            QMessageBox.critical(self,
+                                 "Critical Warning",
+                                 "All data must have a label name!")
         else:
-      
             return super().accept()
 
     def browse(self):
 
-        userhome = os.path.expanduser('~')
-        # filenames: file adress + file name of the selected data files
+        # files: file adress + file name of the selected data files
         files, _ = QFileDialog.getOpenFileNames(parent=self, 
                                                 caption='Open data',
-                                                directory=f"{userhome}\\Documents",
+                                                directory=self.parent().lastpath,
                                                 filter="Data files (*.txt *.dat *.csv)")
+        if files:
+            self.parent().lastpath = os.path.dirname(files[-1])
         
         loaded_files = self.check_files(files=files)
+
+        self.add_files(loaded_files)
+
+    def add_files(self, loaded_files):
         
         #todo: criar maneira de poder excluir uma linha depois de importa-la
         nr_oldfiles = len(self.oldfiles)
+        # name_fmt = "{0} Phase {1}{2}"
+        # names_oldfiles = [self.getUndulatorName(oldfile)+\
+        #                   f"Phase {self.getUndulatorPhase(oldfile)}"+
+        #                   self.getUndulatorCorrection(oldfile)
+        #                   for oldfile in self.oldfiles]
         rows = self.layoutData.gridFiles.rowCount()
 
         for i, file in enumerate(loaded_files):
 
             filename = os.path.basename(file)
-            line_name, spin_nr_periods, spin_period_length, spin_gap = self.layoutData.gridFiles_insertAfterRow(filename, i+rows)
+            (line_name, spin_nr_periods,
+             spin_period_length, spin_gap,
+             check_correction) = self.layoutData.insertAfterRow(filename, i+rows)
 
             line_name.textChanged.connect(self.resize_to_content)
+  
             und_name = self.getUndulatorName(filename)
             und_phase = self.getUndulatorPhase(filename)
+            und_correct = self.isUndulatorCorrected(filename)
+            
             if und_name!="":
                 line_name.setText(f"{und_name} Phase {und_phase}")
             else:
@@ -185,15 +229,16 @@ class DataDialog(QDialog):
                 spin_nr_periods.setValue(self.parameters[und_name]["nr_periods"])
                 spin_period_length.setValue(self.parameters[und_name]["period_length"])
                 spin_gap.setValue(self.parameters[und_name]["gap"])
+                check_correction.setChecked(und_correct)
 
             spin_nr_periods.valueChanged.connect(self.spin_all)
-            self.spins_nr_periods.append(spin_nr_periods)
-
             spin_period_length.valueChanged.connect(self.spin_all)
-            self.spins_period_length.append(spin_period_length)
-
             spin_gap.valueChanged.connect(self.spin_all)
+
+            self.spins_nr_periods.append(spin_nr_periods)
+            self.spins_period_length.append(spin_period_length)
             self.spins_gap.append(spin_gap)
+            self.checks_correction.append(check_correction)
     
     def resize_to_content(self):
         lineedit = self.sender()

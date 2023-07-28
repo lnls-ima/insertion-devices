@@ -129,8 +129,8 @@ class Table(QTableView):
 
 class Canvas(QWidget):
 
-    def __init__(self, dpi=100):
-        super().__init__()
+    def __init__(self, parent=None, dpi=100):
+        super().__init__(parent)
 
         self.fig, self.ax = plt.subplots(dpi=dpi)
         # perform the axes adjustment each time the figure is redrawn

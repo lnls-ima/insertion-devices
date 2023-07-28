@@ -38,6 +38,7 @@ from matplotlib import cbook, cm, colors as mcolors, markers, image as mimage, p
 from matplotlib.backends.qt_compat import QtGui
 from matplotlib.backends.qt_editor import _formlayout
 from matplotlib.dates import DateConverter, num2date
+from .visualization_window import VisualizationTabWidget
 
 LINESTYLES = {'-': 'Solid',
               '--': 'Dashed',
@@ -355,9 +356,11 @@ def figure_edit(axes, parent=None):
                 figure.canvas.toolbar.push_current()
                 break
 
-    figOptions = _formlayout.fedit(
-        datalist,parent=parent,apply=apply_callback) #modification <
-    return figOptions                                #modification <
+    while type(parent) != VisualizationTabWidget:    #modification v
+        parent = parent.parent()
+    figOptions = parent.fedit(
+        datalist,parent=parent,apply=apply_callback)
+    return figOptions                                #modification ^
     #_formlayout.fedit(
     #    datalist, title="Figure options", parent=parent,
     #    icon=QtGui.QIcon(

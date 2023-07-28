@@ -49,21 +49,26 @@ class DataLayout(QVBoxLayout):
         self.gridFiles = QGridLayout()
 
         label_browse = QLabel("Browse for Data")
-        label_files = QLabel("Files")
+        label_files = QLabel("Filenames")
         label_files.setAlignment(alignHCenter)
         label_files.setStyleSheet("font-weight: bold")
-        label_names = QLabel("Names")
+        label_names = QLabel("Labels")
+        label_names.setToolTip("Names of the Insertion Devices displayed in the Explore Window")
         label_names.setAlignment(alignHCenter)
-        label_names.setStyleSheet("font-weight: bold")
-        label_nr_periods = QLabel("Number of Periods")
+        label_names.setStyleSheet("QLabel{font-weight: bold}")
+        label_nr_periods = QLabel(r"Nº of Periods")
         label_nr_periods.setAlignment(alignHCenter)
         label_nr_periods.setStyleSheet("font-weight: bold")
-        label_period_length = QLabel("Period Length")
+        label_period_length = QLabel("Period")
         label_period_length.setAlignment(alignHCenter)
         label_period_length.setStyleSheet("font-weight: bold")
         label_gap = QLabel("Gap")
         label_gap.setAlignment(alignHCenter)
         label_gap.setStyleSheet("font-weight: bold")
+        label_correction = QLabel("Corrected")
+        label_correction.setToolTip(r"Is the field map corrected by cross talk?")
+        label_correction.setAlignment(alignHCenter)
+        label_correction.setStyleSheet("QLabel{font-weight: bold}")
         
         self.button_browse = QToolButton(text="...")
 
@@ -82,6 +87,7 @@ class DataLayout(QVBoxLayout):
         self.gridFiles.addWidget(label_nr_periods,1,2)
         self.gridFiles.addWidget(label_period_length,1,3)
         self.gridFiles.addWidget(label_gap,1,4)
+        self.gridFiles.addWidget(label_correction,1,5)
 
         ## dialog button box - buttons
         buttons = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
@@ -93,8 +99,11 @@ class DataLayout(QVBoxLayout):
         self.addWidget(self.buttonBox)
 
 
-    def gridFiles_insertAfterRow(self, filename: str, pre_row_index: int) -> typing.Tuple[QLineEdit, QSpinBox, QDoubleSpinBox, QDoubleSpinBox]:
-        
+    def insertAfterRow(self, filename: str, pre_row_index: int) -> typing.Tuple[QLineEdit,
+                                                                                QSpinBox,
+                                                                                QDoubleSpinBox,
+                                                                                QDoubleSpinBox,
+                                                                                QCheckBox]:
         label_file = QLabel(filename)
         line_name = QLineEdit()
         spin_nr_periods = QSpinBox()
@@ -102,14 +111,16 @@ class DataLayout(QVBoxLayout):
         spin_period_length.setSuffix(" mm")
         spin_gap = QDoubleSpinBox()
         spin_gap.setSuffix(" mm")
-        
+        check_correction = QCheckBox()
+
         self.gridFiles.addWidget(label_file,pre_row_index,0)
         self.gridFiles.addWidget(line_name,pre_row_index,1)
         self.gridFiles.addWidget(spin_nr_periods,pre_row_index,2)
         self.gridFiles.addWidget(spin_period_length,pre_row_index,3)
         self.gridFiles.addWidget(spin_gap,pre_row_index,4)
+        self.gridFiles.addWidget(check_correction,pre_row_index,5,alignHCenter)
 
-        return line_name, spin_nr_periods, spin_period_length, spin_gap
+        return line_name, spin_nr_periods, spin_period_length, spin_gap, check_correction
     
 
 
@@ -182,23 +193,28 @@ class ModelGroupBox(QGroupBox):
 
         self.spin_dp = QDoubleSpinBox()#parent=self.groupCassettePositions)
         self.spin_dp.setObjectName("dp")
-        self.spin_dp.setDecimals(2)
+        self.spin_dp.setDecimals(3)
+        self.spin_dp.setRange(-10000,10000)
         self.spin_dp.setSuffix(" mm")
         self.spin_dcp = QDoubleSpinBox()
         self.spin_dcp.setObjectName("dcp")
-        self.spin_dcp.setDecimals(2)
+        self.spin_dcp.setDecimals(3)
+        self.spin_dcp.setRange(-10000,10000)
         self.spin_dcp.setSuffix(" mm")
         self.spin_dg = QDoubleSpinBox()
         self.spin_dg.setObjectName("dg")
-        self.spin_dg.setDecimals(2)
+        self.spin_dg.setDecimals(3)
+        self.spin_dg.setRange(-10000,10000)
         self.spin_dg.setSuffix(" mm")
         self.spin_dgv = QDoubleSpinBox()
         self.spin_dgv.setObjectName("dgv")
-        self.spin_dgv.setDecimals(2)
+        self.spin_dgv.setDecimals(3)
+        self.spin_dgv.setRange(-10000,10000)
         self.spin_dgv.setSuffix(" mm")
         self.spin_dgh = QDoubleSpinBox()
         self.spin_dgh.setObjectName("dgh")
-        self.spin_dgh.setDecimals(2)
+        self.spin_dgh.setDecimals(3)
+        self.spin_dgh.setRange(-10000,10000)
         self.spin_dgh.setSuffix(" mm")
 
         self.formCassettePos.setWidget(0,QFormLayout.ItemRole.LabelRole,self.label_dp)

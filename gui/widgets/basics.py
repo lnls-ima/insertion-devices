@@ -86,7 +86,7 @@ class BasicTabWidget(QTabWidget):
 
         self.menuContext = QMenu(self)
         self.menuContext.setToolTipsVisible(True)
-        actionRename = self.menuContext.addAction("Rename Tab")
+        actionRename = self.menuContext.addAction("Rename Tab ...")
         actionRename.triggered.connect(self.rename_tab)
 
 
@@ -101,7 +101,7 @@ class BasicTabWidget(QTabWidget):
         index = self.tabBar().tabAt(self.tabPos)
 
         new_text, ok = QInputDialog.getText(
-            self, 'Rename Item', 'Enter new name:', text=self.tabText(index)
+            self, 'Rename Tab', 'Enter new name:', text=self.tabText(index)
         )
         
         if ok:

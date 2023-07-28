@@ -1,5 +1,6 @@
 
 import time
+import os
 
 t = time.time()
 import sys
@@ -42,7 +43,7 @@ class MainWindow(QMainWindow):
         # ---------------------- contrucao da tool bar ---------------------- #
 
         self.toolbar = window_bars.ToolBar(title="Tool Bar",parent=self)
-        self.toolbar.buttonAnalysis.Menu.apply.clicked.connect(self.applyAnalysis)
+        self.toolbar_connect()
         
 
         # ------------------- construcao do main menu bar ------------------- #
@@ -125,12 +126,20 @@ class MainWindow(QMainWindow):
     def open_files(self, checked):
         project = self.projects.currentWidget()
 
-        ID_list, filenames, name_list = data_dialog.DataDialog.getOpenFileIDs(files=project.filenames, parent=self)
+        files = [id_dict.get("filename") for id_dict in project.insertiondevices.values()]
+        IDs_params = data_dialog.DataDialog.getOpenFileIDs(files=files, parent=project)
         
-        for ID, filename, name in zip(ID_list, filenames, name_list):
-            project.filenames.append(filename)
-            project.insertiondevices[name] = {"InsertionDeviceObject": ID, "filename": filename}
-            project.tree.insertID(ID=ID, IDType=ExploreItem.IDType.IDData, filename=filename, name=name)
+        for ID, filename, name, correct in IDs_params:
+            IDType = ExploreItem.IDType.IDData
+            num = project.countIDnames(name,IDType)
+            name += f" {num+1}" if num!=0 else ""
+            ID_item = project.tree.insertID(IDType=IDType,
+                                            ID=ID, correct=correct, filename=filename, name=name)
+            project.insertiondevices[id(ID_item)] = {"InsertionDeviceObject": ID,
+                                                     "filename": filename,
+                                                     "item": ID_item}
+            if correct:
+                project.insertiondevices[id(ID_item)]["Cross Talk"]=correct
 
     def model_generation(self):
         
@@ -138,10 +147,13 @@ class MainWindow(QMainWindow):
 
         if ID is not None:
             project = self.projects.currentWidget()
-            num = project.countIDnames(name)
-            name = f'{name} {num}'
-            project.insertiondevices[name] = {"InsertionDeviceObject": ID}
-            project.tree.insertID(ID=ID, IDType=ExploreItem.IDType.IDModel,name=name)
+            IDType = ExploreItem.IDType.IDModel
+            num = project.countIDnames(name,IDType)
+            name = f'{name} {num+1}'
+            ID_item = project.tree.insertID(IDType=IDType,
+                                            ID=ID, name=name)
+            project.insertiondevices[id(ID_item)] = {"InsertionDeviceObject": ID,
+                                                     "item": ID_item}
     
     def closeEvent(self, event):
         answer = QMessageBox.question(self,
@@ -158,15 +170,16 @@ class MainWindow(QMainWindow):
     ## settings slots
 
     def applyAnalysis(self):
+        project = self.projects.currentWidget()
+        analysis_btn = self.toolbar.buttonAnalysis
 
+        #run analysis for all ID items
         if self.menubar.actionApplyForAll.isChecked():
-            #executar analises para todos
-            project = self.projects.currentWidget()
             for item in project.tree.topLevelItem(0).children():
                 self._exec_analysis(item)
-
-        elif self.toolbar.buttonAnalysis.Menu.checkedItems():
-            self.toolbar.buttonAnalysis.setChecked(True)
+            analysis_btn.Menu.uncheckAnalysisMenu()
+        elif analysis_btn.Menu.checkedItems():
+            analysis_btn.modeChanged.emit(False)
 
     ## edit slots
 
@@ -199,6 +212,21 @@ class MainWindow(QMainWindow):
 
 
     # tool bar slots
+
+    def toolbar_connect(self):
+        analysis_btn = self.toolbar.buttonAnalysis
+        analysis_btn.Menu.apply.clicked.disconnect(analysis_btn.applyChangeMode)
+        analysis_btn.Menu.apply.clicked.connect(self.applyAnalysis)
+        self.toolbar.modeChanged.connect(self.buttonActivateMessage)
+
+
+    # status bar slots
+
+    def buttonActivateMessage(self):
+        toolbar_button = self.toolbar.buttonChecked
+        self.statusbar.label_button.setText(f"<b>{toolbar_button.objectName()}</b> active")
+        #bug for painted button when select other option
+
 
 
     # project slots
@@ -244,6 +272,9 @@ class MainWindow(QMainWindow):
         project = self.projects.currentWidget()
 
         # ----------------------------- analysis ----------------------------- #
+        
+        #todo: learn to execute the analysis in other thread
+        #todo: https://realpython.com/python-pyqt-qthread/
         if analysis_button.isChecked() and item.type() is ExploreItem.IDType:
 
             self._exec_analysis(item)
@@ -254,9 +285,10 @@ class MainWindow(QMainWindow):
         #*: por enquanto sem exibir tabela para apenas um numero
         if  table_button.isChecked() and \
             table_button.selectedAction.text()=="Table" and \
-            item.type() is not ExploreItem.ContainerType and \
-            item.flag() is not ExploreItem.ResultType.ResultNumeric and \
-            item.flag() is not ExploreItem.AnalysisType.RollOffPeaks:
+            (item.flag() in [ExploreItem.IDType.IDData,
+                             ExploreItem.ResultType.ResultArray] or \
+             (item.type() is ExploreItem.AnalysisType and \
+              item.flag() is not ExploreItem.AnalysisType.RollOffPeaks)):
 
             project.displayTable(item)
 
@@ -268,7 +300,11 @@ class MainWindow(QMainWindow):
             project.saveFieldMap(item)
 
         # ----------------------------- summary ----------------------------- #
-        project.update_summary(item)
+        #*: A principio poderia apresentar resumo para o modelo, mas precisa calcular alguns
+        #*:   parametros tais como amplitude do campo e outros, o que demora um tanto, por isso
+        #*:   o resumo foi restringido a dados
+        if item.flag() is not ExploreItem.IDType.IDModel:
+            project.update_summary(item)
 
     def tree_items_returned(self, items):
         if self.toolbar.buttonPlot.isChecked():

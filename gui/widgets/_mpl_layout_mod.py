@@ -300,23 +300,27 @@ class FormWidget(QtWidgets.QWidget):
                 field.setRange(-10**9, 10**9)
                 field.setValue(value)
             elif isinstance(value, Real):
-                field = QtWidgets.QDoubleSpinBox(self) #modification v
-                field.setSingleStep(0.5)
-                if label=="Min" or label=="Max":
-                    field.setRange(-10**9, 10**9)
-                elif label=="Alpha":
-                    field.setRange(0,1)
-                    field.setSingleStep(0.1)
+                if label=="Min" or label=="Max":                      #modification v
+                    field = QtWidgets.QLineEdit(repr(value), self)
+                    field.setCursorPosition(0)
+                    field.setValidator(QtGui.QDoubleValidator(field))
+                    field.validator().setLocale(QtCore.QLocale("C"))
                 else:
-                    field.setRange(0,10**9)
-                field.setValue(value)                  #modification ^
-                # field = QtWidgets.QLineEdit(repr(value), self)                  #source commented v
-                # field.setCursorPosition(0)
-                # field.setValidator(QtGui.QDoubleValidator(field))
-                # field.validator().setLocale(QtCore.QLocale("C"))
-                # dialog = self.get_dialog()
-                # dialog.register_float_field(field)
-                # field.textChanged.connect(lambda text: dialog.update_buttons()) #source commented ^
+                    field = QtWidgets.QDoubleSpinBox(self)
+                    field.setSingleStep(0.5)
+                    if label=="Alpha":
+                        field.setRange(0,1)
+                        field.setSingleStep(0.1)
+                    else:
+                        field.setRange(0,10**9)
+                    field.setValue(value)                             #modification ^
+                #field = QtWidgets.QLineEdit(repr(value), self)                  #source commented v
+                #field.setCursorPosition(0)
+                #field.setValidator(QtGui.QDoubleValidator(field))
+                #field.validator().setLocale(QtCore.QLocale("C"))
+                #dialog = self.get_dialog()
+                #dialog.register_float_field(field)
+                #field.textChanged.connect(lambda text: dialog.update_buttons()) #source commented ^
             elif isinstance(value, datetime.datetime):
                 field = QtWidgets.QDateTimeEdit(self)
                 field.setDateTime(value)
@@ -350,7 +354,10 @@ class FormWidget(QtWidgets.QWidget):
             elif isinstance(value, Integral):
                 value = int(field.value())
             elif isinstance(value, Real):
-                value = field.value()             #modification <
+                try:                                  #modification v
+                    value = field.value()
+                except:
+                    value = float(str(field.text()))  #modification ^
                 #value = float(str(field.text())) #source commented <
             elif isinstance(value, datetime.datetime):
                 datetime_ = field.dateTime()

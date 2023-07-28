@@ -8,16 +8,12 @@ from widgets import _mpl_layout_mod as layout_mod
 from .explore_window import ExploreItem
 
 import numpy as np
-from matplotlib.backends.qt_editor import _formlayout as _mpl_formlayout
-
 
 
 class VisualizationTabWidget(BasicTabWidget):
 
     def __init__(self):
         super().__init__(leftSpace=-1)
-
-        _mpl_formlayout.fedit = self.fedit
 
         self.dockFigOptions = QDockWidget("Figure Options",self.parent())
         widgetFigOptions = QWidget() #todo: set frame
@@ -152,6 +148,7 @@ class VisualizationTabWidget(BasicTabWidget):
 
         #todo: no futuro, avaliar se uso analysis ou analysis_item para fazer as condicoes
         id_name = analysis_info["id_name"]
+        id_dict = analysis_info["id_dict"]
         analysis_item = analysis_info["analysis_item"]
         analysis_dict = analysis_info["analysis_dict"]
         titleyxlabel = []
@@ -235,11 +232,23 @@ class VisualizationTabWidget(BasicTabWidget):
 
         elif analysis_item.flag() is ExploreItem.AnalysisType.RollOffAmp:
 
-            x, y, *roa = analysis_dict.values()
-            roa = 100*np.array(roa).T
+            ID = id_dict["InsertionDeviceObject"]
+            bxamp, byamp, *_ = ID.calc_field_amplitude()
 
-            chart.ax.plot(x,roa,label=[f"ROAx of {id_name}",f"ROAy of {id_name}",f"ROAz of {id_name}"])
-            titleyxlabel.extend(["Roll Off Amplitude", "ROAx, ROAy, ROAz (%)", "x (mm)"])
+            x, y, *roa = analysis_dict.values()
+
+            if abs(byamp-bxamp) < 0.1:
+                chart.ax.plot(x,roa[0],label=f"ROAx of {id_name}")
+                chart.ax.plot(x,roa[1],label=f"ROAy of {id_name}")
+                ylabel = "ROAx, ROAy (%)"
+            elif bxamp>byamp:
+                chart.ax.plot(x,roa[0],label=f"ROAx of {id_name}")
+                ylabel = "ROAx (%)"
+            else:
+                chart.ax.plot(x,roa[1],label=f"ROAy of {id_name}")
+                ylabel = "ROAy (%)"
+            
+            titleyxlabel.extend(["Roll Off Amplitude", ylabel, "x (mm)"])
 
         if addMode:
             chart.ax.set_title("")
@@ -257,7 +266,7 @@ class VisualizationTabWidget(BasicTabWidget):
         plotColumns = indexes[0].column() != indexes[-1].column()
         modelTable = self.currentWidget().model()
 
-        chart = Canvas()
+        chart = Canvas(parent=self)
         chart.ax.grid(visible=True)
 
         if plotColumns:

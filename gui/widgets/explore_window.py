@@ -2,8 +2,8 @@
 from enum import Enum
 from PyQt6 import sip
 import numpy as np
-from PyQt6.QtWidgets import QTreeWidgetItem, QTreeWidget, QMenu
-from PyQt6.QtGui import QColor, QKeyEvent
+from PyQt6.QtWidgets import QTreeWidgetItem, QTreeWidget, QMenu, QInputDialog, QMessageBox
+from PyQt6.QtGui import QColor, QKeyEvent, QIcon
 from PyQt6.QtCore import pyqtSignal, Qt, QItemSelectionModel, QItemSelection
 
 
@@ -196,12 +196,15 @@ class ExploreItem(QTreeWidgetItem):
         rtArray = cls.ResultType.ResultArray
 
         ID = id_dict["InsertionDeviceObject"]
-        ropx, ropy, ropz = ID.calc_roll_off_peaks(**rop_kwargs)
-        id_dict[analysis_item.text(0)] = {'ROPx': ropx,'ROPy': ropy,'ROPz': ropz}
+        x = rop_kwargs["x"]
+        ropx, ropy, ropz = 100*ID.calc_roll_off_peaks(**rop_kwargs)
+        id_dict[analysis_item.text(0)] = {'x [mm]': x,
+                                          'ROPx [%]': ropx,'ROPy [%]': ropy,'ROPz [%]': ropz}
 
-        result_items = [cls(rtArray, analysis_item, ['ROPx',  "List"]),
-                        cls(rtArray, analysis_item, ['ROPy',  "List"]),
-                        cls(rtArray, analysis_item, ['ROPz',  "List"])]
+        result_items = [cls(rtArray, analysis_item, ['x [mm]',  "List"]),
+                        cls(rtArray, analysis_item, ['ROPx [%]',  "List"]),
+                        cls(rtArray, analysis_item, ['ROPy [%]',  "List"]),
+                        cls(rtArray, analysis_item, ['ROPz [%]',  "List"])]
         
         return result_items
 
@@ -215,37 +218,32 @@ class ExploreItem(QTreeWidgetItem):
 
         ID = id_dict["InsertionDeviceObject"]
         x, y = roa_kwargs["x"], roa_kwargs["y"]
-        roax, roay, roaz = ID.calc_roll_off_amplitude(**roa_kwargs)
+        roax, roay, roaz = 100*ID.calc_roll_off_amplitude(**roa_kwargs)
         id_dict[analysis_item.text(0)] = {'x [mm]': x, 'y [mm]': y,
-                                          'ROAx': roax,'ROAy': roay,'ROAz': roaz}
+                                          'ROAx [%]': roax,'ROAy [%]': roay,'ROAz [%]': roaz}
 
         result_items = [cls(rtArray, analysis_item, ['x [mm]',  "List"]),
                         cls(rtNumber, analysis_item, ['y [mm]',  f"{y:.1f}"]),
-                        cls(rtArray, analysis_item, ['ROAx',  "List"]),
-                        cls(rtArray, analysis_item, ['ROAy',  "List"]),
-                        cls(rtArray, analysis_item, ['ROAz',  "List"])]
+                        cls(rtArray, analysis_item, ['ROAx [%]',  "List"]),
+                        cls(rtArray, analysis_item, ['ROAy [%]',  "List"]),
+                        cls(rtArray, analysis_item, ['ROAz [%]',  "List"])]
         
         return result_items
 
-    def calcCross_Talk(self, id_dict: dict):
+    def calcCross_Talk(self, id_dict: dict, correction_kwargs):
     
         id_item = self.parent()
         id_name = id_item.text(0)
 
         ID = id_dict["InsertionDeviceObject"]
-        ID.correct_angles(angxy=0.15, angxz=-0.21, angyx=-0.01,
-                          angyz=-0.02, angzx=0.01, angzy=-0.74)
-        ky = [-0.006781104386361973,-0.01675247563602003,7.568631573320983e-06]
-        kz = [-0.006170829583118335,-0.016051627320478382,7.886674928668737e-06]
-        ID.correct_cross_talk(ky=ky,kz=kz)
-        id_dict[self.text(0)] = {'angxy':  0.15, 'angxz': -0.21,
-                                 'angyx': -0.01, 'angyz': -0.02,
-                                 'angzx':  0.01, 'angzy': -0.74,
-                                 'ky': ky, 'kz': kz}
+        ID.correct_angles(**correction_kwargs["angles"])
+        ID.correct_cross_talk(**correction_kwargs["cross_talk"])
+        id_dict[self.text(0)] = True
         
         self.delete()
-        id_new_name = id_name+' C'
-        id_item.setText(0,id_new_name)
+        #id_new_name = id_name+' C'
+        #id_item.setText(0,id_new_name)
+        id_item.setIcon(0,QIcon("icons/icons/data-tick.png"))
         
         result_items = []
         
@@ -306,12 +304,28 @@ class ExploreTreeWidget(QTreeWidget):
         self.insertTopLevelItem(1, model_container)
         self.topLevelItem(1).setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
 
-        self.menuContextID = QMenu(self)
-        self.menuContextID.addAction("Summary")
-        self.menuContextID.addAction("Save field map")
+        self.menuContextIDData = QMenu(self)
+        self.menuContextIDData.addAction("Rename ...")
+        self.menuContextIDData.addAction("Summary ...")
+        self.menuContextIDData.addAction("Save field map ...")
+        self.menuContextIDModel = QMenu(self)
+        self.menuContextIDModel.addAction("Rename ...")
 
         self.menuContextTraj = QMenu(self)
         self.menuContextTraj.addAction("Save Trajectory")
+
+    def rename_item(self, item):
+        new_text, ok = QInputDialog.getText(
+            self, 'Rename Item', 'Enter new label:', text=item.text(0)
+        )
+        if ok:
+            #todo: fazer simbolo de correction ser icone e nao parte do texto
+            if new_text=="" or new_text.isspace():
+                QMessageBox.warning(self,
+                                    "Label Error",
+                                    "Empty label is not allowed!")
+            else:
+                item.setText(0, new_text)
 
     def isFilesVisible(self):
         return self.files_visible
@@ -354,19 +368,27 @@ class ExploreTreeWidget(QTreeWidget):
             return super().keyPressEvent(event)
         
 
-    def insertID(self, ID, IDType: ExploreItem.IDType, filename='', name=''):
+    def insertID(self, ID, IDType: ExploreItem.IDType, correct=False, filename='', name=''):
 
         ID.name = name
 
+        #IDData value is 1 and IDModel is 0
         if IDType.value:
             container = self.topLevelItem(0)
             id_item = ExploreItem(IDType, container, [ID.name, "FieldMap"])
+            if correct:
+                id_item.setIcon(0,QIcon("icons/icons/data-tick.png"))
+            else:
+                id_item.setIcon(0,QIcon("icons/icons/data.png"))
             filename = "../"+"/".join(filename.split("/")[3:])
             id_item.status_tip = "File: "+filename
         else:
             container = self.topLevelItem(1)
             id_item = ExploreItem(IDType, container, [ID.name, "Model"])
+            id_item.setIcon(0,QIcon("icons/icons/model.png"))
 
         id_item.setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
         if not container.isExpanded():
             self.expandItem(container)
+        
+        return id_item

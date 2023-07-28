@@ -297,6 +297,7 @@ class Block(_fieldsource.FieldModel):
         Raises:
             ValueError: if the block length is a negative number.
             ValueError: if block is a cylinder and shape is not float or int.
+            ValueError: if nseg is not an integer or if is less than 3.
             ValueError: if the length of the magnetization list is different
                 from three.
             ValueError: if the lengths of block_sudivision and block_shape
@@ -342,6 +343,8 @@ class Block(_fieldsource.FieldModel):
 
         self._rectangular = rectangular
         self._cylinder = cylinder
+        if (type(cylinder_nseg) is not int) or (cylinder_nseg < 3):
+            raise ValueError('Numper of segments must be an integer > 2')
         self._cylinder_nseg = cylinder_nseg
         self._longitudinal_position = longitudinal_position
         self._draw_color_component = draw_color_component

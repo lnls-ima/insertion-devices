@@ -19,6 +19,8 @@ class MagicFingers(_fieldsource.FieldModel):
         block_shape
         block_length
         block_distance
+        cylinder
+        cylinder_nseg
         nr_blocks_group
         block_shift_list
         group_rotation
@@ -41,15 +43,14 @@ class MagicFingers(_fieldsource.FieldModel):
     """
 
     def __init__(
-            self, nr_blocks_group, block_shape, block_length,
-            block_height, block_distance, block_nseg,
+            self, nr_blocks_group, block_shape, block_length, block_distance,
             group_distance, nr_groups, row_distance, nr_rows,
             magnetization_init_list, ksipar=0.06, ksiper=0.17,
             group_rotation=_np.pi/2, block_shift_list=None,
             group_shift_list=None, device_rotation=0,
             device_position = 0, block_subdivision=None,
-            rectangular=False, init_radia_object=True,
-            cylinder=False, name='', block_names=None):
+            rectangular=False, cylinder=False, cylinder_nseg=64,
+            init_radia_object=True, name='', block_names=None):
         """Pass and store attributes which define geometry and distribution
         of the blocks in the device and call radia object creation method.
 
@@ -130,6 +131,13 @@ class MagicFingers(_fieldsource.FieldModel):
                 If True the both are created as Radia ObjRecMag objects.
                 If False both are created as Radia ObjThckPgn objects.
                 Defaults to False.
+            cylinder (bool, optional): Used for initialization of blocks,
+                If True, cylindric blocks will be created with bases along the
+                ZX plane (see help on blocks.Block for more information).
+                Defaults to False.
+            cylinder_nseg (int, optional): If cylinder==True, this argument
+                determines the number of segments for modeling the cylindric
+                surface of the blocks. Defaults to 64.
             init_radia_object (bool, optional): If True, Radia object is
                 created at object initialization. Defaults to True.
             name (str, optional): Device label. Defaults to ''.
@@ -202,8 +210,7 @@ class MagicFingers(_fieldsource.FieldModel):
         self._nr_blocks_group = int(nr_blocks_group)
         self._block_shape = block_shape
         self._block_length = float(block_length)
-        self._block_height = float(block_height)
-        self._block_nseg = int(block_nseg)
+        self._cylinder_nseg = int(cylinder_nseg)
         self._block_distance = float(block_distance)
         self._group_distance = float(group_distance)
         self._nr_groups = int(nr_groups)
@@ -264,9 +271,9 @@ class MagicFingers(_fieldsource.FieldModel):
         return self._block_distance
 
     @property
-    def block_nseg(self):
+    def cylinder_nseg(self):
         """Distance between blocks inside a group [mm]."""
-        return self._block_nseg
+        return self._cylinder_nseg
 
     @property
     def group_distance(self):

@@ -198,13 +198,17 @@ class ExploreItem(QTreeWidgetItem):
         ID = id_dict["InsertionDeviceObject"]
         x = rop_kwargs["x"]
         ropx, ropy, ropz = 100*ID.calc_roll_off_peaks(**rop_kwargs)
-        id_dict[analysis_item.text(0)] = {'x [mm]': x,
-                                          'ROPx [%]': ropx,'ROPy [%]': ropy,'ROPz [%]': ropz}
 
-        result_items = [cls(rtArray, analysis_item, ['x [mm]',  "List"]),
-                        cls(rtArray, analysis_item, ['ROPx [%]',  "List"]),
-                        cls(rtArray, analysis_item, ['ROPy [%]',  "List"]),
-                        cls(rtArray, analysis_item, ['ROPz [%]',  "List"])]
+        if len(ropx):
+            id_dict[analysis_item.text(0)] = {'x [mm]': x,
+                                              'ROPx [%]': ropx.T,'ROPy [%]': ropy.T,'ROPz [%]': ropz.T}
+
+            result_items = [cls(rtArray, analysis_item, ['x [mm]',  "List"]),
+                            cls(rtArray, analysis_item, ['ROPx [%]',  "List"]),
+                            cls(rtArray, analysis_item, ['ROPy [%]',  "List"]),
+                            cls(rtArray, analysis_item, ['ROPz [%]',  "List"])]
+        else:
+            result_items = []
         
         return result_items
 
@@ -214,16 +218,14 @@ class ExploreItem(QTreeWidgetItem):
     @classmethod
     def calcRoll_Off_Amplitude(cls, analysis_item, id_dict: dict, roa_kwargs):
         rtArray = cls.ResultType.ResultArray
-        rtNumber = cls.ResultType.ResultNumeric
 
         ID = id_dict["InsertionDeviceObject"]
-        x, y = roa_kwargs["x"], roa_kwargs["y"]
+        x = roa_kwargs["x"]
         roax, roay, roaz = 100*ID.calc_roll_off_amplitude(**roa_kwargs)
-        id_dict[analysis_item.text(0)] = {'x [mm]': x, 'y [mm]': y,
+        id_dict[analysis_item.text(0)] = {'x [mm]': x,
                                           'ROAx [%]': roax,'ROAy [%]': roay,'ROAz [%]': roaz}
 
         result_items = [cls(rtArray, analysis_item, ['x [mm]',  "List"]),
-                        cls(rtNumber, analysis_item, ['y [mm]',  f"{y:.1f}"]),
                         cls(rtArray, analysis_item, ['ROAx [%]',  "List"]),
                         cls(rtArray, analysis_item, ['ROAy [%]',  "List"]),
                         cls(rtArray, analysis_item, ['ROAz [%]',  "List"])]
@@ -233,7 +235,6 @@ class ExploreItem(QTreeWidgetItem):
     def calcCross_Talk(self, id_dict: dict, correction_kwargs):
     
         id_item = self.parent()
-        id_name = id_item.text(0)
 
         ID = id_dict["InsertionDeviceObject"]
         ID.correct_angles(**correction_kwargs["angles"])
@@ -241,8 +242,6 @@ class ExploreItem(QTreeWidgetItem):
         id_dict[self.text(0)] = True
         
         self.delete()
-        #id_new_name = id_name+' C'
-        #id_item.setText(0,id_new_name)
         id_item.setIcon(0,QIcon("icons/icons/data-tick.png"))
         
         result_items = []

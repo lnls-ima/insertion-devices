@@ -1,19 +1,15 @@
 
-from PyQt6 import QtGui
 from PyQt6.QtWidgets import (QWidget,
                              QTabWidget,
                              QTabBar,
                              QMenu,
                              QInputDialog,
-                             QLineEdit,
                              QStyle,
                              QStylePainter,
                              QStyleOptionTab,
                              QVBoxLayout,
                              QToolButton,
-                             QLayout,
-                             QMainWindow,
-                             QDockWidget)
+                             QLayout)
 
 from PyQt6.QtCore import pyqtSignal, Qt, QRect, QPoint
 
@@ -81,7 +77,7 @@ class BasicTabWidget(QTabWidget):
         self.setTabsClosable(True)
         
         self.tabCloseRequested.connect(self.closeTab)
-        self.tabBarDoubleClicked.connect(self.start_rename)
+        # self.tabBarDoubleClicked.connect(self.start_rename)
         self.tabBar().customContextMenuRequested.connect(self.exec_context_menu)
 
         self.menuContext = QMenu(self)
@@ -97,45 +93,42 @@ class BasicTabWidget(QTabWidget):
             self.menuContext.exec(self.mapToGlobal(self.tabPos))
     
     def rename_tab(self):
-        
         index = self.tabBar().tabAt(self.tabPos)
-
         new_text, ok = QInputDialog.getText(
-            self, 'Rename Tab', 'Enter new name:', text=self.tabText(index)
-        )
-        
+            self, 'Rename Tab', 'Enter new name:',
+            text=self.tabText(index))
         if ok:
             self.setTabText(index, new_text)
 
-    def start_rename(self, tab_index):
-        self.editting_tab = tab_index
+    # def start_rename(self, tab_index):
+    #     self.editting_tab = tab_index
 
-        tab_rect = self.tabBar().tabRect(tab_index)
-        corner = self.mapToParent(tab_rect.topLeft())
+    #     tab_rect = self.tabBar().tabRect(tab_index)
+    #     corner = self.mapToParent(tab_rect.topLeft())
 
-        self.edit = QLineEdit(parent=self.parent())
-        self.edit.textChanged.connect(self.resize_to_content)
-        self.edit.editingFinished.connect(self.finish_rename)
+    #     self.edit = QLineEdit(parent=self.parent())
+    #     self.edit.textChanged.connect(self.resize_to_content)
+    #     self.edit.editingFinished.connect(self.finish_rename)
         
-        left_margin = 10
-        self.edit.move(corner.x()+left_margin+self.leftSpace, corner.y())
-        self.edit.setFixedHeight(tab_rect.height())
+    #     left_margin = 10
+    #     self.edit.move(corner.x()+left_margin+self.leftSpace, corner.y())
+    #     self.edit.setFixedHeight(tab_rect.height())
 
-        self.edit.setText(self.tabText(tab_index))
-        self.edit.selectAll()
-        self.edit.setFocus() # talvez de problema quando clicar fora do line edit enquanto ele tiver aberto
+    #     self.edit.setText(self.tabText(tab_index))
+    #     self.edit.selectAll()
+    #     self.edit.setFocus() # talvez de problema quando clicar fora do line edit enquanto ele tiver aberto
 
-        self.edit.show()
+    #     self.edit.show()
 
-    def resize_to_content(self):
-        X_margin = 15
-        self.edit.setFixedWidth(
-            10+X_margin+self.edit.fontMetrics().boundingRect(self.edit.text()).width()
-        )
+    # def resize_to_content(self):
+    #     X_margin = 15
+    #     self.edit.setFixedWidth(
+    #         10+X_margin+self.edit.fontMetrics().boundingRect(self.edit.text()).width()
+    #     )
 
-    def finish_rename(self):
-        self.setTabText(self.editting_tab, self.edit.text())
-        self.edit.deleteLater()
+    # def finish_rename(self):
+    #     self.setTabText(self.editting_tab, self.edit.text())
+    #     self.edit.deleteLater()
 
     def addTab(self, widget: QWidget, text: str) -> int:
         i = super().addTab(widget, text)

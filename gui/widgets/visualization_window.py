@@ -1,5 +1,5 @@
 
-from PyQt6.QtWidgets import QMenu, QWidget, QDockWidget, QWidget, QVBoxLayout
+from PyQt6.QtWidgets import QMenu, QWidget, QFrame, QDockWidget, QVBoxLayout
 from PyQt6.QtGui import QAction, QIcon, QCursor
 
 from.basics import BasicTabWidget
@@ -16,7 +16,10 @@ class VisualizationTabWidget(BasicTabWidget):
         super().__init__(leftSpace=-1)
 
         self.dockFigOptions = QDockWidget("Figure Options",self.parent())
-        widgetFigOptions = QWidget() #todo: set frame
+        widgetFigOptions = QFrame() #todo: set frame
+        widgetFigOptions.setObjectName("frame")
+        widgetFigOptions.setFrameShape(QFrame.Shape.Panel)
+        widgetFigOptions.setStyleSheet("QFrame#frame{ border: 1.2px solid #7c7c7c}")
         self.vboxFigOptions = QVBoxLayout(widgetFigOptions)
         self.dockFigOptions.setWidget(widgetFigOptions)
 
@@ -111,7 +114,9 @@ class VisualizationTabWidget(BasicTabWidget):
         result = result_info["result"]
         result_array = result_info["result_arraynum"]
 
-        chart.ax.plot(result_array,label=result)
+        line = chart.ax.plot(result_array)
+        if len(line)==1:
+            line[0].set_label(result)
 
         if addMode:
             chart.ax.set_title("")
@@ -125,11 +130,11 @@ class VisualizationTabWidget(BasicTabWidget):
         id_name = x_info["id_name"]
         x_label = x_info["result"]
         x = x_info["result_arraynum"]
-        
+
         y_label = y_info["result"]
         y = y_info["result_arraynum"]
-        
-        line, = chart.ax.plot(x,y)
+
+        line = chart.ax.plot(x,y)
 
         if addMode:
             chart.ax.set_title("")
@@ -142,7 +147,8 @@ class VisualizationTabWidget(BasicTabWidget):
             x_label = x_label[:x_label.find("[")-1]
             y_label = y_label[:y_label.find("[")-1]
             chart.ax.set_title(f"{y_label} vs {x_label}")
-            line.set_label(f"{y_label} vs {x_label} of {id_name}")
+            if len(line)==1:
+                line[0].set_label(f"{y_label} vs {x_label} of {id_name}")
 
     def plotAnalysis(self, chart: Canvas, analysis_info, addMode=False):
 
@@ -151,24 +157,24 @@ class VisualizationTabWidget(BasicTabWidget):
         id_dict = analysis_info["id_dict"]
         analysis_item = analysis_info["analysis_item"]
         analysis_dict = analysis_info["analysis_dict"]
-        titleyxlabel = []
+        title_y_x = []
 
         if analysis_item.flag() is ExploreItem.AnalysisType.MagneticField:
             
             x, y, z, *B = list(analysis_dict.values())
             B = np.array(B).T
 
-            titleyxlabel.extend(["Magnetic Field", "Bx, By, Bz (T)"])
+            title_y_x.extend(["Magnetic Field", "Bx, By, Bz (T)"])
             label = [f"Bx of {id_name}",f"By of {id_name}",f"Bz of {id_name}"]
             if not isinstance(z, (int, float)):
                 chart.ax.plot(z,B,label=label)
-                titleyxlabel.append("z (mm)")
+                title_y_x.append("z (mm)")
             elif not isinstance(x, (int, float)):
                 chart.ax.plot(x,B,label=label)
-                titleyxlabel.append("x (mm)")
+                title_y_x.append("x (mm)")
             elif not isinstance(y, (int, float)):
                 chart.ax.plot(y,B,label=label)
-                titleyxlabel.append("y (mm)")
+                title_y_x.append("y (mm)")
 
         elif analysis_item.flag() is ExploreItem.AnalysisType.Trajectory:
             
@@ -186,11 +192,11 @@ class VisualizationTabWidget(BasicTabWidget):
             
             if action.text()=="Position Deviation":
                 chart.ax.plot(z,x_y,label=[f"x of {id_name}", f"y of {id_name}"])
-                titleyxlabel.extend(["Trajectory","x, y (mm)"])
+                title_y_x.extend(["Trajectory","x, y (mm)"])
             elif action.text()=="Angular Deviation":
                 chart.ax.plot(z,dxds_dyds,label=[f"x' of {id_name}", f"y' of {id_name}"])
-                titleyxlabel.extend(["Trajectory - Angular Deviation","x', y' (rad)"])
-            titleyxlabel.append("z (mm)")
+                title_y_x.extend(["Trajectory - Angular Deviation","x', y' (rad)"])
+            title_y_x.append("z (mm)")
 
         elif  analysis_item.flag() is ExploreItem.AnalysisType.PhaseError:
 
@@ -204,7 +210,7 @@ class VisualizationTabWidget(BasicTabWidget):
                                      label=f"Phase Err RMS of {id_name}",
                                      c=phaserr_line.get_color())
 
-            titleyxlabel.extend(["Phase Error","Phase Error (deg)","z poles (mm)"])
+            title_y_x.extend(["Phase Error","Phase Error (deg)","z poles (mm)"])
 
         elif analysis_item.flag() is ExploreItem.AnalysisType.Integrals:
 
@@ -222,42 +228,78 @@ class VisualizationTabWidget(BasicTabWidget):
             
             if action.text()=="First Integral":
                 chart.ax.plot(z,ib,label=[f"ibx of {id_name}", f"iby of {id_name}", f"ibz of {id_name}"])
-                titleyxlabel.extend(["Field Integral - First","ibx, iby, ibz (G.cm)"])
+                title_y_x.extend(["Field Integral - First","ibx, iby, ibz (G.cm)"])
 
             elif action.text()=="Second Integral":
                 chart.ax.plot(z,iib,label=[f"iibx of {id_name}", f"iiby of {id_name}", f"iibz of {id_name}"])
-                titleyxlabel.extend(["Field Integral - Second","iibx, iiby, iibz (kG.cm2)"])
+                title_y_x.extend(["Field Integral - Second","iibx, iiby, iibz (kG.cm2)"])
 
-            titleyxlabel.append("z (mm)")
+            title_y_x.append("z (mm)")
 
         elif analysis_item.flag() is ExploreItem.AnalysisType.RollOffAmp:
 
             ID = id_dict["InsertionDeviceObject"]
             bxamp, byamp, *_ = ID.calc_field_amplitude()
-
-            x, y, *roa = analysis_dict.values()
+            x, *roa = analysis_dict.values()
 
             if abs(byamp-bxamp) < 0.1:
                 chart.ax.plot(x,roa[0],label=f"ROAx of {id_name}")
                 chart.ax.plot(x,roa[1],label=f"ROAy of {id_name}")
-                ylabel = "ROAx, ROAy (%)"
+                title_y_x.append("Roll Off Amplitude - x, y")
             elif bxamp>byamp:
                 chart.ax.plot(x,roa[0],label=f"ROAx of {id_name}")
-                ylabel = "ROAx (%)"
+                title_y_x.append("Roll Off Amplitude - x")
             else:
                 chart.ax.plot(x,roa[1],label=f"ROAy of {id_name}")
-                ylabel = "ROAy (%)"
+                title_y_x.append("Roll Off Amplitude - y")
             
-            titleyxlabel.extend(["Roll Off Amplitude", ylabel, "x (mm)"])
+            title_y_x.extend(["Roll Off (%)", "x (mm)"])
 
+        elif analysis_item.flag() is ExploreItem.AnalysisType.RollOffPeaks:
+
+            ID = id_dict["InsertionDeviceObject"]
+            bxamp, byamp, *_ = ID.calc_field_amplitude()
+            x, *rop = analysis_dict.values()
+            N = rop[0].shape[1]
+
+            if abs(byamp-bxamp) < 0.1:
+
+                menuPeaks = QMenu(self)
+                menuPeaks.addAction("x component")
+                menuPeaks.addAction("y component")
+
+                action = menuPeaks.exec(QCursor.pos())
+                if action is None:
+                    return False
+                
+                if action.text()=="x component":
+                    rop_lines = chart.ax.plot(x,rop[0])
+                    title_y_x.append("Roll Off Peaks - x")
+
+                elif action.text()=="y component":
+                    rop_lines = chart.ax.plot(x,rop[1])
+                    title_y_x.append("Roll Off Peaks - y")
+
+            elif bxamp>byamp:
+                rop_lines = chart.ax.plot(x,rop[0])
+                title_y_x.append("Roll Off Peaks - x")
+            else:
+                rop_lines = chart.ax.plot(x,rop[1])
+                title_y_x.append("Roll Off Peaks - y")
+
+            rop_lines[0].set_label(f"ROPeak 1 of {id_name}")
+            rop_lines[N-1].set_label(f"ROPeak {N} of {id_name}")
+            title_y_x.extend(["Roll Off (%)","x (mm)"])
+
+    
         if addMode:
             chart.ax.set_title("")
             chart.ax.set_ylabel("")
             chart.ax.set_xlabel("")
         else:
-            chart.ax.set_title(titleyxlabel[0])
-            chart.ax.set_ylabel(titleyxlabel[1])
-            chart.ax.set_xlabel(titleyxlabel[2])
+            chart.ax.set_title(title_y_x[0])
+            chart.ax.set_ylabel(title_y_x[1])
+            chart.ax.set_xlabel(title_y_x[2])
 
         return True
 

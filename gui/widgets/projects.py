@@ -6,8 +6,8 @@ from  PyQt6.QtWidgets import   (QMainWindow,
                                 QToolButton,
                                 QDockWidget,
                                 QMessageBox,
-                                QInputDialog)
-from   PyQt6.QtGui    import    QIcon
+                                QMenu)
+from   PyQt6.QtGui    import    QIcon, QCursor
 from   PyQt6.QtCore   import   Qt, QPoint
 
 from .basics import BasicTabWidget
@@ -183,6 +183,11 @@ class ProjectWidget(QMainWindow):
 
                 #mainwindow.statusbar.showMessage(f"Running {analysis}",1000)
                 result_items = calcAnalysis(analysis_item, id_dict, self.params[analysis])
+                if analysis=="Roll Off Peaks" and not result_items:
+                    analysis_item.delete()
+                    QMessageBox.warning(self,
+                                "Roll Off Warning",
+                                f"There are no peaks in the greater magnetic field, Bx or By, of ({id_name}). Roll Off for Peaks cannot be calculated!")
                 #mainwindow.statusbar.showMessage(f"{analysis} done!",1000)
                 # self.update_ids_dict_key(key=id_name, new_key=ID_item.text(0))
                 [item.setTextAlignment(1,Qt.AlignmentFlag.AlignRight) for item in result_items]
@@ -191,16 +196,6 @@ class ProjectWidget(QMainWindow):
                 QMessageBox.warning(self,
                                     f"Analysis Warning",
                                     f"{analysis} of ({id_name}) already calculated!")
-
-    # def update_ids_dict_key(self, key, new_key):
-    #     ids_dict = self.insertiondevices
-
-    #     if key in ids_dict:
-    #         value = ids_dict.pop(key)
-    #         ids_dict[new_key] = value
-    #         return True
-    #     else:
-    #         return False
 
     def drawItems(self, items: typing.List[ExploreItem]):
 
@@ -236,8 +231,9 @@ class ProjectWidget(QMainWindow):
             y_info = self.treeItemInfo(y_item)
             visuals.plotPair(chart, x_info, y_info, isModeAdd)
         
-        #chart.ax.legend(old_handles+new_handles, old_labels+new_labels)
-        chart.ax.legend()
+        labels0 = [line.get_label()[0] for line in chart.ax.get_lines()]
+        if len(labels0) != labels0.count("_"):
+            chart.ax.legend()
 
         #maneira de nao criar nada se nao e' selecionado nada nos menus de traj e integral
         # colocando grafico no self
@@ -269,24 +265,61 @@ class ProjectWidget(QMainWindow):
             analysis_item = item
             analysis_dict = self.treeItemInfo(analysis_item)["analysis_dict"]
 
-            data = []
             header = []
+            data = []
             for param, content in analysis_dict.items():
                 if not isinstance(content, (int, float)):
                     header.append(param)
                     data.append(content)
+
+            if "ROP" in header[1]:
+
+                menuPeaks = QMenu(self)
+                actionx = menuPeaks.addAction("x component")
+                actiony = menuPeaks.addAction("y component")
+                actionz = menuPeaks.addAction("z component")
+                action = menuPeaks.exec(QCursor.pos())
+                if action is None:
+                    return False
+                i = [actionx, actiony, actionz].index(action)
+
+                x = data[0].reshape(1,-1)
+                rop = data[i+1].T
+                data = np.append(x,rop,axis=0)
+
+                header = ["x [mm]"]
+                N = rop.shape[0]
+                coord = ["x","y","z"][i]
+                header.extend([f"ROP{i}{coord} [%]"
+                               for i in range(1,N+1)])
+
             data = np.array(data).T
 
         # tabela: resultado
-        elif item.flag() is ExploreItem.ResultType.ResultArray:
+        elif item.type() is ExploreItem.ResultType:
 
             result_item = item
             result_info = self.treeItemInfo(result_item)
             result = result_info["result"]
-            result_array = result_info["result_arraynum"]
+            array_num = result_info["result_arraynum"]
 
-            data = result_array.reshape(-1,1)
-            header = [result]
+            rtArray = ExploreItem.ResultType.ResultArray
+            rtNumber = ExploreItem.ResultType.ResultNumeric
+
+            if item.flag() is rtArray:
+                cols = 1 if array_num.ndim==1 else array_num.shape[1]
+
+                data = array_num.reshape(-1,cols)
+                if "ROP" in result:
+                    coord = result[3]
+                    header = [f"ROP{i}{coord} [%]" for i in range(1,cols+1)]
+                else:
+                    header = [result]*cols
+            
+            elif item.flag() is rtNumber:
+        
+                data = np.array([[array_num]])
+                header = [result]
 
         #contrucao da tabela
         tabela = Table(data, header)

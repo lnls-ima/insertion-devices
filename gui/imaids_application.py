@@ -1,6 +1,5 @@
 
 import time
-import os
 
 t = time.time()
 import sys
@@ -228,7 +227,6 @@ class MainWindow(QMainWindow):
         #bug for painted button when select other option
 
 
-
     # project slots
 
     def project_connect(self, proj_idx):
@@ -281,14 +279,10 @@ class MainWindow(QMainWindow):
 
 
         # ------------------------------ table ------------------------------ #
-        #*: por enquanto sem roll off peaks, pois deveria haver uma tabela para cada pico
-        #*: por enquanto sem exibir tabela para apenas um numero
         if  table_button.isChecked() and \
             table_button.selectedAction.text()=="Table" and \
-            (item.flag() in [ExploreItem.IDType.IDData,
-                             ExploreItem.ResultType.ResultArray] or \
-             (item.type() is ExploreItem.AnalysisType and \
-              item.flag() is not ExploreItem.AnalysisType.RollOffPeaks)):
+            item.type() is not ExploreItem.ContainerType and \
+            item.flag() is not ExploreItem.IDType.IDModel:
 
             project.displayTable(item)
 
@@ -312,12 +306,9 @@ class MainWindow(QMainWindow):
             if len(items) == 0:
                 print("nada selecionado")
 
-            #*: por enquanto sem roll off peaks, pois ha muitos graficos para
-            #*: cada coordenada
             elif len(items) == 1 and \
-                 (items[0].flag() is ExploreItem.AnalysisType.RollOffPeaks or \
-                  (items[0].type() is not ExploreItem.AnalysisType and \
-                   items[0].flag() is not ExploreItem.ResultType.ResultArray)):
+                 (items[0].type() is not ExploreItem.AnalysisType and \
+                  items[0].flag() is not ExploreItem.ResultType.ResultArray):
                 
                 print("nao pode ser plotado")
 

@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import QTreeWidgetItem, QTreeWidget, QMenu, QInputDialog, Q
 from PyQt6.QtGui import QColor, QKeyEvent, QIcon
 from PyQt6.QtCore import pyqtSignal, Qt, QItemSelectionModel, QItemSelection
 
+from . import get_path
 
 class ExploreItem(QTreeWidgetItem):
 
@@ -242,7 +243,7 @@ class ExploreItem(QTreeWidgetItem):
         id_dict[self.text(0)] = True
         
         self.delete()
-        id_item.setIcon(0,QIcon("icons/icons/data-tick.png"))
+        id_item.setIcon(0,QIcon(get_path('icons','data-tick.png')))
         
         result_items = []
         
@@ -376,15 +377,15 @@ class ExploreTreeWidget(QTreeWidget):
             container = self.topLevelItem(0)
             id_item = ExploreItem(IDType, container, [ID.name, "FieldMap"])
             if correct:
-                id_item.setIcon(0,QIcon("icons/icons/data-tick.png"))
+                id_item.setIcon(0,QIcon(get_path('icons','data-tick.png')))
             else:
-                id_item.setIcon(0,QIcon("icons/icons/data.png"))
+                id_item.setIcon(0,QIcon(get_path('icons','data.png')))
             filename = "../"+"/".join(filename.split("/")[3:])
             id_item.status_tip = "File: "+filename
         else:
             container = self.topLevelItem(1)
             id_item = ExploreItem(IDType, container, [ID.name, "Model"])
-            id_item.setIcon(0,QIcon("icons/icons/model.png"))
+            id_item.setIcon(0,QIcon(get_path('icons','model.png')))
 
         id_item.setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
         if not container.isExpanded():

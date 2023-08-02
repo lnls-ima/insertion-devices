@@ -7,10 +7,11 @@ from PyQt6.QtWidgets import (QPushButton,
                              QVBoxLayout,
                              QDialog,
                              QMessageBox)
-from PyQt6.QtGui import QIcon, QWindow
+from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QTimer
 
 from .dialog_layouts import AnalysisLayout
+from . import get_path
 
 import numpy as np
 
@@ -217,7 +218,7 @@ class AnalysisMenu(QFrame):
     # coloca ou tira icone da varinha do botao apply
     def toggle_icon(self,state):
         if state:
-            self.apply.setIcon(QIcon('icons/icons/wand.png'))
+            self.apply.setIcon(QIcon(get_path('icons','wand.png')))
         else:
             self.apply.setIcon(QIcon(None))
     

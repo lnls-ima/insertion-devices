@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import QStatusBar, QToolBar, QMenuBar, QLabel
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtCore import pyqtSignal
 
-from . import analysis, painted_button
+from . import analysis, painted_button, get_path
 
 
 class StatusBar(QStatusBar):
@@ -35,17 +35,17 @@ class ToolBar(QToolBar):
 
         self.buttonChecked = None
 
-        grafico = QIcon("icons/icons/guide.png")
-        tabela = QIcon("icons/icons/table.png")
-        dog = QIcon("icons/icons/animal-dog.png")
-        cat = QIcon("icons/icons/animal.png")
-        bug = QIcon("icons/icons/bug.png")
+        grafico = QIcon(get_path('icons','guide.png'))
+        tabela = QIcon(get_path('icons','table.png'))
+        dog = QIcon(get_path('icons','animal-dog.png'))
+        cat = QIcon(get_path('icons','animal.png'))
+        bug = QIcon(get_path('icons','bug.png'))
         
         # tool bar
         self.setObjectName(self.name)
 
         ## tool bar - cursor action: explore window without affect items
-        self.actionCursor = QAction(icon=QIcon("icons/icons/cursor.png"),
+        self.actionCursor = QAction(icon=QIcon(get_path('icons','cursor.png')),
                                     text="<b>Cursor</b> (C)<br>"+
                                          "Select item or tab",
                                     parent=self)
@@ -56,7 +56,7 @@ class ToolBar(QToolBar):
         self.addAction(self.actionCursor)
 
         ## tool bar - save action: salvar tabelas dos mapas de campo
-        self.actionSave = QAction(icon=QIcon("icons/icons/database-export.png"),
+        self.actionSave = QAction(icon=QIcon(get_path('icons','database-export.png')),
                                   text="<b>Save</b> (S)<br>"+
                                        "Select Data ID item or Analysis item",
                                   parent=self)
@@ -152,17 +152,17 @@ class MenuBar(QMenuBar):
 
         # icons
         ## icons - File menu
-        iconNew_Project = QIcon("icons/icons/projection-screen--plus.png")
-        iconOpen_Data = QIcon("icons/icons/database-import.png")
-        iconGenerate_Model = QIcon("icons/icons/magnet-blue.png")
-        iconExit = QIcon("icons/icons/door-open-out.png")
+        iconNew_Project = QIcon(get_path('icons','projection-screen--plus.png'))
+        iconOpen_Data = QIcon(get_path('icons','database-import.png'))
+        iconGenerate_Model = QIcon(get_path('icons','magnet-blue.png'))
+        iconExit = QIcon(get_path('icons','door-open-out.png'))
         ## icons - Edit Menu
-        iconAnalysis = QIcon("icons/icons/beaker--pencil")
+        iconAnalysis = QIcon(get_path('icons','beaker--pencil'))
         ## icons - View Menu
-        iconToolBar = QIcon("icons/icons/toolbox.png")
-        iconStatusBar = QIcon("icons/icons/ui-status-bar-blue.png")
+        iconToolBar = QIcon(get_path('icons','toolbox.png'))
+        iconStatusBar = QIcon(get_path('icons','ui-status-bar-blue.png'))
         ## icons - Settings Menu
-        iconApplyForAll = QIcon("icons/icons/wand-hat.png")
+        iconApplyForAll = QIcon(get_path('icons','wand-hat.png'))
         
         # File menu
         self.menuFile = self.addMenu("&File")

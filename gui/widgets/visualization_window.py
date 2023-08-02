@@ -6,6 +6,7 @@ from.basics import BasicTabWidget
 from .visual_elements import Canvas
 from widgets import _mpl_layout_mod as layout_mod
 from .explore_window import ExploreItem
+from . import get_path
 
 import numpy as np
 
@@ -104,7 +105,7 @@ class VisualizationTabWidget(BasicTabWidget):
         index = self.currentIndex()
 
         if change:
-            self.setTabIcon(index, QIcon("icons\icons\plus-white.png"))
+            self.setTabIcon(index, QIcon(get_path('icons','plus-white.png')))
         else:
             self.setTabIcon(index, QIcon(None))
 

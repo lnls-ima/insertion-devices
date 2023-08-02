@@ -5,23 +5,12 @@ from PyQt6.QtWidgets import QDialog, QFormLayout
 
 from imaids import models
 from .dialog_layouts import ModelLayout
+from . import get_path
 
 # todo: ter opcao de carregar arquivo com o conjunto de pontos para ter forma dos blocos
 class ModelDialog(QDialog):
 
-    parameters_json = 'models_parameters.json'
-
-    # Get the current directory
-    current_dir = os.getcwd()
-    # Iterate over all the files in the directory tree
-    for root, dirs, files in os.walk(current_dir):
-        # Check if the file we're looking for is in the list of files
-        if parameters_json in files:
-            # If it is, print the full path to the file
-            parameters_json = os.path.join(root, parameters_json)
-            break
-    
-    with open(parameters_json) as f:
+    with open(get_path('.','models_parameters.json')) as f:
         parameters = json.load(f)
 
     def __init__(self, parent=None):

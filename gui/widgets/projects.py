@@ -16,6 +16,7 @@ from .visual_elements import Canvas, Table
 from .visualization_window import VisualizationTabWidget
 from .save_dialog import SaveDialog
 from .summary_dialog import SummaryDialog, SummaryWidget
+from . import get_path
 
 import numpy as np
 
@@ -474,7 +475,7 @@ class ProjectsTabWidget(BasicTabWidget):
         self.PlusButton.setShortcut("+")
         self.PlusButton.setToolTip("New Project (+)")
         self.PlusButton.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
-        self.PlusButton.setIcon(QIcon("icons/icons/plus-button.png"))
+        self.PlusButton.setIcon(QIcon(get_path('icons','plus-button.png')))
         self.PlusButton.pressed.connect(self.addTab)
         self.setCornerWidget(self.PlusButton,corner=Qt.Corner.TopLeftCorner)
 

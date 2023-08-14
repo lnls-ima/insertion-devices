@@ -50,7 +50,8 @@ class MagicFingers(_fieldsource.FieldModel):
             group_shift_list=None, device_rotation=0,
             device_position = 0, block_subdivision=None,
             rectangular=False, cylinder=False, cylinder_nseg=64,
-            init_radia_object=True, name='', block_names=None):
+            init_radia_object=True, name='', block_names=None,
+            draw_color_component = None):
         """Pass and store attributes which define geometry and distribution
         of the blocks in the device and call radia object creation method.
 
@@ -58,13 +59,17 @@ class MagicFingers(_fieldsource.FieldModel):
             nr_blocks_group (int): Number of blocks forming a group of blocks.
                 A number of such groups will be distributed radially around
                 the z=0 ([0,0,1]) axis forming the device.
-            block_shape (list, Mx2 or NxMx2): List defining blocks geometry.
-                Single list or N nested lists of M 2D points defining convex
-                polygons which form the cross-section of a block (as
-                described in blocks.Block). Same block_shape for all blocks.
-                2D points coordinates in mm.
-            block_length (float): Block longitudinal length, perpendicular to
-                cross-section defined by block_shape. in mm.
+            block_shape (list, Mx2 or NxMx2): Defines block transversal shape.
+                If block is NOT a cylinder, it is a single single list or N
+                nested lists of M 2D points defining convex polygons which form
+                the cross-section of a block (as described in blocks.Block).
+                Same block_shape for all blocks. In mm.
+                If cylinder is True, the shape parameter is the base radius
+                for all blocks. In mm.
+            block_length (float): Block longitudinal length.
+                If block is NOT a cylinder, it is the length perpendicular to
+                    the cross-section defined by block_shape. In mm.
+                If cylinder, it is the cylinder height (y). In mm.
             block_distance (float): Longitudinal distance between blocks in
                 each group (in the direction perpendicular to cross-section
                 defined by block_shape). The same for all groups. In mm.
@@ -147,6 +152,9 @@ class MagicFingers(_fieldsource.FieldModel):
             block_names (list, nr_blocks_group*nr_groups): Labels applied
                 to the individual blocks. Defaults to None, meaning labels
                 = '' to all blocks.
+            draw_color_component (int, optional): magnetization component index
+                used to determine draw colors. Passed to Block class at block
+                creation. Defaults to None (default color to all blocks).
 
         Raises:
             ValueError: If nr_blocks_group is < 1
@@ -235,6 +243,7 @@ class MagicFingers(_fieldsource.FieldModel):
         self._cylinder = cylinder
         self.name = name # "public"/mutable, no need for @property method
         self._block_names = block_names
+        self._draw_color_component = draw_color_component
 
         # More "private" attributes, not directly given by __init__ arguments
         self._blocks = []
@@ -399,6 +408,11 @@ class MagicFingers(_fieldsource.FieldModel):
     def blocks(self):
         """List of Block objects."""
         return self._blocks
+
+    @property
+    def draw_color_component(self):
+        """Magnetization component used for determining block color."""
+        return self._draw_color_component
 
     @property
     def nr_blocks_total(self):

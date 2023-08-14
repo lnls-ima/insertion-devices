@@ -44,8 +44,8 @@ class MagicFingers(_fieldsource.FieldModel):
 
     def __init__(
             self, nr_blocks_group, block_shape, block_length, block_distance,
-            group_distance, nr_groups, row_distance, nr_rows,
-            magnetization_init_list, ksipar=0.06, ksiper=0.17,
+            group_distance, nr_groups, magnetization_init_list,
+            nr_rows=1, row_distance=None, ksipar=0.06, ksiper=0.17,
             group_rotation=_np.pi/2, block_shift_list=None,
             group_shift_list=None, device_rotation=0,
             device_position = 0, block_subdivision=None,
@@ -79,8 +79,10 @@ class MagicFingers(_fieldsource.FieldModel):
                 at its desired radial and angular position.
             row_distance (float): Distance between rows in global z direction
                 for each group. The same for all groups. In mm.
+                Note: Magic fingers z=0 position is centered in the first row.
             nr_rows (int): Number of rows forming the device.
-            magnetization_init_list (list, nr_blocks_group*nr_groups x 3):
+            magnetization_init_list
+                    (list, nr_blocks_group*nr_rows*nr_groups*3):
                 Magnetizations list for the device blocks. Block materials will
                 always be linear with (possibly) anisotropic permeability.
                 Magnetization modulus (remanence) and the direction (easy axis
@@ -99,7 +101,8 @@ class MagicFingers(_fieldsource.FieldModel):
                 > the x axis coincides with the local z (device rotation axis);
                 Same rotation is applied to each group in its respective
                 respective local y axis. In radians, defaults to pi/2.
-            block_shift_list (list, nr_blocks_group*nr_groups x 3, optional):
+            block_shift_list
+                    (list, nr_blocks_group*nr_rows*nr_groups*3, optional):
                 Shifts [x,y,z] applied individually to the blocks, in mm.
                 The shifts are described in the local coordinate system of the
                 groups (as described for the group_rotation argument above).
@@ -179,8 +182,11 @@ class MagicFingers(_fieldsource.FieldModel):
         if nr_groups < 1:
             raise ValueError('nr_groups must be >= 1.')
 
-        if row_distance < 0:
-            raise ValueError('row_distance must be >= 0.')
+        if nr_rows > 1:
+            if row_distance is None:
+                raise ValueError('row_distance must be provided if nr_rows>1.')
+            elif row_distance < 0:
+                raise ValueError('row_distance must be >= 0.')
 
         if nr_rows < 1:
             raise ValueError('nr_rows must be >= 1.')
@@ -214,8 +220,8 @@ class MagicFingers(_fieldsource.FieldModel):
         self._block_distance = float(block_distance)
         self._group_distance = float(group_distance)
         self._nr_groups = int(nr_groups)
-        self._row_distance = float(row_distance)
         self._nr_rows = int(nr_rows)
+        self._row_distance = row_distance
         self._magnetization_init_list = magnetization_init_list
         self._ksipar = ksipar
         self._ksiper = ksiper
@@ -544,17 +550,22 @@ class MagicFingers(_fieldsource.FieldModel):
                     # Generate position, WITHOUT SHIFTS.
                     position = idx_block*(self.block_distance)
                     position_list.append(position)
-                    row_distance_z_list.append(idx_row*self.row_distance)
-                    if idx_row % 2 == 0:
-                        if idx_group % 2 == 0:
-                            row_distance_x_list.append(-self.block_length/2)
+                    if self.nr_rows > 1:
+                        row_distance_z_list.append(idx_row*self.row_distance)
+                        half_radius = self.block_length/2
+                        if idx_row % 2 == 0:
+                            if idx_group % 2 == 0:
+                                row_distance_x_list.append(-half_radius)
+                            else:
+                                row_distance_x_list.append(half_radius)
                         else:
-                            row_distance_x_list.append(self.block_length/2)
+                            if idx_group %2 == 0:
+                                row_distance_x_list.append(half_radius)
+                            else:
+                                row_distance_x_list.append(-half_radius)
                     else:
-                        if idx_group %2 == 0:
-                            row_distance_x_list.append(self.block_length/2)
-                        else:
-                            row_distance_x_list.append(-self.block_length/2)
+                        row_distance_z_list.append(0)
+                        row_distance_x_list.append(0)
                     # Generate group rotation AROUND Z axis (for positioning
                     # the magic fingers as the desired circular array).
                     group_rotation_z_list.append(2*_np.pi*idx_group/self.nr_groups)
@@ -581,13 +592,15 @@ class MagicFingers(_fieldsource.FieldModel):
                     subdivision=self.block_subdivision,
                     rectangular=self.rectangular,
                     cylinder=self.cylinder,
-                    ksipar=self.ksipar, ksiper=self.ksiper)
+                    ksipar=self.ksipar, ksiper=self.ksiper,
+                    draw_color_component=self.draw_color_component)
             else:
                 block = _blocks.Block(
                     self.block_shape, self.block_length, position, magnetization,
                     subdivision=self.block_subdivision,
                     rectangular=self.rectangular,
-                    ksipar=self.ksipar, ksiper=self.ksiper)
+                    ksipar=self.ksipar, ksiper=self.ksiper,
+                    draw_color_component=self.draw_color_component)
 
             # --------- START of block positioning --------- #
 

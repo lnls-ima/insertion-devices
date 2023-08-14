@@ -674,19 +674,19 @@ class MagicFingersSabia(MagicFingers):
     def __init__(
             self, magnetization_init_list,
             nr_blocks_group=4, block_shape='default', block_length=1.25,
-            block_distance=7, group_distance=30.65, nr_groups=4,
+            block_distance=7, group_distance=29.83, nr_groups=4,
             ksipar=0.06, ksiper=0.17, group_rotation=_np.pi/2,
             block_shift_list=None, group_shift_list=None,
             device_rotation=_np.pi/4, device_position=0,
             block_subdivision='default', rectangular=False,
             init_radia_object=True, name='magic_fingers_sabia',
-            block_names='default'):
+            block_names='default', draw_color_component=1):
 
         '''Initialization function with default arguments adjusted for
         Delta Sabia magic fingers.
 
         Group distance is based on a distance between center of block and
-        device center of 43.15 mm, with the block half length as 12.5 mm.
+        device center of 42.33 mm, with the block half length as 12.5 mm.
 
         See help for MagicFingers class for details on arguments meaning.
 
@@ -698,7 +698,7 @@ class MagicFingersSabia(MagicFingers):
                 will be used.
             block_length (float, optional): In mm. Defaults to 1.25.
             block_distance (float, optional): In mm. Defaults to 7.0.
-            group_distance (float, optional): In mm. Defaults to 30.65.
+            group_distance (float, optional): In mm. Defaults to 29.83.
             nr_groups (int, optional): Defaults to 4.
             ksipar (float, optional): Defaults to 0.06.
             ksiper (float, optional): Defaults to 0.17.
@@ -720,6 +720,8 @@ class MagicFingersSabia(MagicFingers):
             block_names (list, nr_blocks_group*nr_groups): Defaults to
                 'default', in which case a list af names:
                 [Block_00, Block_01, ..., Block_15] will be used.
+            draw_color_component (int, optional): magnetization component
+                represented by draw colors. Defaults to 1 (y component).
         '''
         if block_shape == 'default':
             block_shape = \
@@ -741,4 +743,4 @@ class MagicFingersSabia(MagicFingers):
             device_rotation=device_rotation, device_position=device_position,
             block_subdivision=block_subdivision, rectangular=rectangular,
             init_radia_object=init_radia_object, name=name,
-            block_names=block_names)
+            block_names=block_names, draw_color_component=draw_color_component)

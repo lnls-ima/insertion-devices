@@ -619,17 +619,17 @@ class MagicFingers(_fieldsource.FieldModel):
             # Shift blocks by group distance (from device center to group).
             block.shift([0, (-1)*self.group_distance, 0])
 
-            # Position group at its desired rotational position.
-            block.rotate([0,0,0], [0,0,1], group_rotation_z)
-
-            # Apply global device rotation around z axis.
-            block.rotate([0,0,0], [0,0,1], self.device_rotation)
-
             # Apply row shifts (in z direction)
             block.shift([0,0,row_distance_z])
 
             # Apply row shifts (in x direction)
             block.shift([row_distance_x,0,0])
+
+            # Position group at its desired rotational position.
+            block.rotate([0,0,0], [0,0,1], group_rotation_z)
+
+            # Apply global device rotation around z axis.
+            block.rotate([0,0,0], [0,0,1], self.device_rotation)
 
             # Apply group shifts (in z direction)
             block.shift([0,0,self.group_shift_list[idx_group]])

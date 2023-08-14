@@ -556,13 +556,20 @@ class Block(_fieldsource.FieldModel):
                 lower bounds for the points forming the block geometry.
         """
 
-        points = _np.concatenate(self.shape, axis=0)
-        x = points[:,0]
-        y = points[:,1]
-        zmin = self.longitudinal_position - 0.5*self.length
-        zmax = self.longitudinal_position + 0.5*self.length
+        if self.cylinder:
+            bounding_box = [[-self.shape, self.shape],
+                            [-0.5*self.length, 0.5*self.length],
+                            [-self.shape, self.shape]]
+        else:
+            points = _np.concatenate(self.shape, axis=0)
+            x = points[:,0]
+            y = points[:,1]
+            zmin = self.longitudinal_position - 0.5*self.length
+            zmax = self.longitudinal_position + 0.5*self.length
+            bounding_box = [[x.min(), x.max()],
+                            [y.min(), y.max()],
+                            [zmin, zmax]]
 
-        bounding_box = [[x.min(), x.max()], [y.min(), y.max()], [zmin, zmax]]
         return _np.array(bounding_box)
 
     def _check_magnetization(self, magnetization):

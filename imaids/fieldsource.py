@@ -932,9 +932,9 @@ class SinusoidalFieldSource(FieldSource):
         Returns:
             numpy.ndarray 2 x max_power x N: Array of multipole
                 coefficients (up to max_power) for the N found peaks.
-                Ex 1: [1, 0, 3] will be the dipole normal component of the 3rd 
+                Ex 1: [1, 0, 3] will be the dipole normal component of the 3rd
                     peak.
-                Ex 2: [0, 0, 3] will be the dipole skew component of the 3rd 
+                Ex 2: [0, 0, 3] will be the dipole skew component of the 3rd
                     peak.
         """
         if field_comp is None:
@@ -1233,8 +1233,6 @@ class FieldModel(FieldSource):
         """
         if self._radia_object is None:
             return False
-
-        _rad.ObjDrwAtr(self._radia_object, [0, 0.5, 1], 0.001)
         _rad.ObjDrwOpenGL(self._radia_object)
         return True
 

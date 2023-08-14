@@ -164,7 +164,7 @@ class Block(_fieldsource.FieldModel):
                 [-8.957738927679571, -17.3142528],
                 [8.957738927679571, -17.3142528],
                 [8.9, -17.9]],
-            
+
             [
                 [-8.957738927679571, -18.4857472],
                 [-8.9, -17.9],
@@ -196,7 +196,7 @@ class Block(_fieldsource.FieldModel):
                 [11.25, -24.6464466],
                 [11.25, -20.828736]]],
                 }
-            
+
 
     PREDEFINED_SUBDIVISION = {
         'delta_prototype': [[3, 3, 2], [3, 3, 2]],
@@ -210,34 +210,38 @@ class Block(_fieldsource.FieldModel):
         'papu': [[3,3,2], [3,3,2]],
         'hybrid_block': [[3, 3, 3]],
         'hybrid_pole': [[6, 6, 3]],
-        'delta_sabia_smooth': [[3, 3, 2], [1, 1, 2], 
-               [1, 1, 2], [1, 1, 2], [1, 1, 2], 
-               [1, 1, 2], [1, 1, 2], [1, 1, 2], 
+        'delta_sabia_smooth': [[3, 3, 2], [1, 1, 2],
+               [1, 1, 2], [1, 1, 2], [1, 1, 2],
+               [1, 1, 2], [1, 1, 2], [1, 1, 2],
                [1, 1, 2], [1, 1, 2], [1, 1, 2], [1, 1, 2]],
-        'delta_carnauba_smooth': [[3, 3, 2], [1, 1, 1], 
-               [1, 1, 1], [1, 1, 1], [1, 1, 1], 
-               [1, 1, 1], [1, 1, 1], [1, 1, 1], 
+        'delta_carnauba_smooth': [[3, 3, 2], [1, 1, 1],
+               [1, 1, 1], [1, 1, 1], [1, 1, 1],
+               [1, 1, 1], [1, 1, 1], [1, 1, 1],
                [1, 1, 1], [1, 1, 1], [1, 1, 1], [2, 2, 2]]
     }
 
     def __init__(
             self, shape, length, longitudinal_position,
             magnetization=[0, 1.37, 0], subdivision=None, rectangular=False,
-            name='', material=None, **kwargs):
-        """Create the radia object for a block with magnetization. 
+            cylinder=False, cylinder_nseg=64, name='', material=None,
+            draw_color_component=None, **kwargs):
+        """Create the radia object for a block with magnetization.
 
         Args:
-            shape (list, Mx2 or NxMx2): nested list specifying cross sections
-                of N subblocks in (x,y) as N lists of M points. Each M points
-                list should define vertex points of a convex polyhedron. In mm.
-                The N lists of points represent subblocks which will be grouped
-                in a single container Radia object. Subblocks are useful for
-                specifying a non-convex block as composed by convex subblocks.
-                This argument also defines the block position in the x,y plane. 
-                For N=1 (no subblocks), a Mx2 list of points may be provided.
-            length (float): block longitudinal (z) length in mm. Must be a
-                positive number. If the length is 0, the radia object will 
-                not be created.
+            shape (list, Mx2, NxMx2 or float):
+                If cylinder is False, shape is a nested list specifying cross
+                    sections of N subblocks in (x,y) as N lists of M points.
+                    Each M points list should define vertex points of a convex
+                    polyhedron. In mm.
+                    - Subblocks are grouped in a container, and are useful for
+                      specifying a non-convex blocks as convex subblocks.
+                    - For N=1, a Mx2 list of points may be provided.
+                If cylinder is True, the shape parameter is the base radius.
+            length (float):
+                If cylinder is False, block longitudinal (z) length in mm.
+                If cylinder is True, cylinder height (y), in mm.
+                Must be a positive number, If the length is 0, the radia
+                object will not be created.
             longitudinal_position (float): longitudinal (z) position of the
                 block center in mm. Transversal (xy) position is defined by
                 the points position in the shape attribute.
@@ -249,22 +253,40 @@ class Block(_fieldsource.FieldModel):
                 If material=None, the default material is linear and uses this
                 argument for determining the magnetization modulus as well.
                 Can be set to [0, 0, 0]. Defaults to [0, 1.37, 0].
-            subdivision (list, 3 or Nx3, optional): nested list specifying 
+            subdivision (list, 3 or Nx3, optional): nested list specifying
                 the number of subdivisions of each subblock in the cartesian
                 directions [x, y, z].
                 For N=1 (no subblocks), a len=3 [x, y, z] list may be provided.
                 Defaults to None (no subdivision).
-            rectangular (bool, optional): If True the block is created using 
-                the radia function ObjRecMag. If False the block is create 
+                For a cylinder block, one must input only one subdivision,
+                triple, since cylinders do not support subblocks (as a [x,y,z]
+                or a [[x,y,z]] list).
+            rectangular (bool, optional): If True the block is created using
+                the radia function ObjRecMag. If False the block is create
                 using the radia function ObjThckPgn. Either way, cross-section
                 and thickness of the block must be specifyed by the shape
                 and length attributes. Defaults to False.
+            cylinder (bool, optional): If True the a cylinder block will be
+                created with bases of radii given by "shape", in mm, parallel
+                to the XZ plane, with "length", in mm, aligned with the y axis.
+                Cylinder is centerd in the [0, 0, longitudinal_position] point.
+                Defaults to False.
+            cylinder_nseg (int, optional): Number os segments at the cylinder
+                side, equal to the number of vertices at its circular bases.
+                Defaults to 64.
             name (str, optional): Block label. Defaults to ''.
             material (Material, optional): Material object to apply to block.
                 Defaults to None, in which case a default material is used.
                 Default material is created with default arguments (including
                 linear=True) except for the magnetization modulus, which is
                 defined as the modulus of the magnetization vector argument.
+            draw_color_component (int, optional): integer for magnetization
+                component used for determining draw colors.
+                e.g. if draw_color_component == 1, the y component is used for
+                     assigning draw color, being of one color if My > 0, of
+                     another color if My < 0 and of a neutral color if My = 0.
+                Defaults to None, meaning no magnetization-related coloring
+                    scheme (default color to all blocks).
             **kwargs: if material==None additional keyword arguments are passed
                 to the Material initialization, overriding default arguments.
                 Default magnetization can not be overwridden, in this case
@@ -274,40 +296,58 @@ class Block(_fieldsource.FieldModel):
 
         Raises:
             ValueError: if the block length is a negative number.
+            ValueError: if block is a cylinder and shape is not float or int.
+            ValueError: if nseg is not an integer or if is less than 3.
             ValueError: if the length of the magnetization list is different
                 from three.
             ValueError: if the lengths of block_sudivision and block_shape
                 arguments (numbers of subblocks) are inconsistent.
         """
-        if _utils.depth(shape) != 3:
-            self._shape = [shape]
+        if cylinder:
+            if type(shape) not in [int, float]:
+                msg = 'Shape parameter represents the radious in the case of a'
+                msg += ' cylinder and must be an int or a float.        '
+                raise ValueError(msg)
+            else:
+                self._shape = shape
         else:
-            self._shape = shape
+            if _utils.depth(shape) != 3:
+                self._shape = [shape]
+            else:
+                self._shape = shape
 
         if length < 0:
-            raise ValueError('The block length must be a positive number.')
+            raise ValueError('The length must be a positive number.')
         self._length = length
 
         self._check_magnetization(magnetization)
         self._magnetization = magnetization
 
-        if subdivision is None or len(subdivision) == 0:
-            sub = [[1, 1, 1]]*len(self._shape)
+        if subdivision is None:
+            if not cylinder:
+                sub = [[1, 1, 1]]*len(self._shape)
+            else:
+                sub = [[1,1,1]]
         else:
             sub = subdivision
 
         if _utils.depth(sub) != 2:
             sub = [sub]
 
-        if len(sub) != len(self._shape):
-            raise ValueError(
-                'Inconsistent length between block_sudivision ' +
-                'and block_shape arguments.')
+        if not cylinder:
+            if len(sub) != len(self._shape):
+                raise ValueError(
+                    'Inconsistent length between block_sudivision ' +
+                    'and block_shape arguments.')
         self._subdivision = sub
 
         self._rectangular = rectangular
-
+        self._cylinder = cylinder
+        if (type(cylinder_nseg) is not int) or (cylinder_nseg < 3):
+            raise ValueError('Numper of segments must be an integer > 2')
+        self._cylinder_nseg = cylinder_nseg
         self._longitudinal_position = longitudinal_position
+        self._draw_color_component = draw_color_component
 
         if material is None:
             self._use_default_material = True
@@ -369,6 +409,39 @@ class Block(_fieldsource.FieldModel):
         return self._rectangular
 
     @property
+    def cylinder(self):
+        """True if the shape is cylinder, False otherwise."""
+        return self._cylinder
+
+    @property
+    def cylinder_nseg(self):
+        """Number of segments at the cylindrical side surface."""
+        return self._cylinder_nseg
+
+    @property
+    def draw_color_component(self):
+        """Magnetization component used for determining block color."""
+        return self._draw_color_component
+
+    @property
+    def draw_color(self):
+        """RGB color used for draw method."""
+        if self.draw_color_component is None:
+            return [0.8, 0.9, 0.7] # standard color.
+        else:
+            magnetization_array = _np.array(self._magnetization)
+            component = magnetization_array[self.draw_color_component]
+            eps = 10*_np.finfo(_np.float64).eps # Very small number (10 times
+                                                # the smallest epsilon for a
+                                                # flaot) may mean 0.0.
+            if component > eps:
+                return [0, 0.6, 0.7] # blue-ish.
+            elif component < -1*eps:
+                return [0.7, 0.2, 0.5] # pink-ish.
+            else:
+                return [0.8, 0.8, 0.8] # light gray.
+
+    @property
     def state(self):
         data = {
             'shape': self._shape,
@@ -377,6 +450,7 @@ class Block(_fieldsource.FieldModel):
             'magnetization': self._magnetization,
             'subdivision': self._subdivision,
             'rectangular': self._rectangular,
+            'cylinder': self._cylinder,
             'name': self.name,
         }
         data.update(self._material.state)
@@ -444,8 +518,21 @@ class Block(_fieldsource.FieldModel):
                 subblock = _rad.MatApl(subblock, self._material.radia_object)
                 subblock = _rad.ObjDivMag(subblock, div, 'Frame->Lab')
                 subblock_list.append(subblock)
+                _rad.ObjDrwAtr(subblock, self.draw_color)
             self._radia_object = _rad.ObjCnt(subblock_list)
-
+        elif self._cylinder:
+            subblock_list = []
+            for div in self._subdivision:
+                # There will be only one _subdivision elements in this case.
+                subblock = _rad.ObjCylMag([0,0,self._longitudinal_position],
+                                            self._shape, self._length,
+                                            self._cylinder_nseg, 'y',
+                                            self._magnetization)
+                subblock = _rad.MatApl(subblock, self._material.radia_object)
+                subblock = _rad.ObjDivMag(subblock, div, 'Frame->Lab')
+                subblock_list.append(subblock)
+                _rad.ObjDrwAtr(subblock, self.draw_color)
+            self._radia_object = _rad.ObjCnt(subblock_list)
         else:
             subblock_list = []
             for shp, div in zip(self._shape, self._subdivision):
@@ -455,26 +542,34 @@ class Block(_fieldsource.FieldModel):
                 subblock = _rad.MatApl(subblock, self._material.radia_object)
                 subblock = _rad.ObjDivMag(subblock, div, 'Frame->Lab')
                 subblock_list.append(subblock)
+                _rad.ObjDrwAtr(subblock, self.draw_color)
             self._radia_object = _rad.ObjCnt(subblock_list)
 
     def get_geometry_bounding_box(self):
         """Geometrical limits (bounding box) of Block's input geometry
             (shape and length).
-        
+
         Returns:
             numpy.ndarray, 3x2: Array of the form:
                 [[xmin, xmax], [ymin,ymax], [zmin,zmax]]
                 where the min and max values are the coordinates' upper and
                 lower bounds for the points forming the block geometry.
         """
-        
-        points = _np.concatenate(self.shape, axis=0)
-        x = points[:,0]
-        y = points[:,1]
-        zmin = self.longitudinal_position - 0.5*self.length
-        zmax = self.longitudinal_position + 0.5*self.length
 
-        bounding_box = [[x.min(), x.max()], [y.min(), y.max()], [zmin, zmax]]
+        if self.cylinder:
+            bounding_box = [[-self.shape, self.shape],
+                            [-0.5*self.length, 0.5*self.length],
+                            [-self.shape, self.shape]]
+        else:
+            points = _np.concatenate(self.shape, axis=0)
+            x = points[:,0]
+            y = points[:,1]
+            zmin = self.longitudinal_position - 0.5*self.length
+            zmax = self.longitudinal_position + 0.5*self.length
+            bounding_box = [[x.min(), x.max()],
+                            [y.min(), y.max()],
+                            [zmin, zmax]]
+
         return _np.array(bounding_box)
 
     def _check_magnetization(self, magnetization):

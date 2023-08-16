@@ -1462,7 +1462,7 @@ class FieldData(FieldSource):
                 self._px, self._pz, self._bz)
         return True
 
-    def add_field(self, other):
+    def add_field(self, other, nproc=None, chunksize=100):
         """Add field from another radia object.
 
         Args:
@@ -1472,16 +1472,38 @@ class FieldData(FieldSource):
         px = [i for i in self._px]
         py = [i for i in self._py]
         pz = [i for i in self._pz]
-        raw_data = []
-        for z in pz:
-            for y in py:
-                for x in px:
-                    b = self.get_field_at_point([x, y, z])
-                    bo = other.get_field_at_point([x, y, z])
-                    bs = _np.array(b) + _np.array(bo)
-                    raw_data.append([x, y, z, bs[0], bs[1], bs[2]])
-        raw_data = _np.array(raw_data)
-        self.read_raw_data(raw_data=raw_data)
+        if nproc is not None:
+            pos_list = []
+            for z in pz:
+                for y in py:
+                    for x in px:
+                        pos_list.append([x, y, z])
+            pos_list = _np.array(pos_list)
+            nproc = int(nproc)
+            if nproc < 1:
+                raise ValueError('Number or processes must be >=1.')
+            # with _ProcessPoolExecutor(max_workers=nproc) as executor:
+            #     b_gen = executor.map(self.get_field_at_point, pos_list,
+            #                          chunksize=chunksize)
+            #     b = _np.array(list(b_gen))
+            with _ProcessPoolExecutor(max_workers=nproc) as executor:
+                bo_gen = executor.map(other.get_field_at_point, pos_list,
+                                      chunksize=chunksize)
+                bo = _np.array(list(bo_gen))
+            bs = b
+            raw_data = _np.hstack([pos_list, bs])
+            self.read_raw_data(raw_data=raw_data)
+        else:
+            raw_data = []
+            for z in pz:
+                for y in py:
+                    for x in px:
+                        b = self.get_field_at_point([x, y, z])
+                        bo = other.get_field_at_point([x, y, z])
+                        bs = _np.array(b) + _np.array(bo)
+                        raw_data.append([x, y, z, bs[0], bs[1], bs[2]])
+            raw_data = _np.array(raw_data)
+            self.read_raw_data(raw_data=raw_data)
 
     def sub_field(self, other):
         """Subtract field from another radia object.

@@ -1410,6 +1410,28 @@ class FieldData(FieldSource):
     def raw_data(self):
         return self._raw_data
 
+    @classmethod
+    def from_model(cls, model, x, y, z):
+
+        if int(_np.ndim(x)) == 0:
+            x = [x]
+        if int(_np.ndim(y)) == 0:
+            y = [y]
+        if int(_np.ndim(z)) == 0:
+            z = [z]
+
+        if sum([len(i) > 1 for i in [x, y, z]]) == 0:
+            raise ValueError('Inputs correspond to single point')
+
+        raw_data = []
+        for pz in z:
+            for py in y:
+                for px in x:
+                    b = model.get_field_at_point([px, py, pz])
+                    raw_data.append([px, py, pz, b[0], b[1], b[2]])
+
+        return cls(raw_data=_np.array(raw_data))
+
     def _update_interpolation_functions(self):
         """Update field data using scipy interpolation functions.
             Interpolations 1D or 2D only.

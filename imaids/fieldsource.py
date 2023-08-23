@@ -1411,7 +1411,7 @@ class FieldData(FieldSource):
         return self._raw_data
 
     @classmethod
-    def from_model(cls, model, x, y, z):
+    def from_model(cls, model, x=0, y=0, z=0):
         """Returns FieldData object based on field values from Radia Model.
 
         Args:
@@ -1439,7 +1439,9 @@ class FieldData(FieldSource):
             z = [z]
 
         if sum([len(i) > 1 for i in [x, y, z]]) == 0:
-            raise ValueError('Inputs correspond to single point')
+            msg = 'Inputs correspond to single point. At least one'
+            msg += ' position argument (x, y or z) must be a list.'
+            raise ValueError(msg)
 
         raw_data = []
         for pz in z:

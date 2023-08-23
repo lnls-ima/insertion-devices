@@ -1412,6 +1412,24 @@ class FieldData(FieldSource):
 
     @classmethod
     def from_model(cls, model, x, y, z):
+        """Returns FieldData object based on field values from Radia Model.
+
+        Args:
+            model (FieldModel): Radia model used for calculating magnetic field
+                for the returned FieldData object.
+            x (list or float or int, optional): list of x positions
+                or fixed x position to get field (in mm). Defaults to 0.
+            y (list or float or int, optional): list of y positions
+                or fixed y position to get field (in mm). Defaults to 0.
+            z (list or float or int, optional): list of z positions
+                or fixed z position to get field (in mm). Defaults to 0.
+
+        Raises:
+            ValueError: x, y and z are float or int (single point not allowed).
+
+        Returns:
+            FieldData: Data object whose raw data was calculated from model.
+        """
 
         if int(_np.ndim(x)) == 0:
             x = [x]

@@ -1410,6 +1410,48 @@ class FieldData(FieldSource):
     def raw_data(self):
         return self._raw_data
 
+    @classmethod
+    def from_model(cls, model, x=0, y=0, z=0):
+        """Returns FieldData object based on field values from Radia Model.
+
+        Args:
+            model (FieldModel): Radia model used for calculating magnetic field
+                for the returned FieldData object.
+            x (list or float or int, optional): list of x positions
+                or fixed x position to get field (in mm). Defaults to 0.
+            y (list or float or int, optional): list of y positions
+                or fixed y position to get field (in mm). Defaults to 0.
+            z (list or float or int, optional): list of z positions
+                or fixed z position to get field (in mm). Defaults to 0.
+
+        Raises:
+            ValueError: x, y and z are float or int (single point not allowed).
+
+        Returns:
+            FieldData: Data object whose raw data was calculated from model.
+        """
+
+        if int(_np.ndim(x)) == 0:
+            x = [x]
+        if int(_np.ndim(y)) == 0:
+            y = [y]
+        if int(_np.ndim(z)) == 0:
+            z = [z]
+
+        if sum([len(i) > 1 for i in [x, y, z]]) == 0:
+            msg = 'Inputs correspond to single point. At least one'
+            msg += ' position argument (x, y or z) must be a list.'
+            raise ValueError(msg)
+
+        raw_data = []
+        for pz in z:
+            for py in y:
+                for px in x:
+                    b = model.get_field_at_point([px, py, pz])
+                    raw_data.append([px, py, pz, b[0], b[1], b[2]])
+
+        return cls(raw_data=_np.array(raw_data))
+
     def _update_interpolation_functions(self):
         """Update field data using scipy interpolation functions.
             Interpolations 1D or 2D only.

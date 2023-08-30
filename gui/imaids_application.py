@@ -174,7 +174,7 @@ class MainWindow(QMainWindow):
 
         #run analysis for all ID items
         if self.menubar.actionApplyForAll.isChecked():
-            for item in project.tree.topLevelItem(0).children():
+            for item in project.tree.topLevelItem(0).children().values():
                 self._exec_analysis(item)
             analysis_btn.Menu.uncheckAnalysisMenu()
         elif analysis_btn.Menu.checkedItems():
@@ -191,7 +191,7 @@ class MainWindow(QMainWindow):
 
     def setFilesVisible(self, visible):
         tree = self.projects.currentWidget().tree
-        data_items = tree.topLevelItem(0).children()
+        data_items = tree.topLevelItem(0).children().values()
         for item in data_items:
             tree.files_visible = visible
             if visible:
@@ -248,7 +248,8 @@ class MainWindow(QMainWindow):
                           ExploreItem.calcMagnetic_Field,
                           ExploreItem.calcTrajectory,
                           ExploreItem.calcPhase_Error,
-                          ExploreItem.calcField_Integrals,
+                          ExploreItem.calcCumulative_Integrals,
+                          ExploreItem.calcField_Integrals_vs_X,
                           ExploreItem.calcRoll_Off_Peaks,
                           ExploreItem.calcRoll_Off_Amplitude]
 

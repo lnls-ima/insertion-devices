@@ -6,7 +6,8 @@ from  PyQt6.QtWidgets import   (QMainWindow,
                                 QToolButton,
                                 QDockWidget,
                                 QMessageBox,
-                                QMenu)
+                                QMenu,
+                                QDialog)
 from   PyQt6.QtGui    import    QIcon, QCursor
 from   PyQt6.QtCore   import   Qt, QPoint
 
@@ -63,18 +64,23 @@ class ProjectWidget(QMainWindow):
                 "traj": "calculated",
                 "bx_amp": "calculated",
                 "by_amp": "calculated",
-                "skip_poles": 4,
-                "zmin": None,
-                "zmax": None,
+                "skip_poles": 0,
+                "zmin": -530,
+                "zmax": 550,
                 "field_comp": None
             },
-            "Field Integrals": {
+            "Cumulative Integrals": {
                 "z_list": np.arange(-900,900+0.5,0.5),
                 "x": 0,
                 "y": 0,
                 "field_list": None,
                 "nproc": None,
                 "chunksize": 100
+            },
+            "Field Integrals vs X": {
+                "z": np.arange(-900,900+0.5,0.5),
+                "x": np.arange(-5,5+1,1),
+                "y": 0
             },
             "Roll Off Peaks": {
                 "z": np.arange(-900,900+0.5,0.5),
@@ -119,7 +125,7 @@ class ProjectWidget(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea,self.visuals.dockFigOptions)
         self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea,self.dockCommand)
 
-    
+
 
     def treeItemInfo(self, item: ExploreItem):
 
@@ -175,9 +181,40 @@ class ProjectWidget(QMainWindow):
             #todo: quando realiza a analise, mudar cursor para cursor de espera
             
             #todo: checar item, nao o texto
-            if analysis not in id_dict:
+
+            replace = False
+            add = False
+
+            if analysis in id_dict:
+                messagebox = QMessageBox(QMessageBox.Icon.Question,
+                                         f"Analysis Warning",
+                                         f"{analysis} of ({id_name}) already calculated! Do you want add a new {analysis}, replace the last one done or just ignore?")
+                messagebox.addButton("Add",QMessageBox.ButtonRole.AcceptRole)
+                messagebox.addButton("Replace", QMessageBox.ButtonRole.YesRole)
+                btnIgnore = messagebox.addButton("Ignore",QMessageBox.ButtonRole.RejectRole)
+                messagebox.setDefaultButton(btnIgnore)
+                
+                btn = messagebox.exec()
+                if btn==0:
+                    add = True
+                elif btn==1:
+                    replace = True
+            
+            if (analysis not in id_dict) or add or replace:
+
+                items = ID_item.children()
+                labels = [label for label in items.keys() if analysis in label]
+                num = len(labels)
+
+                analysis_label = analysis if not add else analysis+f" {num+1}"
+                
+                if replace:
+                    analysis_label = analysis if num==1 else analysis+f" {num}"
+                    self.insertiondevices[id(ID_item)].pop(analysis_label)
+                    items.pop(analysis_label).delete()
+
                 analysisType = ExploreItem.AnalysisType(analysis)
-                analysis_item = ExploreItem(analysisType, ID_item, [analysis, "Analysis"])
+                analysis_item = ExploreItem(analysisType, ID_item, [analysis_label, "Analysis"])
                 analysis_item.setTextAlignment(1,Qt.AlignmentFlag.AlignRight)
                 if not ID_item.isExpanded():
                     self.tree.expandItem(ID_item)
@@ -192,11 +229,6 @@ class ProjectWidget(QMainWindow):
                 #mainwindow.statusbar.showMessage(f"{analysis} done!",1000)
                 # self.update_ids_dict_key(key=id_name, new_key=ID_item.text(0))
                 [item.setTextAlignment(1,Qt.AlignmentFlag.AlignRight) for item in result_items]
-            
-            else:
-                QMessageBox.warning(self,
-                                    f"Analysis Warning",
-                                    f"{analysis} of ({id_name}) already calculated!")
 
     def drawItems(self, items: typing.List[ExploreItem]):
 
@@ -445,7 +477,7 @@ class ProjectWidget(QMainWindow):
             if ID != self.summary.ID:
                 self.summary.set_insertion_device(ID)
                 phaserr_dict = id_dict.get("Phase Error")
-                integrals_dict = id_dict.get("Field Integrals")
+                integrals_dict = id_dict.get("Cumulative Integrals")
 
                 self.summary.update_phaserr(phaserr_dict["RMS [deg]"] if phaserr_dict else None)
 

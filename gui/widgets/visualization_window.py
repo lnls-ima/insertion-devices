@@ -229,13 +229,37 @@ class VisualizationTabWidget(BasicTabWidget):
             
             if action.text()=="First Integral":
                 chart.ax.plot(z,ib,label=[f"ibx of {id_name}", f"iby of {id_name}", f"ibz of {id_name}"])
-                title_y_x.extend(["Field Integral - First","ibx, iby, ibz (G.cm)"])
+                title_y_x.extend(["Cumulative Field Integral - First","ibx, iby, ibz (G.cm)"])
 
             elif action.text()=="Second Integral":
                 chart.ax.plot(z,iib,label=[f"iibx of {id_name}", f"iiby of {id_name}", f"iibz of {id_name}"])
-                title_y_x.extend(["Field Integral - Second","iibx, iiby, iibz (kG.cm2)"])
+                title_y_x.extend(["Cumulative Field Integral - Second","iibx, iiby, iibz (kG.cm2)"])
 
             title_y_x.append("z (mm)")
+        
+        elif analysis_item.flag() is ExploreItem.AnalysisType.IntegralsH:
+
+            x, ibx, iby, ibz, iibx, iiby, iibz = analysis_dict.values()
+            ib = np.array([ibx, iby, ibz]).T
+            iib = np.array([iibx, iiby, iibz]).T
+
+            menuIntegral = QMenu(self)
+            menuIntegral.addAction("First Integrals")
+            menuIntegral.addAction("Second Integrals")
+            #todo: consertar pos para pegar canto superior direito do item
+            action = menuIntegral.exec(QCursor.pos())
+            if action is None:
+                return False
+            
+            if action.text()=="First Integrals":
+                chart.ax.plot(x,ib,'o-',label=[f"ibx of {id_name}", f"iby of {id_name}", f"ibz of {id_name}"])
+                title_y_x.extend(["Field Integrals - First","ibx, iby, ibz (G.cm)"])
+
+            elif action.text()=="Second Integrals":
+                chart.ax.plot(x,iib,'o-',label=[f"iibx of {id_name}", f"iiby of {id_name}", f"iibz of {id_name}"])
+                title_y_x.extend(["Field Integrals - Second","iibx, iiby, iibz (kG.cm2)"])
+
+            title_y_x.append("x (mm)")
 
         elif analysis_item.flag() is ExploreItem.AnalysisType.RollOffAmp:
 

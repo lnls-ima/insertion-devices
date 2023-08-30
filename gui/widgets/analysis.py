@@ -75,7 +75,8 @@ class AnalysisMenu(QFrame):
         self.itemMagneticField = AnalysisItem(text="Magnetic Field",parent=self.list)
         self.itemTrajectory = AnalysisItem(text="Trajectory",parent=self.list)
         self.itemPhaseError = AnalysisItem(text="Phase Error",parent=self.list)
-        self.itemIntegrals = AnalysisItem(text="Field Integrals",parent=self.list)
+        self.itemIntegrals = AnalysisItem(text="Cumulative Integrals",parent=self.list)
+        self.itemIntegralsH = AnalysisItem(text="Field Integrals vs X",parent=self.list)
         # kickmap temporariamente fora, pois nao esta devidamente implementado no imaids
         #self.itemKickmap = AnalysisItem(text="Kickmap",parent=self.list)
         # multipolos e multipolos dinamicos em avaliacao
@@ -269,13 +270,12 @@ class AnalysisPushButton(QPushButton):
         else:
             # uncheck the analysis button
             self.setChecked(False)
-            print('executou click botao')
 
             # expose the menu
             if not self.Menu.timerHide.isActive():
                 # positionate the menu
                 corner = self.parent().mapToGlobal(self.geometry().bottomLeft())
-                self.Menu.setGeometry(corner.x()+1, corner.y(), 160, 220)
+                self.Menu.setGeometry(corner.x()+1, corner.y(), 180, 240)
                 self.Menu.show()
 
             # restaura valor padrao de changed
@@ -308,12 +308,15 @@ class AnalysisDialog(QDialog):
                         "zmin": None,
                         "zmax": None,
                         "field_comp": None},
-        "Field Integrals": {"z_list": np.arange(-900,900+0.5,0.5),
-                            "x": 0,
-                            "y": 0,
-                            "field_list": None,
-                            "nproc": None,
-                            "chunksize": 100},
+        "Cumulative Integrals": {"z_list": np.arange(-900,900+0.5,0.5),
+                                 "x": 0,
+                                 "y": 0,
+                                 "field_list": None,
+                                 "nproc": None,
+                                 "chunksize": 100},
+        "Field Integrals vs X": {"z": np.arange(-900,900+0.5,0.5),
+                                 "x": np.arange(-5,5+1,1),
+                                 "y": 0},
         "Roll Off Peaks": {"z": np.arange(-900,900+0.5,0.5),
                            "x": np.arange(-5,5+0.5,0.5),
                            "y": 0,
@@ -360,6 +363,7 @@ class AnalysisDialog(QDialog):
             traj = dialog.layoutAnalysis.editTrajectory
             phaserr = dialog.layoutAnalysis.editPhaseError
             integrals = dialog.layoutAnalysis.editIntegrals
+            integralsH = dialog.layoutAnalysis.editIntegralsH
             rop = dialog.layoutAnalysis.editRollOffPeaks
             roa = dialog.layoutAnalysis.editRollOffAmp
 
@@ -390,29 +394,34 @@ class AnalysisDialog(QDialog):
                                             "zmin": zmin,
                                             "zmax": zmax,
                                             "field_comp": field_comp}
-            
+
             #Integrals
             z_list, x, y, nproc, chunksize = integrals.get_values()
-            params_kwargs["Field Integrals"] = {"z_list": z_list,
-                                            "x": x,
-                                            "y": y,
-                                            "field_list": None,
-                                            "nproc": nproc,
-                                            "chunksize": chunksize}
-            
+            params_kwargs["Cumulative Integrals"] = {"z_list": z_list,
+                                                     "x": x,
+                                                     "y": y,
+                                                     "field_list": None,
+                                                     "nproc": nproc,
+                                                     "chunksize": chunksize}
+
+            z, x, y = integralsH.get_values()
+            params_kwargs["Field Integrals vs X"] = {"z": z,
+                                                     "x": x,
+                                                     "y": y}
+
             #RollOffPeaks
             z, x, y, field_comp = rop.get_values()
             params_kwargs["Roll Off Peaks"] = {"z": z,
                                                "x": x,
                                                "y": y,
                                                "field_comp": field_comp}
-            
+
             #RollOffAmp
             z, x, y = roa.get_values()
             params_kwargs["Roll Off Amplitude"] = {"z": z,
                                                    "x": x,
                                                    "y": y}
-        
+
         return params_kwargs #*: retornar a mesma coisa, mesmo se nao houver edicao
 
     def accept(self) -> None:
@@ -424,13 +433,13 @@ class AnalysisDialog(QDialog):
         rop = self.layoutAnalysis.editRollOffPeaks
         roa = self.layoutAnalysis.editRollOffAmp
 
-        StepZero = field.spins_step[i].value() == 0 or \
+        StepZero = (i != -1 and field.spins_step[i].value() == 0) or \
                    integrals.spin_z_list_step.value() == 0 or \
                    rop.spin_zstep.value() == 0 or \
                    rop.spin_xstep.value() == 0
 
         StartEqualEnd = \
-            field.spins_start[i].value() == field.spins_end[i].value() or \
+            (i != -1 and field.spins_start[i].value() == field.spins_end[i].value()) or \
             integrals.spin_z_list_start.value() == integrals.spin_z_list_end.value() or \
             rop.spin_zstart.value() == rop.spin_zend.value() or \
             rop.spin_xstart.value() == rop.spin_xend.value() or \
@@ -438,8 +447,8 @@ class AnalysisDialog(QDialog):
             roa.spin_xstart.value() == roa.spin_zend.value()
 
         StartGreaterEnd_StepPositive = \
-            (field.spins_start[i].value() > field.spins_end[i].value() and \
-             field.spins_step[i].value() > 0) or \
+            (i != -1 and (field.spins_start[i].value() > field.spins_end[i].value() and \
+             field.spins_step[i].value() > 0)) or \
             (integrals.spin_z_list_start.value() > integrals.spin_z_list_end.value() and \
              integrals.spin_z_list_step.value() > 0) or \
             (rop.spin_zstart.value() > rop.spin_zend.value() and \
@@ -452,8 +461,8 @@ class AnalysisDialog(QDialog):
              roa.spin_xstep.value() > 0)
 
         StartLessEnd_StepNegative = \
-            (field.spins_start[i].value() < field.spins_end[i].value() and \
-             field.spins_step[i].value() < 0) or \
+            (i != -1 and (field.spins_start[i].value() < field.spins_end[i].value() and \
+             field.spins_step[i].value() < 0)) or \
             (integrals.spin_z_list_start.value() < integrals.spin_z_list_end.value() and \
              integrals.spin_z_list_step.value() < 0) or \
             (rop.spin_zstart.value() < rop.spin_zend.value() and \

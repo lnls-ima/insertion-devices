@@ -23,7 +23,8 @@ class ExploreItem(QTreeWidgetItem):
         MagneticField = "Magnetic Field"
         Trajectory = "Trajectory"
         PhaseError = "Phase Error"
-        Integrals = "Field Integrals"
+        Integrals = "Cumulative Integrals"
+        IntegralsH = "Field Integrals vs X"
         RollOffPeaks = "Roll Off Peaks"
         RollOffAmp = "Roll Off Amplitude"
         CrossTalk = "Cross Talk"
@@ -47,8 +48,8 @@ class ExploreItem(QTreeWidgetItem):
     def delete(self):
         sip.delete(self)
 
-    def children(self):
-        return [self.child(i) for i in range(self.childCount())]
+    def children(self) -> dict:
+        return dict([(self.child(i).text(0),self.child(i)) for i in range(self.childCount())])
     
     def type(self):
         return type(self.item_type)
@@ -151,7 +152,10 @@ class ExploreItem(QTreeWidgetItem):
         rtNumber = cls.ResultType.ResultNumeric
 
         ID = id_dict["InsertionDeviceObject"]
-        traj_dict = id_dict[cls.AnalysisType.Trajectory.value]
+        num_trajs = len([label for label in id_dict.keys()
+                           if "Trajectory" in label])
+        last_traj = "Trajectory" if num_trajs==1 else f"Trajectory {num_trajs}"
+        traj_dict = id_dict[last_traj]
         traj = np.array(list(traj_dict.values())).T
         bxamp, byamp, _, _ = ID.calc_field_amplitude()
         energy = phaserr_kwargs["energy"]
@@ -170,7 +174,7 @@ class ExploreItem(QTreeWidgetItem):
         return result_items
         
     @classmethod
-    def calcField_Integrals(cls, analysis_item, id_dict: dict, integrals_kwargs):
+    def calcCumulative_Integrals(cls, analysis_item, id_dict: dict, integrals_kwargs):
         rtArray = cls.ResultType.ResultArray
         rtNumber = cls.ResultType.ResultNumeric
 
@@ -183,6 +187,37 @@ class ExploreItem(QTreeWidgetItem):
                                           'IIBx [kG.cm2]': iibx, 'IIBy [kG.cm2]': iiby, 'IIBz [kG.cm2]': iibz}
 
         result_items = [cls(rtArray,  analysis_item, ['z [mm]',  "List"]),
+                        cls(rtArray,  analysis_item, ['IBx [G.cm]',  "List"]),
+                        cls(rtArray,  analysis_item, ['IBy [G.cm]',  "List"]),
+                        cls(rtArray,  analysis_item, ['IBz [G.cm]',  "List"]),
+                        cls(rtArray,  analysis_item, ['IIBx [kG.cm2]', "List"]),
+                        cls(rtArray,  analysis_item, ['IIBy [kG.cm2]', "List"]),
+                        cls(rtArray,  analysis_item, ['IIBz [kG.cm2]', "List"])]
+        
+        return result_items
+    
+    @classmethod
+    def calcField_Integrals_vs_X(cls, analysis_item, id_dict: dict, integralsH_kwargs):
+        rtArray = cls.ResultType.ResultArray
+        rtNumber = cls.ResultType.ResultNumeric
+
+        ID = id_dict["InsertionDeviceObject"]
+        z, x_list, y = integralsH_kwargs.values()
+
+        ib, iib = [], []
+        for x in x_list:
+            intb, intintb = ID.calc_field_integrals(x=x,y=y,z_list=z)
+            ib.append(intb[-1,:])
+            iib.append(intintb[-1,:])
+        ib = np.array(ib)
+        iib = np.array(iib)
+        
+        id_dict[analysis_item.text(0)] = {'x [mm]': x_list,
+                                          'IBx [G.cm]': ib[:,0], 'IBy [G.cm]': ib[:,1],
+                                          'IBz [G.cm]': ib[:,2], 'IIBx [kG.cm2]': iib[:,0],
+                                          'IIBy [kG.cm2]': iib[:,1], 'IIBz [kG.cm2]': iib[:,2]}
+
+        result_items = [cls(rtArray,  analysis_item, ['x [mm]',  "List"]),
                         cls(rtArray,  analysis_item, ['IBx [G.cm]',  "List"]),
                         cls(rtArray,  analysis_item, ['IBy [G.cm]',  "List"]),
                         cls(rtArray,  analysis_item, ['IBz [G.cm]',  "List"]),

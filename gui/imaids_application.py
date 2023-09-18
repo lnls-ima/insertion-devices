@@ -144,7 +144,7 @@ class MainWindow(QMainWindow):
         
         ID, name = model_dialog.ModelDialog.getSimulatedID(parent=self)
 
-        if ID is not None:
+        if ID:
             project = self.projects.currentWidget()
             IDType = ExploreItem.IDType.IDModel
             num = project.countIDnames(name,IDType)

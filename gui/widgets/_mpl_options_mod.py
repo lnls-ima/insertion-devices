@@ -373,6 +373,12 @@ def figure_edit(axes, parent=None):
 
 # Monkey-patch original figureoptions
 from matplotlib.backends.qt_editor import figureoptions
-figureoptions.figure_edit = figure_edit
+from matplotlib import __version__ as mpl_version
+
+#*: para uso em outras versoes futuras do matplotlib, alterar edit_version e
+#*: testar funcionamento
+edit_version = ['3','7']
+if mpl_version.split('.')[:-1]==edit_version:
+    figureoptions.figure_edit = figure_edit
 
 ###############################################################################

@@ -1,17 +1,11 @@
-import os
-import json
-
 from PyQt6.QtWidgets import QDialog, QFormLayout
 
 from imaids import models
 from .dialog_layouts import ModelLayout
-from . import get_path
+from . import models_parameters
 
 # todo: ter opcao de carregar arquivo com o conjunto de pontos para ter forma dos blocos
 class ModelDialog(QDialog):
-
-    with open(get_path('.','models_parameters.json')) as f:
-        parameters = json.load(f)
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
@@ -30,7 +24,7 @@ class ModelDialog(QDialog):
         for model_type in ["Delta","AppleX","AppleII","APU","Planar"]:
             self.models_dict.pop(model_type)
 
-        self.layoutModel = ModelLayout(models_parameters=self.parameters,parent=self)
+        self.layoutModel = ModelLayout(models_parameters=models_parameters,parent=self)
         self.layoutModel.comboboxModels.currentIndexChanged.connect(self.model_chose)
         ## dialog button box - signals
         self.layoutModel.buttonBox.accepted.connect(self.accept)
@@ -87,8 +81,10 @@ class ModelDialog(QDialog):
         dialog = cls(parent)
         answer = dialog.exec()
 
-        if  answer == QDialog.DialogCode.Accepted and \
-            dialog.layoutModel.comboboxModels.currentText() != "":
+        if  answer == QDialog.DialogCode.Accepted:
+
+            if dialog.layoutModel.comboboxModels.currentText() == "":
+                return None, ""
 
             # valores usados nas spin boxes (parametros e posicoes dos cassetes)
             ID_name, kwargs_model, kwargs_cassettes = dialog.get_values()

@@ -339,15 +339,22 @@ class ExploreTreeWidget(QTreeWidget):
         self.insertTopLevelItem(1, model_container)
         self.topLevelItem(1).setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
 
+        self.menuContextAnalysis = QMenu(self)
+        self.menuContextAnalysis.addAction("Delete")
+        
         self.menuContextIDData = QMenu(self)
         self.menuContextIDData.addAction("Rename ...")
         self.menuContextIDData.addAction("Summary ...")
         self.menuContextIDData.addAction("Save field map ...")
+        self.menuContextIDData.addAction("Delete")
+
         self.menuContextIDModel = QMenu(self)
         self.menuContextIDModel.addAction("Rename ...")
+        self.menuContextIDModel.addAction("Delete")
 
         self.menuContextTraj = QMenu(self)
         self.menuContextTraj.addAction("Save Trajectory")
+        self.menuContextTraj.addAction("Delete")
 
     def rename_item(self, item):
         new_text, ok = QInputDialog.getText(
@@ -368,6 +375,7 @@ class ExploreTreeWidget(QTreeWidget):
     def topLevelItem(self, index: int) -> ExploreItem:
         return super().topLevelItem(index)
 
+    # talvez tenha algo inerente a tree widget que faça a mesma coisa que o abaixo
     def selection_changed(self):
         
         selected_items = self.selectedItems()

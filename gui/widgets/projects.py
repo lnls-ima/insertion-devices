@@ -17,7 +17,7 @@ from .visual_elements import Canvas, Table
 from .visualization_window import VisualizationTabWidget
 from .save_dialog import SaveDialog
 from .summary_dialog import SummaryDialog, SummaryWidget
-from . import get_path
+from . import get_path, getUndulatorName, getUndulatorPhase
 
 import numpy as np
 
@@ -128,6 +128,12 @@ class ProjectWidget(QMainWindow):
 
 
     def treeItemInfo(self, item: ExploreItem):
+        """
+        Give all necessary information about an Explore Item:
+            {id_item, id_name, id_dict,
+             analysis_item, analysis, analysis_dict,
+             result_item, result, result_arraynum}
+        """
 
         #todo: fazer com que isso retorne dicionario, nao todos os items um, dois, tres
         
@@ -161,13 +167,14 @@ class ProjectWidget(QMainWindow):
             return info
 
     def countIDnames(self, IDname, IDType: ExploreItem.IDType):
-        ID_names = []
-        for id_dict in self.insertiondevices.values():
-            if IDType.value:
-                ID_names.append(id_dict["item"].text(0))
-            else:
-                ID_names.append(id_dict["item"].text(0)[:-2])
-        return ID_names.count(IDname)
+
+        if IDType.value:
+            IDname = f"{getUndulatorName(IDname)} Phase {getUndulatorPhase(IDname)}"
+
+        ID_names = [IDname in id_dict["item"].text(0)
+                    for id_dict in self.insertiondevices.values()]
+                
+        return sum(ID_names)
 
     def analyzeItem(self, ID_item: ExploreItem, analysis_actived: list):
         mainwindow = self.parent().parent().parent()
@@ -366,7 +373,7 @@ class ProjectWidget(QMainWindow):
         item = self.tree.itemAt(pos)
         position = self.mapToGlobal(pos)+QPoint(1,49)
 
-        if item is not None:
+        if item:
             if item.type() is ExploreItem.IDType:
                 if item.flag() is ExploreItem.IDType.IDData:
                     action = self.tree.menuContextIDData.exec(position) #todo: consertar pos
@@ -377,16 +384,28 @@ class ProjectWidget(QMainWindow):
                             self.summaryID(item)
                         elif action.text()=="Save field map ...":
                             self.saveFieldMap(item) #todo: passar pra ExploreItem
+                        elif action.text()=="Delete":
+                            self.deleteItem(item)
                 else:
                     action = self.tree.menuContextIDModel.exec(position)
                     if action:
-                        self.tree.rename_item(item)
-
+                        if action.text()=="Rename ...":
+                            self.tree.rename_item(item)
+                        elif action.text()=="Delete":
+                            self.deleteItem(item)
 
             elif item.flag() is ExploreItem.AnalysisType.Trajectory:
                 action = self.tree.menuContextTraj.exec(position)
                 if action:
-                    self.saveTrajectory(item)
+                    if action.text()=="Save Trajectory":
+                        self.saveTrajectory(item)
+                    elif action.text()=="Delete":
+                        self.deleteItem(item)
+
+            elif item.type() is ExploreItem.AnalysisType:
+                action = self.tree.menuContextAnalysis.exec(position)
+                if action:
+                    self.deleteItem(item)
 
     def saveFieldMap(self, id_item: ExploreItem):
 
@@ -447,6 +466,16 @@ class ProjectWidget(QMainWindow):
                 x, y, z, dxds, dyds, dzds = row
                 line = line_fmt.format(x, y, z, dxds, dyds, dzds)
                 electrontraj.write(line)
+
+    def deleteItem(self, item: ExploreItem):
+        if item in self.tree.itemsSelected:
+            self.tree.itemsSelected.remove(item)
+        if item.type() is ExploreItem.IDType:
+            self.insertiondevices.pop(id(item))
+        elif item.type() is ExploreItem.AnalysisType:
+            info = self.treeItemInfo(item)
+            info["id_dict"].pop(info["analysis"])
+        item.delete()
 
     #todo: mudar para exibir o widget que ja existe no dock
     def summaryID(self, item: ExploreItem):
@@ -542,3 +571,7 @@ class ProjectsTabWidget(BasicTabWidget):
         #So to check if there is only one remaining tab, we still count the "deleted" and check if count==2
         if self.count() == 2:
             self.setTabsClosable(False)
+
+
+
+

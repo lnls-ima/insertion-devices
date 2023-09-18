@@ -1,6 +1,5 @@
 
 import os
-import json
 
 from PyQt6.QtWidgets import (QDialog,
                              QFileDialog,
@@ -8,23 +7,10 @@ from PyQt6.QtWidgets import (QDialog,
 
 from imaids.insertiondevice import InsertionDeviceData
 from .dialog_layouts import DataLayout
+from . import (models_parameters, getUndulatorName,
+               getUndulatorPhase, isUndulatorCorrected)
 
 class DataDialog(QDialog):
-
-    filename = 'models_parameters.json'
-
-    # Get the current directory
-    current_dir = os.getcwd()
-    # Iterate over all the files in the directory tree
-    for root, dirs, files in os.walk(current_dir):
-        # Check if the file we're looking for is in the list of files
-        if filename in files:
-            # If it is, print the full path to the file
-            filename = os.path.join(root, filename)
-            break
-    
-    with open(filename) as f:
-        parameters = json.load(f)
 
     def __init__(self, filenames=[] ,parent=None, *args, **kwargs):
         super().__init__(parent=parent, *args, **kwargs)
@@ -98,36 +84,6 @@ class DataDialog(QDialog):
                                spin_gap.value(),
                                check_correction.isChecked()])
         return IDs_params
-    
-    #todo: trocar undulator por ID
-    def getUndulatorName(self,filename):
-        models = list(self.parameters.keys())
-        
-        acertos = []
-        possible_names = ["Delta","Prototype","Sabia"]
-        
-        for modelname in possible_names+models:
-            if modelname in filename:
-                acertos.append(modelname)
-        if acertos:
-            return acertos[-1]
-        else:
-            return ""
-    
-    def getUndulatorPhase(self, filename):
-        phase_idx = filename.find("Phase")
-        if phase_idx!=-1:
-            phase = filename[phase_idx:].lstrip("Phase")[:3]
-            phase = "".join([char for char in list(phase) if char.isdigit()])
-            return phase
-        else:
-            return "N"
-
-    def isUndulatorCorrected(self, filename):
-        corrected = False
-        if "Corrected" in filename:
-            corrected = True
-        return corrected
     
     @classmethod
     def getOpenFileIDs(cls, files=[] ,parent=None):
@@ -215,9 +171,9 @@ class DataDialog(QDialog):
 
             line_name.textChanged.connect(self.resize_to_content)
   
-            und_name = self.getUndulatorName(filename)
-            und_phase = self.getUndulatorPhase(filename)
-            und_correct = self.isUndulatorCorrected(filename)
+            und_name = getUndulatorName(filename)
+            und_phase = getUndulatorPhase(filename)
+            und_correct = isUndulatorCorrected(filename)
             
             if und_name!="":
                 line_name.setText(f"{und_name} Phase {und_phase}")
@@ -225,10 +181,10 @@ class DataDialog(QDialog):
                 line_name.setText(f"Data {(rows-2)+nr_oldfiles+i+1}")
             self.lines_names.append(line_name)
 
-            if und_name in self.parameters:
-                spin_nr_periods.setValue(self.parameters[und_name]["nr_periods"])
-                spin_period_length.setValue(self.parameters[und_name]["period_length"])
-                spin_gap.setValue(self.parameters[und_name]["gap"])
+            if und_name in models_parameters:
+                spin_nr_periods.setValue(models_parameters[und_name]["nr_periods"])
+                spin_period_length.setValue(models_parameters[und_name]["period_length"])
+                spin_gap.setValue(models_parameters[und_name]["gap"])
                 check_correction.setChecked(und_correct)
 
             spin_nr_periods.valueChanged.connect(self.spin_all)

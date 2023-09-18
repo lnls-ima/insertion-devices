@@ -694,6 +694,12 @@ if __name__ == "__main__":
 
 # Monkey-patch original _formlayout
 from matplotlib.backends.qt_editor import _formlayout
-_formlayout.fedit = fedit
+from matplotlib import __version__ as mpl_version
+
+#*: para uso em outras versoes futuras do matplotlib, alterar edit_version e
+#*: testar funcionamento
+edit_version = ['3','7']
+if mpl_version.split('.')[:-1]==edit_version:
+    _formlayout.fedit = fedit
 
 ###############################################################################

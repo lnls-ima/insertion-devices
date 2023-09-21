@@ -16,6 +16,10 @@ Identifiers represent the main goal of the branch, and might be:
 - `test` : Add, expand or correct test.
 - `example` : Add, expand or correct example.
 - `wip` : Works in progress, that might not be done soon.
-- `exp` : Exeriment, probably discarded.
+- `exp` : Experiment, probably discarded.
 
 Examples: `feat-roll-off`, `docs-shim-notebook`, `fix-shimming-results-plot-char`
+
+## imaids GUI
+
+The gui icons are provided by [Yusuke Kamiyamane](https://p.yusukekamiyamane.com/). Licensed under a [Creative Commons Attribution 3.0 License](https://creativecommons.org/licenses/by/3.0/).

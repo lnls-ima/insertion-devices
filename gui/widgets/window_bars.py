@@ -54,17 +54,6 @@ class ToolBar(QToolBar):
         self.actionCursor.setCheckable(True)
         self.actionCursor.triggered.connect(self.mode_swap) #todo: ver como e' o bool que manda
         self.addAction(self.actionCursor)
-
-        ## tool bar - save action: salvar tabelas dos mapas de campo
-        self.actionSave = QAction(icon=QIcon(get_path('icons','database-export.png')),
-                                  text="<b>Save</b> (S)<br>"+
-                                       "Select Data ID item or Analysis item",
-                                  parent=self)
-        self.actionSave.setObjectName("Save")
-        self.actionSave.setShortcut("S")
-        self.actionSave.setCheckable(True)
-        self.actionSave.triggered.connect(self.mode_swap)
-        self.addAction(self.actionSave)
         self.addSeparator()
 
         ## tool bar - analysis button: executar analise de dados
@@ -77,7 +66,7 @@ class ToolBar(QToolBar):
         #self.buttonAnalysis.apply.clicked.connect(self.aplicar_AnalysisForAll)
         self.buttonAnalysis.modeChanged.connect(self.mode_swap)
         self.addWidget(self.buttonAnalysis)
-        self.addSeparator()
+        #self.addSeparator()
 
         ## tool bar - plot button: fazer graficos dos dados
         self.buttonPlot = painted_button.PaintedButton("Plot")
@@ -93,7 +82,7 @@ class ToolBar(QToolBar):
         self.buttonPlot.selectedAction = self.actiongrafico
         self.buttonPlot.Menu.addActions([self.actiongrafico])
         self.addWidget(self.buttonPlot)
-        self.addSeparator()
+        #self.addSeparator()
 
         ## tool bar - table button: fazer tabelas dos dados
         self.buttonTable = painted_button.PaintedButton("Table")
@@ -120,6 +109,32 @@ class ToolBar(QToolBar):
                                           self.actiondog,
                                           self.actionbug])
         self.addWidget(self.buttonTable)
+        self.addSeparator()
+
+        
+        ## tool bar - save action: salvar tabelas dos mapas de campo
+        self.actionSave = QAction(icon=QIcon(get_path('icons','database-export.png')),
+                                  text="<b>Save</b> (S)<br>"+
+                                       "Select Data ID item or Analysis item",
+                                  parent=self)
+        self.actionSave.setObjectName("Save")
+        self.actionSave.setShortcut("S")
+        self.actionSave.setCheckable(True)
+        self.actionSave.triggered.connect(self.mode_swap)
+        self.addAction(self.actionSave)
+        self.addSeparator()
+
+        ## tool bar - model_meas action: transformar modelo em mapa de campo
+        self.actionModelData = QAction(icon=QIcon(get_path('icons','clipboard-block.png')),
+                                       text="<b>ModelData</b> (M)<br>"+
+                                            "Select Model ID item",
+                                       parent=self)
+        self.actionModelData.setObjectName("ModelData")
+        self.actionModelData.setShortcut("M")
+        self.actionModelData.setCheckable(True)
+        self.actionModelData.triggered.connect(self.mode_swap)
+        self.addAction(self.actionModelData)
+
 
     def mode_swap(self,isSelfUnchecking):
 

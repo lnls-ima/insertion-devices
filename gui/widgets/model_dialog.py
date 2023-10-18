@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QDialog, QFormLayout
+from PyQt6.QtWidgets import QDialog, QFormLayout, QMessageBox
 
 from imaids import models
 from .dialog_layouts import ModelLayout
@@ -103,6 +103,20 @@ class ModelDialog(QDialog):
         if answer == QDialog.DialogCode.Rejected:
             return None, ""
         
+    def accept(self) -> None:
+
+        model_group = self.layoutModel.currentModelGroup
+        magneticGeometry = [model_group.spin_nr_periods.value(),
+                          model_group.spin_period_length.value(),
+                          model_group.spin_gap.value(),
+                          model_group.spin_mr.value()]
+        
+        if 0 in magneticGeometry:
+            QMessageBox.critical(self,
+                                 "Critical Warning",
+                                 "Nº of Periods, Period, Gap and Magnetization must be non zero!")
+        else:
+            return super().accept()
 
 # ?: como conseguir string do nome da classe
 #  : usando o atributo __name__

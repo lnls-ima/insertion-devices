@@ -10,26 +10,24 @@ class SaveDialog(QDialog):
     def __init__(self, file, parent=None):
         super().__init__(parent)
 
-        self.file = file
-
-
+        self.file = file if file else ""
 
         self.setWindowTitle("Save Field Map")
 
-        self.layoutSave = SaveLayout(file, self)
+        self.layoutSave = SaveLayout(self.file, self)
 
         self.setMinimumWidth(282)
 
-        self.layoutSave.buttonBrowseDest.clicked.connect(lambda checked: self.saveAs(file))
+        self.layoutSave.buttonBrowseDest.clicked.connect(self.saveAs)
         self.layoutSave.buttonBox.accepted.connect(self.accept)
         self.layoutSave.buttonBox.rejected.connect(self.reject)
 
     
-    def saveAs(self, file):
+    def saveAs(self):
 
         file_path, _ = QFileDialog.getSaveFileName(parent=self,
                                                    caption='Save Field Map',
-                                                   directory=file,
+                                                   directory=self.file,
                                                    filter="Data files (*.dat *.csv *.txt)")
         
         if file_path:
@@ -37,6 +35,7 @@ class SaveDialog(QDialog):
             filedir = os.path.dirname(file_path)
             self.layoutSave.lineName.setText(filename)
             self.layoutSave.lineDir.setText(filedir)
+            self.file = file_path
 
     @classmethod
     def getSaveData(cls, file, parent=None):
@@ -49,6 +48,8 @@ class SaveDialog(QDialog):
 
             filedir = dialog.layoutSave.lineDir.text()
             filename = dialog.layoutSave.lineName.text()
+            if filename[-4:] not in [".dat",".csv",".txt"]:
+                filename += ".dat"
             file_path = os.path.join(filedir,filename)
 
             coords_range = []

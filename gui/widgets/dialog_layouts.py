@@ -107,9 +107,12 @@ class DataLayout(QVBoxLayout):
         label_file = QLabel(filename)
         line_name = QLineEdit()
         spin_nr_periods = QSpinBox()
+        spin_nr_periods.setRange(1,1000)
         spin_period_length = QDoubleSpinBox()
+        spin_period_length.setRange(1,10000)
         spin_period_length.setSuffix(" mm")
         spin_gap = QDoubleSpinBox()
+        spin_gap.setRange(0,1000)
         spin_gap.setSuffix(" mm")
         check_correction = QCheckBox()
 
@@ -1566,3 +1569,107 @@ class SaveLayout(QVBoxLayout):
         self.addWidget(self.buttonBox)
 
         self.setContentsMargins(6,6,6,4)
+
+
+
+
+class ModelDataLayout(QVBoxLayout):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        groupFieldMap = QGroupBox("Field map grid")
+        
+        gridFieldMap = QGridLayout(groupFieldMap)
+
+        label_xrange = QLabel("x range:")
+        label_yrange = QLabel("y range:")
+        label_zrange = QLabel("z range:")
+        label_start = QLabel("start")
+        label_end = QLabel("end")
+        label_step = QLabel("step")
+
+        default_start = [-5,0,-900]
+        default_end   = [ 5,0, 900]
+        default_step  = [ 1,0, 1]
+        self.spins_start = []
+        self.spins_end = []
+        self.spins_step = []
+        for i in [0,1,2]:
+            spin_start = QDoubleSpinBox()
+            spin_start.setMinimum(-10000)
+            spin_start.setMaximum(10000)
+            spin_start.setProperty("value",default_start[i])
+            spin_start.setSuffix(" mm")
+            self.spins_start.append(spin_start)
+            spin_end = QDoubleSpinBox()
+            spin_end.setMinimum(-10000)
+            spin_end.setMaximum(10000)
+            spin_end.setProperty("value",default_end[i])
+            spin_end.setSuffix(" mm")
+            self.spins_end.append(spin_end)
+            spin_step = QDoubleSpinBox()
+            spin_step.setMinimum(-1000)
+            spin_step.setMaximum(1000)
+            spin_step.setProperty("value",default_step[i])
+            spin_step.setSuffix(" mm")
+            self.spins_step.append(spin_step)
+
+            gridFieldMap.addWidget(spin_start,i+1,1)
+            gridFieldMap.addWidget(spin_end,i+1,2)
+            gridFieldMap.addWidget(spin_step,i+1,3)
+
+        gridFieldMap.addWidget(label_start,0,1,alignCenter)
+        gridFieldMap.addWidget(label_end,0,2,alignCenter)
+        gridFieldMap.addWidget(label_step,0,3,alignCenter)
+        gridFieldMap.addWidget(label_xrange,1,0,alignRight)
+        gridFieldMap.addWidget(label_yrange,2,0,alignRight)
+        gridFieldMap.addWidget(label_zrange,3,0,alignRight)
+
+        '''
+        hbox = QHBoxLayout()
+
+        groupGeometry = QGroupBox("Geometry")
+
+        formGeometry = QFormLayout(groupGeometry)
+
+        label_nr_periods = QLabel("Nº of Periods:")
+        label_period_length = QLabel("Period:")
+        label_gap = QLabel("Gap:")
+
+        self.spin_nr_periods = QSpinBox()
+        self.spin_nr_periods.setMinimum(-10000)
+        self.spin_nr_periods.setMaximum(10000)
+        self.spin_nr_periods.setProperty("value",ID_model.nr_periods)
+        self.spin_period_length = QDoubleSpinBox()
+        self.spin_period_length.setMinimum(-10000)
+        self.spin_period_length.setMaximum(10000)
+        self.spin_period_length.setProperty("value",ID_model.period_length)
+        self.spin_period_length.setSuffix(" mm")
+        self.spin_gap = QDoubleSpinBox()
+        self.spin_gap.setMinimum(-10000)
+        self.spin_gap.setMaximum(10000)
+        self.spin_gap.setProperty("value",ID_model.gap)
+        self.spin_gap.setSuffix(" mm")
+
+        formGeometry.insertRow(0,label_nr_periods,self.spin_nr_periods)
+        formGeometry.insertRow(1,label_period_length,self.spin_period_length)
+        formGeometry.insertRow(2,label_gap,self.spin_gap)
+
+        hbox.addWidget(groupGeometry)
+        hbox.addWidget(groupFieldMap)
+        self.addLayout(hbox)
+        '''
+
+
+        # botoes a serem usados
+        buttons = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        # criando os botoes
+        self.buttonBox = QDialogButtonBox(buttons)
+        
+
+        self.addWidget(groupFieldMap)
+        self.addWidget(self.buttonBox)
+
+        self.setContentsMargins(6,6,6,4)
+
+

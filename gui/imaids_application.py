@@ -267,7 +267,6 @@ class MainWindow(QMainWindow):
 
         analysis_button = self.toolbar.buttonAnalysis
         table_button = self.toolbar.buttonTable
-        save_action = self.toolbar.actionSave
         project = self.projects.currentWidget()
 
         # ----------------------------- analysis ----------------------------- #
@@ -289,10 +288,17 @@ class MainWindow(QMainWindow):
 
 
         # ------------------------------- save ------------------------------- #
-        if  save_action.isChecked() and \
+        if  self.toolbar.actionSave.isChecked() and \
             item.flag() is ExploreItem.IDType.IDData:
 
             project.saveFieldMap(item)
+
+
+        # ---------------------------- modeldata ---------------------------- #
+        if  self.toolbar.actionModelData.isChecked() and \
+            item.flag() is ExploreItem.IDType.IDModel:
+
+            project.modelToData(item)
 
         # ----------------------------- summary ----------------------------- #
         #*: A principio poderia apresentar resumo para o modelo, mas precisa calcular alguns

@@ -178,6 +178,9 @@ class MenuBar(QMenuBar):
         iconStatusBar = QIcon(get_path('icons','ui-status-bar-blue.png'))
         ## icons - Settings Menu
         iconApplyForAll = QIcon(get_path('icons','wand-hat.png'))
+        ## icons - Help Menu
+        iconShortcuts = QIcon(get_path('icons','notebook--shortcut.png'))
+        iconManual = QIcon(get_path('icons','book.png'))
         
         # File menu
         self.menuFile = self.addMenu("&File")
@@ -200,6 +203,7 @@ class MenuBar(QMenuBar):
         self.actionExit = QAction(iconExit,"Exit", self)
         self.actionExit.setShortcut("Alt+F4")
         self.menuFile.addAction(self.actionExit)
+
         # Edit menu
         self.menuEdit = self.addMenu("&Edit")
         ## Edit menu - Analysis action
@@ -213,6 +217,7 @@ class MenuBar(QMenuBar):
         ## Edit menu - Redo action
         self.actionRedo = QAction("Redo", self)
         self.menuEdit.addAction(self.actionRedo)'''
+
         # View menu: contem opcoes de esconder widgets, tais como toolbar
         self.menuView = self.addMenu("&View")
         ## View menu - file action
@@ -241,15 +246,20 @@ class MenuBar(QMenuBar):
         self.actionStatusBar = QAction(iconStatusBar,StatusBar.name, self, checkable=True)
         self.actionStatusBar.setChecked(True)
         self.menuView.addAction(self.actionStatusBar)
+
         # Settings menu
         self.menuSettings = self.addMenu("&Settings")
         ## Settings menu - Apply action
         self.actionApplyForAll = QAction(iconApplyForAll,"Apply for All", self, checkable=True)
         self.menuSettings.addAction(self.actionApplyForAll)
+
         # Help menu: documentacao da interface
         self.menuHelp = self.addMenu("&Help")
+        ## Help menu - Shortcuts action
+        self.actionShortcuts = QAction(iconShortcuts, "Shortcuts", self)
+        self.menuHelp.addAction(self.actionShortcuts)
         ## Help menu - Manual action
-        self.actionManual = QAction("Manual")
+        self.actionManual = QAction(iconManual, "Manual", self)
         self.menuHelp.addAction(self.actionManual)
 
     def mousePressEvent(self, event) -> None:

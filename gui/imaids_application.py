@@ -15,7 +15,7 @@ dt = time.time()-t
 print('imports pyqt =',dt*1000,'ms')
 
 t = time.time()
-from widgets import analysis, model_dialog, projects, window_bars, data_dialog
+from widgets import analysis, model_dialog, projects, window_bars, data_dialog, shortcuts_dialog
 from widgets.visual_elements import Canvas, Table
 from widgets.explore_window import ExploreItem
 dt = time.time()-t
@@ -99,18 +99,25 @@ class MainWindow(QMainWindow):
     # menubar slots
 
     def menubar_connect(self):
+        # Menubar
         self.menubar.clicked.connect(self.update_menu)
+        # File menu
         self.menubar.actionNew_Project.triggered.connect(lambda: self.projects.addTab())
         self.menubar.actionOpen_Data.triggered.connect(self.open_files)
         self.menubar.actionGenerate_Model.triggered.connect(self.model_generation)
         self.menubar.actionExit.triggered.connect(self.close)
+        # Edit menu
         self.menubar.actionAnalysis.triggered.connect(self.edit_analysis_parameters)
+        # View menu
         self.menubar.actionFile.triggered.connect(self.setFilesVisible)
         self.menubar.actionDockTree.triggered.connect(self.setDockVisible)
         self.menubar.actionDockSummary.triggered.connect(self.setDockVisible)
         self.menubar.actionDockCommand.triggered.connect(self.setDockVisible)
         self.menubar.actionToolBar.triggered.connect(self.toolbar.setVisible)
         self.menubar.actionStatusBar.triggered.connect(self.statusbar.setVisible)
+        # Help menu
+        self.menubar.actionShortcuts.triggered.connect(lambda checked:
+        shortcuts_dialog.ShortcutsDialog(self).exec())
 
     def update_menu(self):
         project = self.projects.currentWidget()

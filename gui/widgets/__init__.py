@@ -1,17 +1,23 @@
+
+import os
 import json
-from pathlib import Path
+# from pathlib import Path
 
 def get_path(file_dir,filename):
 
-    if file_dir==".":
-        direc = str(Path(__file__).parent)
-    else:
-        direc = str(Path(__file__).with_name(file_dir))
+    # if file_dir==".":
+    #     direc = str(Path(__file__).parent)
+    # else:
+    #     direc = str(Path(__file__).with_name(file_dir))
 
-    return str(Path(direc,filename))
+    # return str(Path(direc,filename))
+
+    basedir = os.path.dirname(__file__)
+
+    return os.path.join(basedir,file_dir,filename)
 
 
-with open(get_path('.','models_parameters.json')) as f:
+with open(get_path('','models_parameters.json')) as f:
     models_parameters = json.load(f)
 
 #todo: trocar undulator por ID

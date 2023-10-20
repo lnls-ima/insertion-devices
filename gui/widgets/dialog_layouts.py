@@ -16,7 +16,8 @@ from PyQt6.QtWidgets import (QWidget,
                              QGroupBox,
                              QSizePolicy,
                              QRadioButton,
-                             QTextEdit)
+                             QTextEdit,
+                             QFrame)
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 
@@ -1673,3 +1674,57 @@ class ModelDataLayout(QVBoxLayout):
         self.setContentsMargins(6,6,6,4)
 
 
+class ShortcutsLayout(QVBoxLayout):
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+
+
+        hline1 = QFrame()
+        hline1.setFrameShape(QFrame.Shape.HLine)
+        hline1.setFrameShadow(QFrame.Shadow.Sunken)
+        hline2 = QFrame()
+        hline2.setFrameShape(QFrame.Shape.HLine)
+        hline2.setFrameShadow(QFrame.Shadow.Sunken)
+
+
+        gridShortcuts = QGridLayout()
+
+        gridShortcuts.addWidget(QLabel("Ctrl+N"),0,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Create new project"),0,1)
+        gridShortcuts.addWidget(QLabel("Ctrl+O"),1,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Open dialog to import data"),1,1)
+        gridShortcuts.addWidget(QLabel("Ctrl+M"),2,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Open dialog to generate ID model"),2,1)
+        gridShortcuts.addWidget(QLabel("Alt+F4"),3,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Exit the GUI"),3,1)
+        gridShortcuts.addWidget(QLabel("Ctrl+A"),4,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Open Analysis menu"),4,1)
+        gridShortcuts.addWidget(QLabel("Return key"),5,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Execute default button in dialogs<br>"+
+                                       "or 'Apply' in analysis menu"),5,1)
+        gridShortcuts.addWidget(hline1,6,0,1,2)
+        gridShortcuts.addWidget(QLabel("C key"),7,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Select Cursor action"),7,1)
+        gridShortcuts.addWidget(QLabel("G key"),8,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Select Plot button"),8,1)
+        gridShortcuts.addWidget(QLabel("T key"),9,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Select Table button"),9,1)
+        gridShortcuts.addWidget(QLabel("S key"),10,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Select Save action"),10,1)
+        gridShortcuts.addWidget(QLabel("M key"),11,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Select ModelData action"),11,1)
+        gridShortcuts.addWidget(hline2,12,0,1,2)
+        gridShortcuts.addWidget(QLabel("Ctrl+Tab"),13,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Pass to next project tab"),13,1)
+        gridShortcuts.addWidget(QLabel("Ctrl+Shift+Tab"),14,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Pass to previous project tab"),14,1)
+        gridShortcuts.addWidget(QLabel("1-9 key"),15,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Select the visualization window 1-9 tab"),15,1)
+        gridShortcuts.addWidget(QLabel("Backspace"),16,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Delete current visualization window tab"),16,1)
+
+        self.buttonBox = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+
+        self.addLayout(gridShortcuts)
+        self.addWidget(self.buttonBox)

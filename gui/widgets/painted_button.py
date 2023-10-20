@@ -61,7 +61,8 @@ class PaintedButton(QPushButton):
 
     def show_menu(self):
         action = self.Menu.exec(self.mapToGlobal(self.rect().bottomLeft()))
-        self.selectedAction = action
+        if action:
+            self.selectedAction = action
     
     def action_swap(self):
 

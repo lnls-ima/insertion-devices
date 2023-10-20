@@ -11,11 +11,14 @@ from  PyQt6.QtWidgets import   (QMainWindow,
 from   PyQt6.QtGui    import    QIcon, QCursor
 from   PyQt6.QtCore   import   Qt, QPoint
 
+from imaids.insertiondevice import InsertionDeviceData
+
 from .basics import BasicTabWidget
 from .explore_window import ExploreItem, ExploreTreeWidget
 from .visual_elements import Canvas, Table
 from .visualization_window import VisualizationTabWidget
 from .save_dialog import SaveDialog
+from .modeldata_dialog import ModelDataDialog
 from .summary_dialog import SummaryDialog, SummaryWidget
 from . import get_path, getUndulatorName, getUndulatorPhase
 
@@ -413,11 +416,10 @@ class ProjectWidget(QMainWindow):
         id_name = id_info["id_name"]
         id_dict = id_info["id_dict"]
         ID = id_dict["InsertionDeviceObject"]
-        file = id_dict["filename"]
+        file = id_dict.get("filename")
 
         correct = id_dict.get("Cross Talk")
-        print(correct)
-        if correct:
+        if file and correct:
             i = file.find("Fieldmap")+len("Fieldmap")
             file = file[:i]+"Corrected"+file[i:]
 
@@ -466,6 +468,29 @@ class ProjectWidget(QMainWindow):
                 x, y, z, dxds, dyds, dzds = row
                 line = line_fmt.format(x, y, z, dxds, dyds, dzds)
                 electrontraj.write(line)
+
+    def modelToData(self, id_item: ExploreItem):
+        
+        id_info = self.treeItemInfo(id_item)
+        id_dict = id_info["id_dict"]
+        ID_model = id_dict["InsertionDeviceObject"]
+
+        coords_range = ModelDataDialog.getDataGrid(self)
+
+        if coords_range:
+            px, py, pz = coords_range
+
+            ID_data = InsertionDeviceData.from_model(ID_model,px,py,pz)
+            ID_data._nr_periods = ID_model.nr_periods
+            ID_data._period_length = ID_model.period_length
+            ID_data._gap = ID_model.gap
+
+            name = id_info["id_name"]
+            ID_item = self.tree.insertID(IDType=ExploreItem.IDType.IDData,
+                                        ID=ID_data, correct=True, name=name)
+            self.insertiondevices[id(ID_item)] = {"InsertionDeviceObject": ID_data,
+                                                    "item": ID_item,
+                                                    "Cross Talk": True}
 
     def deleteItem(self, item: ExploreItem):
         if item in self.tree.itemsSelected:

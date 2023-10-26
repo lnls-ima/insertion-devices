@@ -111,6 +111,7 @@ class MainWindow(QMainWindow):
         # View menu
         self.menubar.actionFile.triggered.connect(self.setFilesVisible)
         self.menubar.actionDockTree.triggered.connect(self.setDockVisible)
+        self.menubar.actionDockOperations.triggered.connect(self.setDockVisible)
         self.menubar.actionDockSummary.triggered.connect(self.setDockVisible)
         self.menubar.actionDockCommand.triggered.connect(self.setDockVisible)
         self.menubar.actionToolBar.triggered.connect(self.toolbar.setVisible)
@@ -123,6 +124,7 @@ class MainWindow(QMainWindow):
         project = self.projects.currentWidget()
         self.menubar.actionFile.setChecked(project.tree.isFilesVisible())
         self.menubar.actionDockTree.setChecked(project.dockTree.isVisible())
+        self.menubar.actionDockOperations.setChecked(project.tree.dockOperations.isVisible())
         self.menubar.actionDockSummary.setChecked(project.dockSummary.isVisible())
         self.menubar.actionDockCommand.setChecked(project.dockCommand.isVisible())
         self.menubar.actionToolBar.setChecked(self.toolbar.isVisible())
@@ -211,6 +213,8 @@ class MainWindow(QMainWindow):
         dock_name = self.sender().objectName()
         if "Tree" in dock_name:
             project.dockTree.setVisible(visible)
+        elif "Operations" in dock_name:
+            project.tree.dockOperations.setVisible(visible)
         elif "Summary" in dock_name:
             project.dockSummary.setVisible(visible)
         elif "Command" in dock_name:
@@ -241,6 +245,8 @@ class MainWindow(QMainWindow):
         project.tree.itemClicked.connect(self.tree_item_clicked)
         project.tree.selectReturned.connect(self.tree_items_returned)
         project.tree.keyPressed.connect(self.keyPressEvent)
+        project.tree.treeOperations.itemClicked.connect(self.tree_item_clicked)
+        project.tree.treeOperations.selectReturned.connect(self.tree_items_returned)
         project.visuals.tabAdded.connect(self.visuals_connect)
 
     ## tree slots
@@ -315,28 +321,72 @@ class MainWindow(QMainWindow):
             project.update_summary(item)
 
     def tree_items_returned(self, items):
-        if self.toolbar.buttonPlot.isChecked():
+        project = self.projects.currentWidget()
+
+        tpAnalysis = ExploreItem.AnalysisType
+        tpResult = ExploreItem.ResultType
+        rtArray = ExploreItem.ResultType.ResultArray
+        
+        #todo: action "Custom Analysis", ao selecionar items e retornar, primeiramente
+        #todo: abre dialogo para inserir como será a operação a ser executada
+        if self.toolbar.buttonOperation.isChecked():
+            selected = self.toolbar.buttonOperation.selectedAction.text()
+            sign = {"Plus Analysis": "+", "Minus Analysis": "-"}[selected]
+            operation = f"{sign}".join([f"A{i}" for i in range(len(items))])
 
             if len(items) == 0:
-                print("nada selecionado")
+                QMessageBox.information(self,
+                                        "Operation Information",
+                                        "Nothing selected to operate.")
+            
+            elif len(items) == 1:
+                QMessageBox.information(self,
+                                        "Operation Information",
+                                        "Nothing to operate, select more than one item.")
 
-            elif len(items) == 1 and \
-                 (items[0].type() is not ExploreItem.AnalysisType and \
-                  items[0].flag() is not ExploreItem.ResultType.ResultArray):
-                
-                print("nao pode ser plotado")
+            elif any(item.type() not in [tpAnalysis, tpResult] for item in items):
+                QMessageBox.warning(self,
+                                    "Operation Error",
+                                    "Invalid items! Please select only Analyses or only Results.")
 
-            elif len(items) == 2 and \
-                 ExploreItem.ResultType.ResultNumeric in [items[0].flag(),
-                                                          items[1].flag()]:
+            elif any(item.type() != items[0].type() for item in items):
+                QMessageBox.warning(self,
+                                    "Operation Error",
+                                    "Do not combine Analyses and Results items!")
+            
+            else:
+                project.operateItems(operation,items)
 
-                print("use apenas items que sao listas")
+        elif self.toolbar.buttonPlot.isChecked():
+            
+            isFirstDenied = len(items)>=1 and \
+                            (items[0].type() is not tpAnalysis and \
+                             items[0].flag() is not rtArray)
+            isSecondDenied = len(items)==2 and \
+                             (items[1].type() is not tpAnalysis and \
+                              items[1].flag() is not rtArray)
+
+            if len(items) == 0:
+                QMessageBox.information(self,
+                                        "Plot Information",
+                                        "Nothing selected to plot.")
 
             elif len(items) > 2:
-                print("selecione apenas 2 items")
+                QMessageBox.warning(self,
+                                    "Plot Error",
+                                    "Select only two items!")
+
+            # Now the items list have or one or two elements. The first one always
+            # exist and must be AnalysisType or ResultArray. The second element can
+            # exist or not, then we check the number of elements. If it exists (len==2),
+            # then this element also must be AnalysisType or ResultArray
+            elif isFirstDenied or isSecondDenied:
+                QMessageBox.warning(self,
+                                    "Plot Error",
+                                    "The plot cannot be performed. Use only items that are Lists!")
 
             else:
-                self.projects.currentWidget().drawItems(items)
+                project.drawItems(items)
 
     ## visuals slots
 

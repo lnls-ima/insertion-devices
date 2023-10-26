@@ -35,6 +35,8 @@ class ToolBar(QToolBar):
 
         self.buttonChecked = None
 
+        plus = QIcon(get_path('icons','plus.png'))
+        minus = QIcon(get_path('icons','minus.png'))
         grafico = QIcon(get_path('icons','guide.png'))
         tabela = QIcon(get_path('icons','table.png'))
         dog = QIcon(get_path('icons','animal-dog.png'))
@@ -66,7 +68,24 @@ class ToolBar(QToolBar):
         #self.buttonAnalysis.apply.clicked.connect(self.aplicar_AnalysisForAll)
         self.buttonAnalysis.modeChanged.connect(self.mode_swap)
         self.addWidget(self.buttonAnalysis)
-        #self.addSeparator()
+        
+        ## tool bar - operation button: realizar operações básicas entre análises
+        self.buttonOperation = painted_button.PaintedButton("Operation   ")
+        self.buttonOperation.setObjectName("Operation")
+        self.buttonOperation.setShortcut("P")
+        self.buttonOperation.setToolTip("<b>Operation</b> (P)<br>"+
+                                       "Select two analysis items then press spacebar")
+        self.buttonOperation.modeChanged.connect(self.mode_swap)
+        self.buttonOperation.setIcon(plus)
+
+        self.actionplus = QAction(icon=plus,text="Plus Analysis")
+        self.actionplus.triggered.connect(self.buttonOperation.action_swap)
+        self.actionminus = QAction(icon=minus,text="Minus Analysis")
+        self.actionminus.triggered.connect(self.buttonOperation.action_swap)
+        self.buttonOperation.selectedAction = self.actionplus
+        self.buttonOperation.Menu.addActions([self.actionplus,
+                                              self.actionminus])
+        self.addWidget(self.buttonOperation)
 
         ## tool bar - plot button: fazer graficos dos dados
         self.buttonPlot = painted_button.PaintedButton("Plot")
@@ -228,6 +247,10 @@ class MenuBar(QMenuBar):
         self.actionDockTree.setObjectName("dockTree")
         self.actionDockTree.setChecked(True)
         self.menuView.addAction(self.actionDockTree)
+        ## View menu - DockOperations action
+        self.actionDockOperations = QAction("Operation Window", self, checkable=True)
+        self.actionDockOperations.setObjectName("dockOperations")
+        self.menuView.addAction(self.actionDockOperations)
         ## View menu - DockSummary action
         self.actionDockSummary = QAction("Summary Window", self, checkable=True)
         self.actionDockSummary.setObjectName("dockSummary")

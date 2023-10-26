@@ -20,6 +20,7 @@ from .visualization_window import VisualizationTabWidget
 from .save_dialog import SaveDialog
 from .modeldata_dialog import ModelDataDialog
 from .summary_dialog import SummaryDialog, SummaryWidget
+from .dialog_operation import OperationAnalysisDialog
 from . import get_path, getUndulatorName, getUndulatorPhase
 
 import numpy as np
@@ -32,6 +33,7 @@ class ProjectWidget(QMainWindow):
         super().__init__(parent)
 
         self.insertiondevices = {}
+        self.operations = {}
         self.params = {
             "Cross Talk": {
                 "angles": {
@@ -124,6 +126,7 @@ class ProjectWidget(QMainWindow):
         #todo: tentar depois deixar visuals dentro de dockwidget tambem, mas sem dar bugs
         self.setCentralWidget(self.visuals)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea,self.dockTree)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea,self.tree.dockOperations)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea,self.dockSummary)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea,self.visuals.dockFigOptions)
         self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea,self.dockCommand)
@@ -151,20 +154,27 @@ class ProjectWidget(QMainWindow):
         
         elif item.type() is ExploreItem.AnalysisType:
             info = self.treeItemInfo(item.parent())
-            id_dict = info["id_dict"]
 
             analysis = item.text(0)
-            analysis_dict = id_dict[analysis]
+            try:
+                id_dict = info["id_dict"]
+                analysis_dict = id_dict[analysis]
+            except:
+                analysis_dict = self.operations[id(item)]
             info.update({"analysis_item": item, "analysis": analysis,
                          "analysis_dict": analysis_dict})
             return info
 
         elif item.type() is ExploreItem.ResultType:
             info = self.treeItemInfo(item.parent())
-            analysis_dict = info["analysis_dict"]
 
             result = item.text(0)
-            result_arraynum = analysis_dict[result]
+            try:
+                analysis_dict = info["analysis_dict"]
+                result_arraynum = analysis_dict[result]
+            except:
+                result_arraynum = self.operations[id(item)]
+
             info.update({"result_item": item, "result": result,
                          "result_arraynum": result_arraynum})
             return info
@@ -239,6 +249,107 @@ class ProjectWidget(QMainWindow):
                 #mainwindow.statusbar.showMessage(f"{analysis} done!",1000)
                 # self.update_ids_dict_key(key=id_name, new_key=ID_item.text(0))
                 [item.setTextAlignment(1,Qt.AlignmentFlag.AlignRight) for item in result_items]
+
+    #todo: implementar delecao de analise customizada
+    def operateItems(self, operation: str, items: typing.List[ExploreItem]):
+        sign = "+" if "+" in operation else "-"
+        infos = [self.treeItemInfo(item) for item in items]
+
+        rtArray = ExploreItem.ResultType.ResultArray
+        rtNumber = ExploreItem.ResultType.ResultNumeric
+
+        #Operate analyses
+        isAnalysis = infos[0].get("result") is None
+        if isAnalysis:
+            print('operate analyses')
+            dicts = [info["analysis_dict"] for info in infos]
+            keys = dicts[0].keys()
+            values = [dirct.values() for dirct in dicts]
+            names = [info["analysis"] for info in infos]
+            
+            if any(analysis != names[0] for analysis in names):
+                QMessageBox.warning(self,
+                                    "Operation Error",
+                                    "Analyses of different types cannot be operated!")
+                return False
+            
+            answer, isUnchanged = OperationAnalysisDialog.getResultsUnchanged(infos[0],self)
+            if answer == QDialog.DialogCode.Rejected:
+                return False
+
+            new_dict = {}
+            result_items = []
+            for key, *value in zip(keys,*values):
+                
+                if any(type(val_i) != type(value[0]) for val_i in value):
+                    QMessageBox.warning(self,
+                                        "Operation Error",
+                                        "Analyses have different result types!")
+                    return False
+                if any(val_i.size != value[0].size for val_i in value):
+                    QMessageBox.warning(self,
+                                        "Operation Error",
+                                        "The sizes of the arrays are different, operation cannot be done!")
+                    return False
+                
+                op_tip = operation
+                for i in range(len(items)):
+                    operation = operation.replace(f"A{i}",f"value[{i}]")
+                    op_tip.replace(f"A{i}",f"")
+                new_dict[key] = dicts[0][key] if isUnchanged[key] else eval(operation)
+                    
+                isArray = type(dicts[0][key])==np.ndarray
+                resultType, resultContent = (rtArray, "List") if isArray else (rtNumber, f"{new_dict[key]:.1f}")
+                item = ExploreItem(resultType, [key, resultContent])
+                item.setTextAlignment(1,Qt.AlignmentFlag.AlignRight)
+                result_items.append(item)
+            
+            container = self.tree.treeOperations.topLevelItem(0)
+            analysisType = ExploreItem.AnalysisType(names[0])
+            analysis_item = ExploreItem(analysisType, container, [infos[0]["analysis"], "Analysis"])
+            msg = f"{sign}".join([f"({info.get('id_name')}/{info['analysis']})" for info in infos])
+            analysis_item.setStatusTip(0,msg)
+            analysis_item.setTextAlignment(1,Qt.AlignmentFlag.AlignRight)
+            analysis_item.addChildren(result_items)
+
+            self.operations[id(analysis_item)] = new_dict
+        
+        # Operate results
+        else:
+            arraynums = [info["result_arraynum"] for info in infos]
+
+            if any(type(arraynum_i) != type(arraynums[0]) for arraynum_i in arraynums):
+                QMessageBox.warning(self,
+                                    "Operation Error",
+                                    "Different types of results cannot be operated!")
+                return False
+            if any(arraynum.size != arraynums[0].size for arraynum in arraynums):
+                QMessageBox.warning(self,
+                                    "Operation Error",
+                                    "The sizes of the arrays are different, operation cannot be done!")
+                return False
+
+            for i in range(len(items)):
+                operation = operation.replace(f"A{i}",f"arraynums[{i}]")
+            new_arraynum = eval(operation)
+
+            isArray = type(arraynums[0])==np.ndarray
+            resultType, resultContent = (rtArray, "List") if isArray else (rtNumber, f"{new_arraynum:.1f}")
+
+            container = self.tree.treeOperations.topLevelItem(1)
+            equals = all(info["result"]==infos[0]["result"] for info in infos)
+            resultName = infos[0]["result"] if equals else "Result"
+            result_item = ExploreItem(resultType, container, [resultName, resultContent])
+            msg = f"{sign}".join([f"({info.get('id_name')}/{info['analysis']}/{info['result']})" for info in infos])
+            result_item.setStatusTip(0,msg)
+            result_item.setTextAlignment(1,Qt.AlignmentFlag.AlignRight)
+
+            self.operations[id(result_item)] = new_arraynum
+
+        if not container.isExpanded():
+            self.tree.treeOperations.expandItem(container)
+
+        self.tree.dockOperations.setVisible(True)
 
     def drawItems(self, items: typing.List[ExploreItem]):
 
@@ -596,7 +707,3 @@ class ProjectsTabWidget(BasicTabWidget):
         #So to check if there is only one remaining tab, we still count the "deleted" and check if count==2
         if self.count() == 2:
             self.setTabsClosable(False)
-
-
-
-

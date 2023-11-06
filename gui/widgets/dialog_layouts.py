@@ -16,7 +16,8 @@ from PyQt6.QtWidgets import (QWidget,
                              QGroupBox,
                              QSizePolicy,
                              QRadioButton,
-                             QTextEdit)
+                             QTextEdit,
+                             QFrame)
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 
@@ -1672,4 +1673,93 @@ class ModelDataLayout(QVBoxLayout):
 
         self.setContentsMargins(6,6,6,4)
 
+
+class ShortcutsLayout(QVBoxLayout):
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+
+
+        hline1 = QFrame()
+        hline1.setFrameShape(QFrame.Shape.HLine)
+        hline1.setFrameShadow(QFrame.Shadow.Sunken)
+        hline2 = QFrame()
+        hline2.setFrameShape(QFrame.Shape.HLine)
+        hline2.setFrameShadow(QFrame.Shadow.Sunken)
+
+
+        gridShortcuts = QGridLayout()
+
+        gridShortcuts.addWidget(QLabel("Ctrl+N"),0,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Create new project"),0,1)
+        gridShortcuts.addWidget(QLabel("Ctrl+O"),1,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Open dialog to import data"),1,1)
+        gridShortcuts.addWidget(QLabel("Ctrl+M"),2,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Open dialog to generate ID model"),2,1)
+        gridShortcuts.addWidget(QLabel("Alt+F4"),3,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Exit the GUI"),3,1)
+        gridShortcuts.addWidget(QLabel("Ctrl+A"),4,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Open Analysis menu"),4,1)
+        gridShortcuts.addWidget(QLabel("Return key"),5,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Execute default button in dialogs<br>"+
+                                       "or 'Apply' in analysis menu"),5,1)
+        gridShortcuts.addWidget(QLabel("Alt+A"),6,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Apply modifications done in Figure Options"),6,1)
+        gridShortcuts.addWidget(hline1,7,0,1,2)
+        gridShortcuts.addWidget(QLabel("C key"),8,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Select Cursor action"),8,1)
+        gridShortcuts.addWidget(QLabel("G key"),9,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Select Plot button"),9,1)
+        gridShortcuts.addWidget(QLabel("T key"),10,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Select Table button"),10,1)
+        gridShortcuts.addWidget(QLabel("S key"),11,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Select Save action"),11,1)
+        gridShortcuts.addWidget(QLabel("M key"),12,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Select ModelData action"),12,1)
+        gridShortcuts.addWidget(hline2,13,0,1,2)
+        gridShortcuts.addWidget(QLabel("Ctrl+Tab"),14,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Pass to next project tab"),14,1)
+        gridShortcuts.addWidget(QLabel("Ctrl+Shift+Tab"),15,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Pass to previous project tab"),15,1)
+        gridShortcuts.addWidget(QLabel("1-9 key"),16,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Select the visualization window 1-9 tab"),16,1)
+        gridShortcuts.addWidget(QLabel("Backspace"),17,0,alignCenter)
+        gridShortcuts.addWidget(QLabel("Delete current visualization window tab"),17,1)
+
+        self.buttonBox = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+
+        self.addLayout(gridShortcuts)
+        self.addWidget(self.buttonBox)
+
+
+
+class OperationAnalysisLayout(QVBoxLayout):
+    def __init__(self, analysis: str, analysis_keys, parent=None):
+        super().__init__(parent)
+
+        style = "style='font-size:12pt; font-weight:600;'"
+        label_title = QLabel(f"<span {style}>Select the results to be kept unchanged</span>")
+        label_title.setAlignment(alignCenter)
+
+        groupAnalysis = QGroupBox(analysis)
+
+        vbox = QVBoxLayout(groupAnalysis)
+        self.checkboxes = []
+        for key in analysis_keys:
+            check = QCheckBox(key)
+            vbox.addWidget(check)
+            self.checkboxes.append(check)
+        vbox.addStretch()
+
+
+        # botoes a serem usados
+        buttons = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        # criando os botoes
+        self.buttonBox = QDialogButtonBox(buttons)
+
+        self.addWidget(label_title)
+        self.addWidget(groupAnalysis)
+        self.addWidget(self.buttonBox)
+
+    
 

@@ -35,6 +35,8 @@ class ToolBar(QToolBar):
 
         self.buttonChecked = None
 
+        plus = QIcon(get_path('icons','plus.png'))
+        minus = QIcon(get_path('icons','minus.png'))
         grafico = QIcon(get_path('icons','guide.png'))
         tabela = QIcon(get_path('icons','table.png'))
         dog = QIcon(get_path('icons','animal-dog.png'))
@@ -66,7 +68,24 @@ class ToolBar(QToolBar):
         #self.buttonAnalysis.apply.clicked.connect(self.aplicar_AnalysisForAll)
         self.buttonAnalysis.modeChanged.connect(self.mode_swap)
         self.addWidget(self.buttonAnalysis)
-        #self.addSeparator()
+        
+        ## tool bar - operation button: realizar operações básicas entre análises
+        self.buttonOperation = painted_button.PaintedButton("Operation   ")
+        self.buttonOperation.setObjectName("Operation")
+        self.buttonOperation.setShortcut("P")
+        self.buttonOperation.setToolTip("<b>Operation</b> (P)<br>"+
+                                       "Select two analysis items then press spacebar")
+        self.buttonOperation.modeChanged.connect(self.mode_swap)
+        self.buttonOperation.setIcon(plus)
+
+        self.actionplus = QAction(icon=plus,text="Plus Analysis")
+        self.actionplus.triggered.connect(self.buttonOperation.action_swap)
+        self.actionminus = QAction(icon=minus,text="Minus Analysis")
+        self.actionminus.triggered.connect(self.buttonOperation.action_swap)
+        self.buttonOperation.selectedAction = self.actionplus
+        self.buttonOperation.Menu.addActions([self.actionplus,
+                                              self.actionminus])
+        self.addWidget(self.buttonOperation)
 
         ## tool bar - plot button: fazer graficos dos dados
         self.buttonPlot = painted_button.PaintedButton("Plot")
@@ -178,6 +197,9 @@ class MenuBar(QMenuBar):
         iconStatusBar = QIcon(get_path('icons','ui-status-bar-blue.png'))
         ## icons - Settings Menu
         iconApplyForAll = QIcon(get_path('icons','wand-hat.png'))
+        ## icons - Help Menu
+        iconShortcuts = QIcon(get_path('icons','notebook--shortcut.png'))
+        iconManual = QIcon(get_path('icons','book.png'))
         
         # File menu
         self.menuFile = self.addMenu("&File")
@@ -200,6 +222,7 @@ class MenuBar(QMenuBar):
         self.actionExit = QAction(iconExit,"Exit", self)
         self.actionExit.setShortcut("Alt+F4")
         self.menuFile.addAction(self.actionExit)
+
         # Edit menu
         self.menuEdit = self.addMenu("&Edit")
         ## Edit menu - Analysis action
@@ -213,6 +236,7 @@ class MenuBar(QMenuBar):
         ## Edit menu - Redo action
         self.actionRedo = QAction("Redo", self)
         self.menuEdit.addAction(self.actionRedo)'''
+
         # View menu: contem opcoes de esconder widgets, tais como toolbar
         self.menuView = self.addMenu("&View")
         ## View menu - file action
@@ -223,6 +247,10 @@ class MenuBar(QMenuBar):
         self.actionDockTree.setObjectName("dockTree")
         self.actionDockTree.setChecked(True)
         self.menuView.addAction(self.actionDockTree)
+        ## View menu - DockOperations action
+        self.actionDockOperations = QAction("Operation Window", self, checkable=True)
+        self.actionDockOperations.setObjectName("dockOperations")
+        self.menuView.addAction(self.actionDockOperations)
         ## View menu - DockSummary action
         self.actionDockSummary = QAction("Summary Window", self, checkable=True)
         self.actionDockSummary.setObjectName("dockSummary")
@@ -241,15 +269,20 @@ class MenuBar(QMenuBar):
         self.actionStatusBar = QAction(iconStatusBar,StatusBar.name, self, checkable=True)
         self.actionStatusBar.setChecked(True)
         self.menuView.addAction(self.actionStatusBar)
+
         # Settings menu
         self.menuSettings = self.addMenu("&Settings")
         ## Settings menu - Apply action
         self.actionApplyForAll = QAction(iconApplyForAll,"Apply for All", self, checkable=True)
         self.menuSettings.addAction(self.actionApplyForAll)
+
         # Help menu: documentacao da interface
         self.menuHelp = self.addMenu("&Help")
+        ## Help menu - Shortcuts action
+        self.actionShortcuts = QAction(iconShortcuts, "Shortcuts", self)
+        self.menuHelp.addAction(self.actionShortcuts)
         ## Help menu - Manual action
-        self.actionManual = QAction("Manual")
+        self.actionManual = QAction(iconManual, "Manual", self)
         self.menuHelp.addAction(self.actionManual)
 
     def mousePressEvent(self, event) -> None:

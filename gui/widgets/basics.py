@@ -1,4 +1,5 @@
 
+from PyQt6 import QtGui
 from PyQt6.QtWidgets import (QWidget,
                              QTabWidget,
                              QTabBar,
@@ -9,7 +10,9 @@ from PyQt6.QtWidgets import (QWidget,
                              QStyleOptionTab,
                              QVBoxLayout,
                              QToolButton,
-                             QLayout)
+                             QLayout,
+                             QTreeWidget,
+                             QMessageBox)
 
 from PyQt6.QtCore import pyqtSignal, Qt, QRect, QPoint
 
@@ -141,6 +144,41 @@ class BasicTabWidget(QTabWidget):
     def closeTab(self, i):
         self.widget(i).deleteLater()
 
+
+class BasicTreeWidget(QTreeWidget):
+
+    selectReturned = pyqtSignal(list)
+
+    def __init__(self, parent=None, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)
+        self.setMouseTracking(True)
+        self.setColumnCount(2)
+        self.setHeaderLabels(["Item", "Content"])
+        self.headerItem().setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
+        #self.setHeaderHidden(True)
+        self.setIndentation(12)
+
+    def rename_item(self, item):
+        new_text, ok = QInputDialog.getText(
+            self, 'Rename Item', 'Enter new label:', text=item.text(0)
+        )
+        if ok:
+            #todo: fazer simbolo de correction ser icone e nao parte do texto
+            if new_text=="" or new_text.isspace():
+                QMessageBox.warning(self,
+                                    "Label Error",
+                                    "Empty label is not allowed!")
+            else:
+                item.setText(0, new_text)
+
+    def keyPressEvent(self, event) -> None:
+        if event.key() in [Qt.Key.Key_Space,Qt.Key.Key_Return,Qt.Key.Key_Enter]:
+            self.selectReturned.emit(self.selectedItems())
+        else:
+            return super().keyPressEvent(event)
 
 class VerticalTabBar(QTabBar):
 

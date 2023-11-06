@@ -1,5 +1,5 @@
 
-from PyQt6.QtWidgets import QMenu, QWidget, QFrame, QDockWidget, QVBoxLayout
+from PyQt6.QtWidgets import QMenu, QWidget, QFrame, QDockWidget, QVBoxLayout, QMessageBox
 from PyQt6.QtGui import QAction, QIcon, QCursor
 
 from.basics import BasicTabWidget
@@ -128,7 +128,7 @@ class VisualizationTabWidget(BasicTabWidget):
 
     def plotPair(self, chart: Canvas, x_info, y_info, addMode=False):
 
-        id_name = x_info["id_name"]
+        id_name = x_info.get("id_name")
         x_label = x_info["result"]
         x = x_info["result_arraynum"]
 
@@ -154,8 +154,8 @@ class VisualizationTabWidget(BasicTabWidget):
     def plotAnalysis(self, chart: Canvas, analysis_info, addMode=False):
 
         #todo: no futuro, avaliar se uso analysis ou analysis_item para fazer as condicoes
-        id_name = analysis_info["id_name"]
-        id_dict = analysis_info["id_dict"]
+        id_name = analysis_info.get("id_name")
+        id_dict = analysis_info.get("id_dict")
         analysis_item = analysis_info["analysis_item"]
         analysis_dict = analysis_info["analysis_dict"]
         title_y_x = []
@@ -262,9 +262,12 @@ class VisualizationTabWidget(BasicTabWidget):
             title_y_x.append("x (mm)")
 
         elif analysis_item.flag() is ExploreItem.AnalysisType.RollOffAmp:
-
-            ID = id_dict["InsertionDeviceObject"]
-            bxamp, byamp, *_ = ID.calc_field_amplitude()
+            
+            try:
+                ID = id_dict["InsertionDeviceObject"]
+                bxamp, byamp, *_ = ID.calc_field_amplitude()
+            except:
+                byamp, byamp = 1, 1
             x, *roa = analysis_dict.values()
 
             if abs(byamp-bxamp) < 0.1:
@@ -282,8 +285,12 @@ class VisualizationTabWidget(BasicTabWidget):
 
         elif analysis_item.flag() is ExploreItem.AnalysisType.RollOffPeaks:
 
-            ID = id_dict["InsertionDeviceObject"]
-            bxamp, byamp, *_ = ID.calc_field_amplitude()
+            try:
+                ID = id_dict["InsertionDeviceObject"]
+                bxamp, byamp, *_ = ID.calc_field_amplitude()
+            except:
+                bxamp, byamp = 1, 1
+            
             x, *rop = analysis_dict.values()
             N = rop[0].shape[1]
 

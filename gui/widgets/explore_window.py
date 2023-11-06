@@ -2,10 +2,11 @@
 from enum import Enum
 from PyQt6 import sip
 import numpy as np
-from PyQt6.QtWidgets import QTreeWidgetItem, QTreeWidget, QMenu, QInputDialog, QMessageBox
+from PyQt6.QtWidgets import QTreeWidgetItem, QTreeWidget, QMenu, QInputDialog, QMessageBox, QDockWidget
 from PyQt6.QtGui import QColor, QKeyEvent, QIcon
 from PyQt6.QtCore import pyqtSignal, Qt, QItemSelectionModel, QItemSelection
 
+from .basics import BasicTreeWidget
 from . import get_path
 
 class ExploreItem(QTreeWidgetItem):
@@ -13,6 +14,8 @@ class ExploreItem(QTreeWidgetItem):
     class ContainerType(Enum):
         ContainerData = 0
         ContainerModel = 1
+        ContainerAnalyses = 2
+        ContainerResults = 3
 
     class IDType(Enum):
         IDModel = 0
@@ -20,6 +23,7 @@ class ExploreItem(QTreeWidgetItem):
     
     #*: na tree, de analysis items pra baixo, nao podera' renomear
     class AnalysisType(Enum):
+        CrossTalk = "Cross Talk"
         MagneticField = "Magnetic Field"
         Trajectory = "Trajectory"
         PhaseError = "Phase Error"
@@ -27,7 +31,7 @@ class ExploreItem(QTreeWidgetItem):
         IntegralsH = "Field Integrals vs X"
         RollOffPeaks = "Roll Off Peaks"
         RollOffAmp = "Roll Off Amplitude"
-        CrossTalk = "Cross Talk"
+        Custom = "Custom"
     
     class ResultType(Enum):
         ResultArray = 0
@@ -92,6 +96,7 @@ class ExploreItem(QTreeWidgetItem):
 
         ID = id_dict["InsertionDeviceObject"]
         x, y, z = field_kwargs["x"], field_kwargs["y"], field_kwargs["z"]
+        x, y, z = [np.float64(i) for i in [x,y,z]]
         B = ID.get_field(**field_kwargs)
         Bx, By, Bz = B.T
         id_dict[analysis_item.text(0)] = {"x [mm]": x, "y [mm]": y, "z [mm]": z,
@@ -300,9 +305,10 @@ class TreeSelectionModel(QItemSelectionModel):
     def select(self, selection: 'QItemSelection', command) -> None:
         super().select(selection, command)
 
-class ExploreTreeWidget(QTreeWidget):
 
-    selectReturned = pyqtSignal(list)
+
+class ExploreTreeWidget(BasicTreeWidget):
+
     keyPressed = pyqtSignal(QKeyEvent)
     noItemClicked = pyqtSignal()
 
@@ -315,30 +321,24 @@ class ExploreTreeWidget(QTreeWidget):
 
         self.itemSelectionChanged.connect(self.selection_changed)
         
-        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)
-        self.setMouseTracking(True)
-        self.setColumnCount(2)
-        self.setHeaderLabels(["Item", "Content"])
-        #self.setHeaderHidden(True)
         self.header().resizeSection(0, 1.8*self.width())
-        self.setIndentation(12)
-        self.headerItem().setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
         self.setMinimumWidth(self.parent().parent().width()*0.47)
 
-        # 0: primeiro da lista top level
+        # Container items
+        ## 0: primeiro da lista top level
         ctnData = ExploreItem.ContainerType.ContainerData
         data_container = ExploreItem(ctnData, ["Data", "Container"])
         data_container.setStatusTip(0,"Container for the undulator field maps data loaded")
         self.insertTopLevelItem(0, data_container)
         self.topLevelItem(0).setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
-        # 1: segundo da lista top level
+        ## 1: segundo da lista top level
         ctnModel = ExploreItem.ContainerType.ContainerModel
         model_container = ExploreItem(ctnModel, ["Models", "Container"])
         model_container.setStatusTip(0,"Container for the undulator models constructed")
         self.insertTopLevelItem(1, model_container)
         self.topLevelItem(1).setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
 
+        # Menus
         self.menuContextAnalysis = QMenu(self)
         self.menuContextAnalysis.addAction("Delete")
         
@@ -356,18 +356,28 @@ class ExploreTreeWidget(QTreeWidget):
         self.menuContextTraj.addAction("Save Trajectory")
         self.menuContextTraj.addAction("Delete")
 
-    def rename_item(self, item):
-        new_text, ok = QInputDialog.getText(
-            self, 'Rename Item', 'Enter new label:', text=item.text(0)
-        )
-        if ok:
-            #todo: fazer simbolo de correction ser icone e nao parte do texto
-            if new_text=="" or new_text.isspace():
-                QMessageBox.warning(self,
-                                    "Label Error",
-                                    "Empty label is not allowed!")
-            else:
-                item.setText(0, new_text)
+        # Operation dock
+        ## dock widget
+        self.dockOperations = QDockWidget("Operation Window")
+        self.dockOperations.setHidden(True)
+        ## tree widget
+        self.treeOperations = BasicTreeWidget(parent=self.dockOperations)
+        self.treeOperations.header().resizeSection(0, 0.6*self.width())
+        ### containers
+        ctnAnalyses = ExploreItem.ContainerType.ContainerAnalyses
+        analyses_container = ExploreItem(ctnAnalyses,["Analyses", "Container"])
+        analyses_container.setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
+        analyses_container.setStatusTip(0,"Container for the operated analyses")
+        self.treeOperations.insertTopLevelItem(0, analyses_container)
+        ctnResults = ExploreItem.ContainerType.ContainerResults
+        results_container = ExploreItem(ctnResults,["Results", "Container"])
+        results_container.setTextAlignment(1, Qt.AlignmentFlag.AlignRight)
+        results_container.setStatusTip(0,"Container for the operated results")
+        self.treeOperations.insertTopLevelItem(1, results_container)
+
+        self.dockOperations.setWidget(self.treeOperations)
+
+    
 
     def isFilesVisible(self):
         return self.files_visible
@@ -400,12 +410,10 @@ class ExploreTreeWidget(QTreeWidget):
 
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        if event.key() in [Qt.Key.Key_Space,Qt.Key.Key_Return,Qt.Key.Key_Enter]:
-            self.selectReturned.emit(self.itemsSelected)
-        elif event.key() in [Qt.Key.Key_A, Qt.Key.Key_Backspace,
-                             Qt.Key.Key_1, Qt.Key.Key_2, Qt.Key.Key_3,
-                             Qt.Key.Key_4, Qt.Key.Key_5, Qt.Key.Key_6,
-                             Qt.Key.Key_7, Qt.Key.Key_8, Qt.Key.Key_9]:
+        if event.key() in [Qt.Key.Key_A, Qt.Key.Key_Backspace,
+                           Qt.Key.Key_1, Qt.Key.Key_2, Qt.Key.Key_3,
+                           Qt.Key.Key_4, Qt.Key.Key_5, Qt.Key.Key_6,
+                           Qt.Key.Key_7, Qt.Key.Key_8, Qt.Key.Key_9]:
             self.keyPressed.emit(event)
         else:
             return super().keyPressEvent(event)

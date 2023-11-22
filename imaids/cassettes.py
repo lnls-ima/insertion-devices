@@ -12,7 +12,7 @@ from . import fieldsource as _fieldsource
 class Cassette(
         _fieldsource.FieldModel, _fieldsource.SinusoidalFieldSource):
     """Insertion device cassette.
-    
+
     The cassette is composed of magnetic blocks (blocks.Block objects),
     with specified materials, lengths and gaps, assembled in a line along
     the longitudinal direction (z).
@@ -52,22 +52,22 @@ class Cassette(
 
         Args:
             nr_periods (int): Number of complete periods.
-            period_length (float, optional): Period length in mm.             
+            period_length (float, optional): Period length in mm.
             block_shape (list, Mx2 or NxMx2): List defining blocks
                 geometry. Single list or N nested lists of M 2D points defining
                 convex polygons which form the cross-section of a block (as
                 described in blocks.Block). In mm.
             mr (float, optional): magnitude of remanent magnetization vector
                 Defines magnetization vector modulus for linear material used
-                at the blocks. In Tesla. Must be >= 0. Defaults to 1.37.  
+                at the blocks. In Tesla. Must be >= 0. Defaults to 1.37.
             upper_cassette (bool, optional): Defines direction of the first
                 core block magnetization and, consequentely, the directions
                 sequency for the Halbach array period used:
-                    If True:   y+, z-, y-, z+ 
+                    If True:   y+, z-, y-, z+
                     If False:  y-, z+, y+, z-
                     With:
                         y+ : (0, 1, 0)   ;   z+ : (0, 0, 1)
-                        y- : (0,-1, 0)   ;   z- : (0, 0,-1) 
+                        y- : (0,-1, 0)   ;   z- : (0, 0,-1)
                 Defaults to False.
             longitudinal_distance (int, optional): Longitudinal gap between
                 adjacent core blocks or between core blocks and poles in the
@@ -87,12 +87,12 @@ class Cassette(
                 easy axis (magnetization diraction). Defaults to 0.17.
             hybrid (bool, optional): If True, hybrid undulator cassette is
                 created with alternating blocks and poles. If False, cassette
-                is created with only blocks. Defaults to False.                
+                is created with only blocks. Defaults to False.
             pole_shape (list, Mx2 or NxMx2, optional): Pole shape in the same
                 format as block_shape, in mm. If None pole shape will be the
-                same as block shape. Defaults to None. 
+                same as block shape. Defaults to None.
             pole_length (float, optional): Pole length in mm.
-                If hybrid==True, must be not None. Defaults to None.                
+                If hybrid==True, must be not None. Defaults to None.
             pole_material (materials.Material, optional): Material applyed to
                 poles blocks.Block objects, which are generated with [0,0,0]
                 initial magnetization.
@@ -100,7 +100,7 @@ class Cassette(
             pole_subdivision (list, 3 or Nx3, optional): Pole subdivision in
                 the same format as block_subdivision. Must have same N length
                 of pole_shape (or block_shape, if pole_shape==None).
-                Defaults to None, meaning no subdivision.       
+                Defaults to None, meaning no subdivision.
             start_blocks_length (list, K, optional): List of K block lengths,
                 one length for each start block, in mm. Only used if both
                 start_blocks_length and start_blocks_distance are not None.
@@ -109,11 +109,11 @@ class Cassette(
                 one for each start block, in which each distance is the gap
                 AFTER the corresponding block, in mm. Only used if both
                 start_blocks_length and start_blocks_distance are not None.
-                Defaults to None.            
+                Defaults to None.
             end_blocks_length (list, L, optional): List of L block lengths,
                 one length for each end block, in mm. Only used if both
                 end_blocks_length and end_blocks_distance are not None.
-                Defaults to None.            
+                Defaults to None.
             end_blocks_distance (list, L optional): List of L distances,
                 one for each end block, in which each distance is the gap
                 BEFORE the corresponding block, in mm. Only used if both
@@ -128,20 +128,20 @@ class Cassette(
             end_blocks_magnetization (list, Lx3, optional): Nested list of
                 end blocks magnetizations. Analogous to corresponding list for
                 start blocks list. In Tesla, defaults to None.
-            name (str, optional): Name labeling the cassette. Defaults to ''.     
+            name (str, optional): Name labeling the cassette. Defaults to ''.
             draw_color_component (int, optional): integer for magnetization
                 component used for determining draw colors for blocks.
                 Passed to Block objects, see Block documentation for details.
                 Defaults to None, meaning no magnetization-related coloring
-                    scheme (default color to all blocks).        
+                    scheme (default color to all blocks).
             init_radia_object (bool, optional): If True, Radia object is
                 created at object initialization. Defaults to True.
-            
+
         Note1: length of core blocks is not given by an initialization argument,
         but determined by the number of periods, period length, longitudinal
         distance and (possibly, if hybrid==True) pole length. Such length
         determination is performed by the create_radia_object method.
-        
+
         Note2: 4 arguments may be provided for defining cassette materials:
             mr, ksipar, ksiper and pole_material.
             Blocks have linear anisotropic material, with ksipar and ksiper.
@@ -156,7 +156,7 @@ class Cassette(
             * Radia is used by imaids in such a way that magnetization
               direction is always defined at the object level, never at
               material level.
-            
+
         Raises:
             ValueError: If mr < 0.
             ValueError: If longitudinal_distance < 0.
@@ -193,7 +193,7 @@ class Cassette(
         if start_blocks_length and start_blocks_distance:
             msg = 'Inconsistent start blocks lists.'+ \
                     f'\n lengths: {len(start_blocks_length)}'+ \
-                    f'\n distances: {len(start_blocks_distance)}'                    
+                    f'\n distances: {len(start_blocks_distance)}'
             if start_blocks_magnetization:
                 start_check = (len(start_blocks_length)
                                 == len(start_blocks_distance)
@@ -205,7 +205,7 @@ class Cassette(
             if not start_check:
                 raise ValueError(msg)
             self._start_blocks_length = start_blocks_length
-            self._start_blocks_distance = start_blocks_distance            
+            self._start_blocks_distance = start_blocks_distance
         else:
             self._start_blocks_length = []
             self._start_blocks_distance = []
@@ -213,7 +213,7 @@ class Cassette(
         if end_blocks_length and end_blocks_distance:
             msg = 'Inconsistent end blocks lists.'+ \
                     f'\nlengths: {len(end_blocks_length)}'+ \
-                    f'\ndistances: {len(end_blocks_distance)}'           
+                    f'\ndistances: {len(end_blocks_distance)}'
             if end_blocks_magnetization:
                 end_check = (len(end_blocks_length)
                                 == len(end_blocks_distance)
@@ -225,7 +225,7 @@ class Cassette(
             if not end_check:
                 raise ValueError(msg)
             self._end_blocks_length = end_blocks_length
-            self._end_blocks_distance = end_blocks_distance            
+            self._end_blocks_distance = end_blocks_distance
         else:
             self._end_blocks_length = []
             self._end_blocks_distance = []
@@ -260,7 +260,7 @@ class Cassette(
         self._radia_object = None
         if init_radia_object:
             self.create_radia_object()
-        
+
         # Also, there are the following @property methods which are not
         # directly obtained from the __init__ arguments:
         # > nr_start_blocks
@@ -284,7 +284,7 @@ class Cassette(
     def period_length(self):
         """Period length [mm]."""
         return self._period_length
-    
+
     @property
     def block_shape(self):
         """Block list of shapes [mm]."""
@@ -293,7 +293,7 @@ class Cassette(
     @property
     def mr(self):
         """Remanent magnetization [T]."""
-        return self._mr    
+        return self._mr
 
     @property
     def upper_cassette(self):
@@ -324,17 +324,17 @@ class Cassette(
     def ksiper(self):
         """Perpendicular magnetic susceptibility."""
         return self._ksiper
-    
+
     @property
     def hybrid(self):
         """True for hybrid cassette, False otherwise."""
         return self._hybrid
-    
+
     @property
     def pole_shape(self):
         """Pole list of shapes [mm]."""
         return _deepcopy(self._pole_shape)
-    
+
     @property
     def pole_length(self):
         """Pole length [mm]."""
@@ -379,12 +379,12 @@ class Cassette(
     def position_err(self):
         """Position errors [mm]."""
         return _deepcopy(self._position_err)
-    
+
     @property
     def blocks(self):
         """List of Block objects."""
         return self._blocks
-    
+
     @property
     def is_pole_list(self):
         """List of boolean values, True if object is pole, False otherwise."""
@@ -452,7 +452,7 @@ class Cassette(
     @property
     def longitudinal_distance_list(self):
         """List of distances (gaps between objects) for Block objects [mm].
-        
+
         Between core blocks (or between core blocks and poles) there are
         nr_core_blocks-1 distances.
         This way, start_blocks_distance represents distances AFTER start blocks
@@ -541,21 +541,22 @@ class Cassette(
             self,
             block_names=None,
             magnetization_list=None,
-            position_err=None):
+            position_err=None,
+            is_pole_list=None):
         """Creates new radia object and stores its index in _radia_object.
 
         If a Radia object bound to the Cassette object already exists, it is
             deleted before a new one is created.
-        
+
         For creating the cassette blocks.Block objects, core block length is
         also determined at this method using:
             > longitudinal distances (gap between core blocks or poles)
             > Period length
-            > Pole length, if hybrid.       
+            > Pole length, if hybrid.
             so that 4 core blocks (or 2 poles and 2 core blocks, if hybrid)
-            lead to a period of length equal to the period_length attribute. 
+            lead to a period of length equal to the period_length attribute.
 
-        Args:        
+        Args:
             block_names (list, nr_blocks, optional): List of names for the
                 blocks.Block objects forming the cassette. List length must
                 match the total number of blocks and poles (nr_blocks).
@@ -571,7 +572,7 @@ class Cassette(
                 Poles are created with their specified material (pole_meterial)
                 and [0,0,0] as their initial magnetization.
                 Examples:
-                    > For a cassette with 2 start blocks, 2 end blocks, 
+                    > For a cassette with 2 start blocks, 2 end blocks,
                         2 periods and hybrid==True, for a magnetization_list:
                             [y+, z-, y-, z+, y+, z-, y-, z+, y+, z-, y-, z+]
                         The cassette objects will be initialized with:
@@ -585,7 +586,7 @@ class Cassette(
                             |  1st period  ||  2nd Period  ||  3rd Period  |
                     Where 00 = [0,0,0].
                 If None, magnetization list will be calculated by the
-                get_ideal_magnetization_list method (Halbach array).                
+                get_ideal_magnetization_list method (Halbach array).
                 Defaults to None.
             position_err (list, nr_blocks x 3, optional): List of translations
                 additionally applied to blocks.Block objects for simulating
@@ -634,34 +635,46 @@ class Cassette(
         magnetization_list = magnetization_list.tolist()
 
         if self.hybrid:
-            # Magnetization of first core object.
-            mag0 = magnetization_list[self.nr_start_blocks]
-            # Check if first block has (mx,my,mz) with |my|>|mz|
-            # to determine wether it is a core block or pole.
-            if _np.abs(mag0[1]) > _np.abs(mag0[2]):
-                # Length_list if HYBRID and first core object is POLE
-                length_list = _utils.flatten([
-                    self._start_blocks_length,
-                    [self._pole_length, block_length]*int(
-                        self.nr_core_blocks/2),
-                    self._end_blocks_length])
-                # is_pole_list if HYBRID and first core object is POLE
-                self._is_pole_list = _utils.flatten([
-                    [False]*int(self.nr_start_blocks),
-                    [True, False]*int(self.nr_core_blocks/2),
-                    [False]*self.nr_end_blocks])
+            if is_pole_list is None:
+                mag0 = magnetization_list[self.nr_start_blocks]
+                # Check if first core block has (mx,my,mz) with |my|>|mz|
+                # to determine wether it is a core block or pole.
+                if _np.abs(mag0[1]) > _np.abs(mag0[2]):
+                    # is_pole_list if HYBRID and first core object is POLE
+                    self._is_pole_list = _utils.flatten([
+                        [False]*int(self.nr_start_blocks),
+                        [True, False]*int(self.nr_core_blocks/2),
+                        [False]*self.nr_end_blocks])
+
+                    # Length_list if HYBRID and first core object is POLE
+                    length_list = _utils.flatten([
+                        self._start_blocks_length,
+                        [self._pole_length, block_length]*int(
+                            self.nr_core_blocks/2),
+                        self._end_blocks_length])
+                else:
+                    # is_pole_list if HYBRID and first core object is BLOCK
+                    self._is_pole_list = _utils.flatten([
+                        [False]*int(self.nr_start_blocks),
+                        [False, True]*int(self.nr_core_blocks/2),
+                        [False]*self.nr_end_blocks])
+                    # Length_list if HYBRID and first core object is BLOCK
+                    length_list = _utils.flatten([
+                        self._start_blocks_length,
+                        [block_length, self._pole_length]*int(
+                            self.nr_core_blocks/2),
+                        self._end_blocks_length])
             else:
-                # Length_list if HYBRID and first core object is BLOCK
+                self._is_pole_list = is_pole_list
+                if is_pole_list[self.nr_start_blocks]:
+                    core_lengths = [self._pole_length, block_length]*int(
+                            self.nr_core_blocks/2)
+                else:
+                    core_lengths = [block_length, self._pole_length]*int(
+                            self.nr_core_blocks/2)
                 length_list = _utils.flatten([
-                    self._start_blocks_length,
-                    [block_length, self._pole_length]*int(
-                        self.nr_core_blocks/2),
-                    self._end_blocks_length])
-                # is_pole_list if HYBRID and first core object is BLOCK
-                self._is_pole_list = _utils.flatten([
-                    [False]*int(self.nr_start_blocks),
-                    [False, True]*int(self.nr_core_blocks/2),
-                    [False]*self.nr_end_blocks])
+                    self._start_blocks_length, core_lengths, self._end_blocks_length
+                ])
         else:
             # Length_list if NON-HYBRID
             length_list = _utils.flatten([
@@ -669,8 +682,8 @@ class Cassette(
                 [block_length]*self.nr_core_blocks,
                 self._end_blocks_length])
             # is_pole_list if NON-HYBRID
-            self._is_pole_list = [False]*(self.nr_start_blocks + 
-                                            self.nr_core_blocks + 
+            self._is_pole_list = [False]*(self.nr_start_blocks +
+                                            self.nr_core_blocks +
                                             self.nr_end_blocks)
 
         # Positions initialy start at 0 and are defined by adding the
@@ -680,7 +693,7 @@ class Cassette(
         position_list = [0]
         for i in range(1, self.nr_blocks):
             position_list.append((
-                length_list[i] + length_list[i-1])/2 + 
+                length_list[i] + length_list[i-1])/2 +
                                  self.longitudinal_distance_list[i-1])
         position_list = _np.cumsum(position_list)
         position_list -= (position_list[0] + position_list[-1])/2
@@ -740,20 +753,20 @@ class Cassette(
 
         0   1   2   3   0   1   2   3   0   1  ...
         y+  z-  y-  z+  y+  z-  y-  z+  y+  z-  ...
-        (^) (<) (v) (>) (^) (<) (v) (>) (^) (<) ...  
+        (^) (<) (v) (>) (^) (<) (v) (>) (^) (<) ...
 
         In which:
             0: is the (0,  1,  0) direction; "transversal-horizontal up"
             1: is the (0,  0, -1) direction; "longitudinal backward"
             2: is the (0  -1,  0) direction; "transversal-horizontal down"
             3: is the (0,  0,  1) direction; "longitudinal foward"
-        
+
         The final magnetization directions are defined in such a way that:
             if upper_cassette==False, the first CORE block always has
-                magnetization in direction 0; (0,+1,0) 
+                magnetization in direction 0; (0,+1,0)
             if upper_cassette==True, the first CORE block always has
                 magnetization in direction 2; (0,-1,0)
-            
+
         Example:
             * upper_cassette==True
             * 3 start blocks
@@ -808,7 +821,7 @@ class Cassette(
                     max_amplitude_error=0.02 represents 2% maximum modulus
                     error, meaning magnetization modulus between 98% and 102% of
                     the ideal value returned by get_ideal_magnetization_list().
-                Defaults to 0.                 
+                Defaults to 0.
             max_angular_error (float, optional): Maximum angular error, which
                 is the angle by which the magnetization vector will be rotated
                 around a random axis. In radians. Defaults to 0.
@@ -820,7 +833,7 @@ class Cassette(
 
         Returns:
             list Nx3: Magnetization 3-vectors of the N=nr_blocks blocks.Block
-                objects forming the cassette with random amplitude and rotation 
+                objects forming the cassette with random amplitude and rotation
                 errors in relation to an ideal Halbach arrangement.
         """
         magnetization_list = self.get_ideal_magnetization_list()

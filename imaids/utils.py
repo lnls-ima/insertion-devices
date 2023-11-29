@@ -1,5 +1,6 @@
 
 import numpy as _np
+from scipy import constants as _constants
 from scipy import signal as _signal
 from scipy import optimize as _optimize
 import radia as _rad
@@ -116,6 +117,157 @@ def get_info_all_str(max_ref=100000):
     for key in info:
         info_str += (info[key] + '\n\n')
     return info_str
+
+
+def get_spectra_accel(I_b=100,beta=[17.2,3.6]):
+    """
+    Returns dict of spectra parameters for the "Accelerator".
+
+    Parameters
+    ----------
+    I_b : float, optional
+        Accelerator beam current, in mA.
+    beta : list of floats, optional
+        Twiss parameters, in m, at the center of the light source: [beta_x,beta_y].
+        Default values are for a high beta section of the storage ring. Values
+        can be found in "Table 1: Sirius SR main parameters" of [1]. Sections:
+        - High beta: beta_x=17.2, beta_y=3.6;
+        - Low  beta: beta_x=1.5 , beta_y=1.4.
+
+    Reference
+    ----------
+    [1] https://wiki-sirius.lnls.br/mediawiki/index.php/Machine:Storage_Ring#Design_parameters
+    """
+    accel = {
+        "Type": "Storage Ring",
+        "Energy (GeV)": 3,
+        "Current (mA)": I_b,
+        "&sigma;<sub>z</sub> (mm)": 2.9,
+        "Nat. Emittance (m.rad)": 2.5e-10,
+        "Coupling Constant": 0.01,
+        "Energy Spread": 0.00084,
+        "&beta;<sub>x,y</sub> (m)": beta,
+        "&alpha;<sub>x,y</sub>": [0,0],
+        "&eta;<sub>x,y</sub> (m)": [0,0],
+        "&eta;'<sub>x,y</sub>": [0,0],
+        "Options": {
+            "Zero Emittance": False,
+            "Zero Energy Spread": False
+            }
+        }
+    
+    return accel
+
+
+def get_spectra_calc_tuning(harm_lim,K_lim,nr_points=100,
+                            dist=25,ret_slit=[0.05,0.05]):
+    """
+    Returns dict of spectra parameters for the "Configurations" (calculation) of
+    the harmonics flux tuning.
+
+    Parameters
+    ----------
+    harm_lim : list of ints, required
+        Limits of target harmonic: [harm_min,harm_max]; ex.: [1,5].
+    K_lim : list of floats, required
+        Limits of K, deflection parameter, range: [K_min,K_max]; ex.: [0,2].
+    nr_points : int, optional
+        Number of points in K range.
+    dist : float, optional
+        Distance from the light source, in m.
+    ret_slit : list of floats, optional
+        Angular lengths, in mrad, from the light source, for the retangular
+        slit illuminated: [Delta theta_x, Delta theta_y].
+    """
+    config = {
+        "Type": "Far Field & Ideal Condition::" + \
+                "K Dependence::" + \
+                "Peak Flux Curve::" + \
+                "Partial Flux::" + \
+                "Rectangular Slit::" + \
+                "Target Harmonics",
+        "Distance from the Source (m)": dist,
+        "Harmonic Range": harm_lim,
+        "&Delta;&theta;<sub>x,y</sub> (mrad)": ret_slit,
+        "K<sub>&perp;</sub> Range": K_lim,
+        "Points (K)": nr_points,
+        "Options": {
+            "Define Obs. Point in": "Angle",
+            "Slit Aperture Size": "Fixed",
+            "Accuracy": "Default"
+        }
+    }
+
+    return config
+
+
+def get_spectra_calc_brilliance(harm_lim,K_lim,nr_points=100,
+                                dist=25):
+    """
+    Returns dict of spectra parameters for the "Configurations" (calculation) of
+    the brilliance or brightness.
+
+    Parameters
+    ----------
+    harm_lim : list of ints, required
+        Limits of target harmonic: [harm_min,harm_max]; ex.: [1,5].
+    K_lim : list of floats, required
+        Limits of K, deflection parameter, range: [K_min,K_max]; ex.: [0,2].
+    nr_points : int, optional
+        Number of points in K range.
+    dist : float, optional
+        Distance from the light source, in m.
+    """
+    config = {
+        "Type": "Far Field & Ideal Condition::" + \
+                "K Dependence::" + \
+                "Peak Flux Curve::" + \
+                "Angular Flux Density::" + \
+                "Target Harmonics",
+        "Distance from the Source (m)": dist,
+        "Harmonic Range": harm_lim,
+        "K<sub>&perp;</sub> Range": K_lim,
+        "Points (K)": nr_points,
+        "Options": {
+            "Accuracy": "Default"
+        }
+    }
+
+    return config
+
+
+def get_spectra_calc_flux_density(energy_lim,energy_step,dist=25):
+    """
+    Returns dict of spectra parameters for the "Configurations" (calculation) of
+    the flux density.
+
+    Parameters
+    ----------
+    energy_lim : list of floats, optional
+        Limits of photon energies range to compute the density flux, in eV:
+        [energy_min,energy_max]; ex.: [0,8000].
+    energy_step : float, optional
+        Step of photon energies range, in eV.
+    dist : float, optional
+        Distance from the light source, in m.
+    """
+    config = {
+        "Type": "Far Field & Ideal Condition::" + \
+                "Energy Dependence::" + \
+                "Angular Flux Density",
+        "Distance from the Source (m)": dist,
+        "Energy Range (eV)": energy_lim,
+        "Energy Pitch (eV)": energy_step,
+        "Angle &theta;<sub>x,y</sub> (mrad)": [0,0],
+        "Options": {
+            "Filtering": "None",
+            "Define Obs. Point in": "Angle",
+            "Wiggler Approximation": False,
+            "Accuracy": "Default"
+        }
+    }
+
+    return config
 
 
 def cosine_function(z, bamp, freq, phase):
@@ -475,6 +627,22 @@ def mh_tesla_curve(hlist, mlist=None, blist=None, msksi=None):
     return mu0_hlist, mu0_mlist
 
 
+def get_radiation_constants():
+    """
+    Basic physical constants for radiation calculations.
+
+    Returns
+    ----------
+    - light_speed, in m/s;
+    - elementary_charge, in C = J/eV;
+    - planck_constant, in J.s.
+    """
+    light_speed       = _constants.c  # [m/s]
+    elementary_charge = _constants.e  # [C = J/eV]
+    planck_constant   = _constants.h  # [J.s]
+    return light_speed, elementary_charge, planck_constant
+
+
 def get_constants():
     """Basic physical constants for calculations on insertion devices.
 
@@ -491,7 +659,7 @@ def calc_beam_parameters(energy):
     """Calculates electron beam parameters from its energy.
 
     Args:
-        energy (float): Electron energy at the beam (in KeV)
+        energy (float): Electron energy at the beam (in KeV) #!: errado, ta em GeV
 
     Returns:
         float: Beta v/c lightspeed fraction (dimensionless).

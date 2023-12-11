@@ -31,6 +31,9 @@ class ExploreItem(QTreeWidgetItem):
         IntegralsH = "Field Integrals vs X"
         RollOffPeaks = "Roll Off Peaks"
         RollOffAmp = "Roll Off Amplitude"
+        HarmTuning = "Harmonics Tuning"
+        Brilliance = "Brilliance"
+        FluxDensity = "Flux Density"
         Custom = "Custom"
     
     class ResultType(Enum):
@@ -270,6 +273,59 @@ class ExploreItem(QTreeWidgetItem):
                         cls(rtArray, analysis_item, ['ROAx [%]',  "List"]),
                         cls(rtArray, analysis_item, ['ROAy [%]',  "List"]),
                         cls(rtArray, analysis_item, ['ROAz [%]',  "List"])]
+        
+        return result_items
+
+    @classmethod
+    def calcHarmonics_Tuning(cls, analysis_item, id_dict: dict, tuning_kwargs):
+        rtArray = cls.ResultType.ResultArray
+        rtNumber = cls.ResultType.ResultNumeric
+
+        ID = id_dict["InsertionDeviceObject"]
+
+        harm_energy, flux = ID.calc_radiation_tuning(**tuning_kwargs)
+
+        id_dict[analysis_item.text(0)] = {}
+        result_items = []
+        for i, h_energy in enumerate(harm_energy.T):
+            id_dict[analysis_item.text(0)][f'Harmonic {2*i+1} Energy [eV]'] = h_energy
+            result_items.append(cls(rtArray, analysis_item, [f'Harmonic {2*i+1} Energy [eV]', "List"]))
+        for i, h_flux in enumerate(flux.T):
+            id_dict[analysis_item.text(0)][f'Flux {2*i+1} [photons/s/0.1%BW]'] = h_flux
+            result_items.append(cls(rtArray, analysis_item, [f'Flux {2*i+1} [photons/s/0.1%BW]', "List"]))
+        
+        return result_items
+    
+    @classmethod
+    def calcBrilliance(cls, analysis_item, id_dict: dict, brilliance_kwargs):
+        rtArray = cls.ResultType.ResultArray
+
+        ID = id_dict["InsertionDeviceObject"]
+
+        harm_energy, flux = ID.calc_radiation_brilliance(**brilliance_kwargs)
+
+        id_dict[analysis_item.text(0)] = {}
+        result_items = []
+        for i, h_energy in enumerate(harm_energy.T):
+            id_dict[analysis_item.text(0)][f'Harmonic {2*i+1} Energy [eV]'] = h_energy
+            result_items.append(cls(rtArray, analysis_item, [f'Harmonic {2*i+1} Energy [eV]', "List"]))
+        for i, h_flux in enumerate(flux.T):
+            id_dict[analysis_item.text(0)][f'Brilliance {2*i+1} [photons/s/mm2/mrad2/0.1%BW]'] = h_flux
+            result_items.append(cls(rtArray, analysis_item, [f'Brilliance {2*i+1} [photons/s/mm2/mrad2/0.1%BW]', "List"]))
+        
+        return result_items
+
+    @classmethod
+    def calcFlux_Density(cls, analysis_item, id_dict: dict, fluxD_kwargs):
+        rtArray = cls.ResultType.ResultArray
+
+        ID = id_dict["InsertionDeviceObject"]
+
+        energy, flux_density = ID.calc_radiation_flux_density(**fluxD_kwargs)
+
+        id_dict[analysis_item.text(0)] = {"Energy [eV]": energy, "Flux D.": flux_density}
+        result_items = [cls(rtArray, analysis_item, ['Energy [eV]', "List"]),
+                        cls(rtArray, analysis_item, ['Flux D. [ph/s/mrad2/0.1%BW]', "List"])]
         
         return result_items
 

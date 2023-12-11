@@ -97,6 +97,30 @@ class ProjectWidget(QMainWindow):
                 "z": np.arange(-900,900+0.5,0.5),
                 "x": np.arange(-5,5+0.5,0.5),
                 "y": 0
+            },
+            "Harmonics Tuning": {
+                "harm_lim": [1,5],
+                "K_lim": [0,4.5],
+                "nr_points": 100,
+                "I_b": 100,
+                "beta": [17.2,3.6],
+                "dist": 25,
+                "ret_slit": [0.05,0.05]
+            },
+            "Brilliance": {
+                "harm_lim": [1,5],
+                "K_lim": [0,4.5],
+                "nr_points": 100,
+                "I_b": 100,
+                "beta": [17.2,3.6],
+                "dist": 25
+            },
+            "Flux Density": {
+                "energy_lim": 'default',
+                "energy_step": 1,
+                "I_b": 100,
+                "beta": [17.2,3.6],
+                "dist": 25
             }
         }
 

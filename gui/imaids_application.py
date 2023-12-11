@@ -264,7 +264,10 @@ class MainWindow(QMainWindow):
                           ExploreItem.calcCumulative_Integrals,
                           ExploreItem.calcField_Integrals_vs_X,
                           ExploreItem.calcRoll_Off_Peaks,
-                          ExploreItem.calcRoll_Off_Amplitude]
+                          ExploreItem.calcRoll_Off_Amplitude,
+                          ExploreItem.calcHarmonics_Tuning,
+                          ExploreItem.calcBrilliance,
+                          ExploreItem.calcFlux_Density]
 
         for menu_item, func in zip(analysis_menu.items,analysis_funcs):
             if  menu_item.isChecked() and \

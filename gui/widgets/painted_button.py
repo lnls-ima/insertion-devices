@@ -23,16 +23,16 @@ class PaintedButton(QPushButton):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        width = self.width()
-        height = self.height()
-        len = int(min(self.width(),self.height())/2)
+        width = self.width()-2
+        height = self.height()-2
+        len = int(min(self.width(),self.height())/2)-4
         
         # coordinates of the polygon points must be integers
         square = QPolygon([QPoint(width,height),
                            QPoint(width,height-len),
                            QPoint(width-len,height-len),
                            QPoint(width-len, height)])
-        painter.setBrush(Qt.GlobalColor.blue)
+        painter.setBrush(Qt.GlobalColor.gray)
         painter.drawPolygon(square)
         painter.end()
     

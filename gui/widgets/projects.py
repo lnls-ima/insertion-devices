@@ -21,7 +21,7 @@ from .save_dialog import SaveDialog
 from .modeldata_dialog import ModelDataDialog
 from .summary_dialog import SummaryDialog, SummaryWidget
 from .dialog_operation import OperationAnalysisDialog
-from . import get_path, getUndulatorName, getUndulatorPhase
+from . import get_path
 
 import numpy as np
 
@@ -203,16 +203,6 @@ class ProjectWidget(QMainWindow):
             info.update({"result_item": item, "result": result,
                          "result_arraynum": result_arraynum})
             return info
-
-    def countIDnames(self, IDname, IDType: ExploreItem.IDType):
-
-        if IDType.value:
-            IDname = f"{getUndulatorName(IDname)} Phase {getUndulatorPhase(IDname)}"
-
-        ID_names = [IDname in id_dict["item"].text(0)
-                    for id_dict in self.insertiondevices.values()]
-                
-        return sum(ID_names)
 
     def analyzeItem(self, ID_item: ExploreItem, analysis_actived: list):
         mainwindow = self.parent().parent().parent()

@@ -7,8 +7,7 @@ from PyQt6.QtWidgets import (QDialog,
 
 from imaids.insertiondevice import InsertionDeviceData
 from .dialog_layouts import DataLayout
-from . import (models_parameters, getUndulatorName,
-               getUndulatorPhase, isUndulatorCorrected)
+from . import models_parameters
 
 class DataDialog(QDialog):
 
@@ -40,6 +39,39 @@ class DataDialog(QDialog):
 
 
     # FUNCTIONS
+
+    #todo: trocar undulator por ID
+    @staticmethod
+    def getUndulatorName(filename):
+        models = list(models_parameters.keys())
+        
+        acertos = []
+        possible_names = ["Delta","Prototype","Sabia"]
+        
+        for modelname in possible_names+models:
+            if modelname in filename:
+                acertos.append(modelname)
+        if acertos:
+            return acertos[-1]
+        else:
+            return ""
+
+    @staticmethod
+    def getUndulatorPhase(filename):
+        phase_idx = filename.find("Phase")
+        if phase_idx!=-1:
+            phase = filename[phase_idx:].lstrip("Phase")[:3]
+            phase = "".join([char for char in list(phase) if char.isdigit()])
+            return phase
+        else:
+            return "N"
+
+    @staticmethod
+    def isUndulatorCorrected(filename):
+        corrected = False
+        if "Corrected" in filename:
+            corrected = True
+        return corrected
 
     def check_files(self, files):
 
@@ -170,10 +202,10 @@ class DataDialog(QDialog):
              check_correction) = self.layoutData.insertAfterRow(filename, i+rows)
 
             line_name.textChanged.connect(self.resize_to_content)
-  
-            und_name = getUndulatorName(filename)
-            und_phase = getUndulatorPhase(filename)
-            und_correct = isUndulatorCorrected(filename)
+
+            und_name = self.getUndulatorName(filename)
+            und_phase = self.getUndulatorPhase(filename)
+            und_correct = self.isUndulatorCorrected(filename)
             
             if und_name!="":
                 line_name.setText(f"{und_name} Phase {und_phase}")

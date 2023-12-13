@@ -66,8 +66,8 @@ class DataLayout(QVBoxLayout):
         label_gap = QLabel("Gap")
         label_gap.setAlignment(alignHCenter)
         label_gap.setStyleSheet("font-weight: bold")
-        label_correction = QLabel("Is Corrected?")
-        label_correction.setToolTip(r"Is the field map corrected by cross talk?")
+        label_correction = QLabel(r"Is Corrected?")
+        label_correction.setToolTip(r"Is the imported field map already corrected by cross talk?")
         label_correction.setAlignment(alignHCenter)
         label_correction.setStyleSheet("QLabel{font-weight: bold}")
         

@@ -116,6 +116,8 @@ class MainWindow(QMainWindow):
         self.menubar.actionDockCommand.triggered.connect(self.setDockVisible)
         self.menubar.actionToolBar.triggered.connect(self.toolbar.setVisible)
         self.menubar.actionStatusBar.triggered.connect(self.statusbar.setVisible)
+        # Setting menu
+        self.menubar.actionApplyForAll.triggered.connect(self.toolbar.swap_apply)
         # Help menu
         self.menubar.actionShortcuts.triggered.connect(lambda checked:
         shortcuts_dialog.ShortcutsDialog(self).exec())
@@ -139,29 +141,33 @@ class MainWindow(QMainWindow):
         
         for ID, filename, name, correct in IDs_params:
             IDType = ExploreItem.IDType.IDData
-            num = project.countIDnames(name,IDType)
-            name += f" {num+1}" if num!=0 else ""
+
+            num = list(project.DftIDlabels.values()).count(name)
             ID_item = project.tree.insertID(IDType=IDType,
-                                            ID=ID, correct=correct, filename=filename, name=name)
+                                            ID=ID, correct=correct, filename=filename,
+                                            name=name if num==0 else name+f' {num+1}')
             project.insertiondevices[id(ID_item)] = {"InsertionDeviceObject": ID,
                                                      "filename": filename,
                                                      "item": ID_item}
+            project.DftIDlabels[id(ID_item)] = name
+
             if correct:
                 project.insertiondevices[id(ID_item)]["Cross Talk"]=correct
 
     def model_generation(self):
-        
+        project = self.projects.currentWidget()
+
         ID, name = model_dialog.ModelDialog.getSimulatedID(parent=self)
 
         if ID:
-            project = self.projects.currentWidget()
             IDType = ExploreItem.IDType.IDModel
-            num = project.countIDnames(name,IDType)
-            name = f'{name} {num+1}'
-            ID_item = project.tree.insertID(IDType=IDType,
-                                            ID=ID, name=name)
+
+            num = list(project.DftIDlabels.values()).count(name)
+            ID_item = project.tree.insertID(IDType=IDType,ID=ID,
+                                            name=name if num==0 else name+f' {num+1}')
             project.insertiondevices[id(ID_item)] = {"InsertionDeviceObject": ID,
                                                      "item": ID_item}
+            project.DftIDlabels[id(ID_item)] = name
     
     def closeEvent(self, event):
         answer = QMessageBox.question(self,
@@ -324,6 +330,7 @@ class MainWindow(QMainWindow):
             project.update_summary(item)
 
     def tree_items_returned(self, items):
+        plot_button = self.toolbar.buttonPlot
         project = self.projects.currentWidget()
 
         tpAnalysis = ExploreItem.AnalysisType
@@ -333,6 +340,7 @@ class MainWindow(QMainWindow):
         #todo: action "Custom Analysis", ao selecionar items e retornar, primeiramente
         #todo: abre dialogo para inserir como será a operação a ser executada
         if self.toolbar.buttonOperation.isChecked():
+            
             selected = self.toolbar.buttonOperation.selectedAction.text()
             sign = {"Plus Analysis": "+", "Minus Analysis": "-"}[selected]
             operation = f"{sign}".join([f"A{i}" for i in range(len(items))])
@@ -360,14 +368,14 @@ class MainWindow(QMainWindow):
             else:
                 project.operateItems(operation,items)
 
-        elif self.toolbar.buttonPlot.isChecked():
-            
-            isFirstDenied = len(items)>=1 and \
-                            (items[0].type() is not tpAnalysis and \
-                             items[0].flag() is not rtArray)
-            isSecondDenied = len(items)==2 and \
-                             (items[1].type() is not tpAnalysis and \
-                              items[1].flag() is not rtArray)
+        elif self.toolbar.buttonPlot.isChecked() and \
+             plot_button.selectedAction.text()=="Plot":
+
+            isOneDenied = len(items) == 1 and \
+                          (items[0].type() is not tpAnalysis and \
+                           items[0].flag() is not rtArray)
+            isTwoDenied = len(items) == 2 and \
+                          [items[0].flag(),items[1].flag()] != [rtArray,rtArray]
 
             if len(items) == 0:
                 QMessageBox.information(self,
@@ -378,15 +386,16 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self,
                                     "Plot Error",
                                     "Select only two items!")
-
-            # Now the items list have or one or two elements. The first one always
-            # exist and must be AnalysisType or ResultArray. The second element can
-            # exist or not, then we check the number of elements. If it exists (len==2),
-            # then this element also must be AnalysisType or ResultArray
-            elif isFirstDenied or isSecondDenied:
+                
+            elif isOneDenied:
                 QMessageBox.warning(self,
                                     "Plot Error",
-                                    "The plot cannot be performed. Use only items that are Lists!")
+                                    "Plot cannot be performed. For one item, only Analysis or Result Array are allowed!")
+            
+            elif isTwoDenied:
+                QMessageBox.warning(self,
+                                    "Plot Error",
+                                    "Plot cannot be performed. For two items, select only Result Arrays!")
 
             else:
                 project.drawItems(items)

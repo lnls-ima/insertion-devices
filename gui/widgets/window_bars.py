@@ -52,14 +52,14 @@ class ToolBar(QToolBar):
                                          "Select item or tab",
                                     parent=self)
         self.actionCursor.setObjectName("Cursor")
-        self.actionCursor.setShortcut("C")
+        self.actionCursor.setShortcut("Esc")
         self.actionCursor.setCheckable(True)
         self.actionCursor.triggered.connect(self.mode_swap) #todo: ver como e' o bool que manda
         self.addAction(self.actionCursor)
         self.addSeparator()
 
         ## tool bar - analysis button: executar analise de dados
-        self.buttonAnalysis = analysis.AnalysisPushButton(text="Analysis",
+        self.buttonAnalysis = analysis.AnalysisPushButton(text="Analysis  ",
                                                                  parent=self)
         self.buttonAnalysis.setObjectName("Analysis")
         self.buttonAnalysis.setToolTip("<b>Analysis</b> (Ctrl+A)<br>"+
@@ -76,15 +76,15 @@ class ToolBar(QToolBar):
         self.buttonOperation.setToolTip("<b>Operation</b> (P)<br>"+
                                        "Select two analysis items then press spacebar")
         self.buttonOperation.modeChanged.connect(self.mode_swap)
-        self.buttonOperation.setIcon(plus)
+        self.buttonOperation.setIcon(minus)
 
-        self.actionplus = QAction(icon=plus,text="Plus Analysis")
-        self.actionplus.triggered.connect(self.buttonOperation.action_swap)
-        self.actionminus = QAction(icon=minus,text="Minus Analysis")
+        self.actionminus = QAction(icon=minus,text="Minus Analyses")
         self.actionminus.triggered.connect(self.buttonOperation.action_swap)
-        self.buttonOperation.selectedAction = self.actionplus
-        self.buttonOperation.Menu.addActions([self.actionplus,
-                                              self.actionminus])
+        self.actionplus = QAction(icon=plus,text="Plus Analyses")
+        self.actionplus.triggered.connect(self.buttonOperation.action_swap)
+        self.buttonOperation.selectedAction = self.actionminus
+        self.buttonOperation.Menu.addActions([self.actionminus,
+                                              self.actionplus])
         self.addWidget(self.buttonOperation)
 
         ## tool bar - plot button: fazer graficos dos dados
@@ -96,7 +96,7 @@ class ToolBar(QToolBar):
         self.buttonPlot.modeChanged.connect(self.mode_swap)
         self.buttonPlot.setIcon(grafico)
 
-        self.actiongrafico = QAction(icon=grafico,text="grafico")
+        self.actiongrafico = QAction(icon=grafico,text="Plot")
         self.actiongrafico.triggered.connect(self.buttonPlot.action_swap)
         self.buttonPlot.selectedAction = self.actiongrafico
         self.buttonPlot.Menu.addActions([self.actiongrafico])
@@ -123,10 +123,7 @@ class ToolBar(QToolBar):
         self.actionbug = QAction(icon=bug,text="inseto")
         self.actionbug.triggered.connect(self.buttonTable.action_swap)
         self.buttonTable.selectedAction = self.actiontabela
-        self.buttonTable.Menu.addActions([self.actiontabela,
-                                          self.actioncat,
-                                          self.actiondog,
-                                          self.actionbug])
+        self.buttonTable.Menu.addActions([self.actiontabela])
         self.addWidget(self.buttonTable)
         self.addSeparator()
 
@@ -154,6 +151,13 @@ class ToolBar(QToolBar):
         self.actionModelData.triggered.connect(self.mode_swap)
         self.addAction(self.actionModelData)
 
+    def swap_apply(self,for_all):
+        self.buttonAnalysis.Menu.apply.setText(
+            "Apply for All" if for_all else "Apply"
+        )
+        self.buttonAnalysis.setIcon(QIcon(
+            get_path('icons','wand-hat.png') if for_all else None
+        ))
 
     def mode_swap(self,isSelfUnchecking):
 

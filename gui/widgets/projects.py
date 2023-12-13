@@ -33,6 +33,7 @@ class ProjectWidget(QMainWindow):
         super().__init__(parent)
 
         self.insertiondevices = {}
+        self.DftIDlabels = {}
         self.operations = {}
         self.params = {
             "Cross Talk": {
@@ -407,7 +408,9 @@ class ProjectWidget(QMainWindow):
             x_item, y_item = items
             x_info = self.treeItemInfo(x_item)
             y_info = self.treeItemInfo(y_item)
-            visuals.plotPair(chart, x_info, y_info, isModeAdd)
+            plot = visuals.plotPair(chart, x_info, y_info, isModeAdd)
+            if not plot:
+                return False
         
         labels0 = [line.get_label()[0] for line in chart.ax.get_lines()]
         if len(labels0) != labels0.count("_"):
@@ -632,6 +635,7 @@ class ProjectWidget(QMainWindow):
             self.tree.itemsSelected.remove(item)
         if item.type() is ExploreItem.IDType:
             self.insertiondevices.pop(id(item))
+            self.DftIDlabels.pop(id(item))
         elif item.type() is ExploreItem.AnalysisType:
             info = self.treeItemInfo(item)
             info["id_dict"].pop(info["analysis"])
@@ -725,9 +729,17 @@ class ProjectsTabWidget(BasicTabWidget):
         return i
 
     def closeTab(self, i):
-        super().closeTab(i)
+
+        answer = QMessageBox.question(self,
+                                      "Close Confirmation",
+                                      "Are you sure you want to close a project?",
+                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                      QMessageBox.StandardButton.No)
+
+        if answer == QMessageBox.StandardButton.Yes:
+            super().closeTab(i)
         
-        #because of the deleteLater behaviour, the count method still counts the tab whom we use deleteLater.
-        #So to check if there is only one remaining tab, we still count the "deleted" and check if count==2
-        if self.count() == 2:
-            self.setTabsClosable(False)
+            #because of the deleteLater behaviour, the count method still counts the tab whom we use deleteLater.
+            #So to check if there is only one remaining tab, we still count the "deleted" and check if count==2
+            if self.count() == 2:
+                self.setTabsClosable(False)

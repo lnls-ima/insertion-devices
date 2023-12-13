@@ -135,6 +135,12 @@ class VisualizationTabWidget(BasicTabWidget):
         y_label = y_info["result"]
         y = y_info["result_arraynum"]
 
+        if len(x) != len(y):
+            QMessageBox.warning(self,
+                                "Plot Error",
+                                "Lengths of result arrays are not the same!")
+            return False
+
         line = chart.ax.plot(x,y)
 
         if addMode:
@@ -150,6 +156,8 @@ class VisualizationTabWidget(BasicTabWidget):
             chart.ax.set_title(f"{y_label} vs {x_label}")
             if len(line)==1:
                 line[0].set_label(f"{y_label} vs {x_label} of {id_name}")
+            
+        return True
 
     def plotAnalysis(self, chart: Canvas, analysis_info, addMode=False):
 

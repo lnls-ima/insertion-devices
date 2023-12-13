@@ -1,11 +1,13 @@
-from PyQt6.QtWidgets import (QWidget,
+from PyQt6.QtWidgets import (QApplication,
+                             QWidget,
                              QDialog,
                              QScrollArea,
                              QLabel,
                              QVBoxLayout,
                              QDialogButtonBox,
                              QFormLayout,
-                             QSizePolicy)
+                             QSizePolicy,
+                             QMenu)
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 
@@ -33,6 +35,9 @@ class SummaryWidget(QScrollArea):
         self._phaserr = None
         self._integrals = None
 
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.open_context)
+
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setWidgetResizable(True)
@@ -58,6 +63,7 @@ class SummaryWidget(QScrollArea):
         boxUnd.setContentExpanded(True)
 
         self.formUnd = QFormLayout(boxUnd.widget())
+        self.formUnd.setObjectName("Undulator Geometry")
 
         #label_dp
         #label_dcp
@@ -70,7 +76,7 @@ class SummaryWidget(QScrollArea):
             self.label_period_length = QLabel("-", font=font10, alignment=alignRight)
             self.label_gap = QLabel("-", font=font10, alignment=alignRight)
         else:
-            self.label_nr_periods = QLabel(f"{ID.nr_periods:.3f}", font=font10, alignment=alignRight)
+            self.label_nr_periods = QLabel(f"{ID.nr_periods}", font=font10, alignment=alignRight)
             self.label_period_length = QLabel(f"{ID.period_length:.3f}", font=font10, alignment=alignRight)
             self.label_gap = QLabel(f"{ID.gap:.3f}", font=font10, alignment=alignRight)
 
@@ -88,6 +94,7 @@ class SummaryWidget(QScrollArea):
 
         
         self.formAmp = QFormLayout(boxAmp.widget())
+        self.formAmp.setObjectName("Field Amplitudes and Phase")
 
         if ID is None:
             self.label_bxamp = QLabel("-", font=font10, alignment=alignRight)
@@ -116,6 +123,7 @@ class SummaryWidget(QScrollArea):
         
         
         self.formK = QFormLayout(boxK.widget())
+        self.formK.setObjectName("Deflection Parameter")
         
         if ID is None:
             self.label_kh = QLabel("-", font=font10, alignment=alignRight)
@@ -135,10 +143,11 @@ class SummaryWidget(QScrollArea):
         boxPhasErr.setContentExpanded(True)
 
         self.formPhasErr = QFormLayout(boxPhasErr.widget())
+        self.formPhasErr.setObjectName("Phase Error")
         
         self.label_rms = QLabel("-", font=font10, alignment=alignRight)
 
-        self.formPhasErr.insertRow(0,"RMS [deg]:",self.label_rms)
+        self.formPhasErr.insertRow(0,"RMS P.E. [deg]:",self.label_rms)
         
 
 
@@ -148,6 +157,7 @@ class SummaryWidget(QScrollArea):
         boxIntegrals.setContentExpanded(True)
 
         self.formIntegrals = QFormLayout(boxIntegrals.widget())
+        self.formIntegrals.setObjectName("Field Integrals")
         
         self.label_ibx = QLabel("-", font=font10, alignment=alignRight)
         self.label_iby = QLabel("-", font=font10, alignment=alignRight)
@@ -182,6 +192,31 @@ class SummaryWidget(QScrollArea):
     @property
     def integrals(self):
         return self._integrals
+    
+    def get_forms(self):
+        return [self.formUnd,self.formAmp,self.formK,self.formPhasErr,self.formIntegrals]
+    
+    def open_context(self, pos):
+        print('position:',pos)
+
+        menu = QMenu(self)
+        menu.addAction("Copy")
+        action = menu.exec(self.mapToGlobal(pos))
+        if action and action.text()=="Copy":
+
+            cb = QApplication.clipboard()
+
+            cbText = ''
+            for form in self.get_forms():
+                # cbText += f'\n{form.objectName()}'
+                for row in range(form.rowCount()):
+                    label = form.itemAt(row,roleLabel).widget().text()
+                    field = form.itemAt(row,roleField).widget().text()
+                    cbText += f'\n{label}\t{field}'
+            cbText = cbText.lstrip('\n')
+
+            cb.setText(cbText)
+        
 
     def clean_default_labels(self):
 

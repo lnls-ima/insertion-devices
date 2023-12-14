@@ -1783,6 +1783,93 @@ class PAPU(APU):
 
         self.shift([-1.7, 0, 0])
 
+
+class PAPU21(APU):
+    """Prototype Adjustable Phase Undulador model."""
+
+    def __init__(
+            self, block_shape='default',
+            nr_periods=20, period_length=21.0, gap=5.8, mr=1.37,
+            block_subdivision='default',
+            rectangular=False, longitudinal_distance=0.05,
+            start_blocks_length='default', start_blocks_distance='default',
+            end_blocks_length='default', end_blocks_distance='default',
+            name='PAPU21', **kwargs):
+
+        """Create PAPU21 model.
+
+        Args:
+            block_shape (str, optional): List of points [x, y] to
+                create blocks shape (in mm). Defaults to 'default'.
+            nr_periods (int, optional): Number of complete periods.
+                Defaults to 20.
+            period_length (int or float, optional): Period length (in mm).
+                Defaults to 21.0.
+            gap (float, optional): Insertion device magnetic gap
+                (in mm). Defaults to 5.8.
+            mr (float, optional): Remanent magnetization (in T).
+                Defaults to 1.37.
+            block_subdivision (str or list, optional): List specifying
+                the number of subdivisions of each subblock in the cartesian
+                directions [x, y, z]. Defaults to 'default'.
+            rectangular (bool, optional): If True, create model with
+                rectangular blocks. Defaults to False.
+            longitudinal_distance (float, optional): Longitunal
+                distance between blocks (in mm). Defaults to 0.05.
+            start_blocks_length (str or list, optional): List of block lengths
+                in the start of the cassette (in mm). Defaults to 'default'.
+            start_blocks_distance (str or list, optional): List of distance
+                between blocks in the start of the cassette (in mm).
+                Defaults to 'default'.
+            end_blocks_length (str or list, optional): List of block lengths
+                in the end of the cassette (in mm). Defaults to 'default'.
+            end_blocks_distance (str or list, optional): List of distance
+                between blocks in the end of the cassette (in mm).
+                Defaults to 'default'.
+            name (str, optional): Insertion device name.
+                Defaults to 'PAPU21'.
+        """
+
+        if block_shape == 'default':
+            block_shape = _blocks.Block.get_predefined_shape('papu_21')
+
+        if block_subdivision == 'default':
+            block_subdivision = _blocks.Block.get_predefined_subdivision(
+                                                                        'papu_21')
+
+        block_len = period_length/4 - longitudinal_distance
+        lenghts = [
+            block_len, block_len, block_len,
+            block_len, block_len]
+        distances = [
+            block_len/4, block_len/4, block_len/4,
+            longitudinal_distance, longitudinal_distance]
+
+        if start_blocks_length == 'default':
+            start_blocks_length = lenghts
+
+        if start_blocks_distance == 'default':
+            start_blocks_distance = distances
+
+        if end_blocks_length == 'default':
+            end_blocks_length = lenghts[0:-1][::-1]
+
+        if end_blocks_distance == 'default':
+            end_blocks_distance = distances[0:-1][::-1]
+
+        super().__init__(
+            nr_periods=nr_periods, period_length=period_length,
+            gap=gap, mr=mr, block_shape=block_shape,
+            block_subdivision=block_subdivision,
+            rectangular=rectangular,
+            longitudinal_distance=longitudinal_distance,
+            start_blocks_length=start_blocks_length,
+            start_blocks_distance=start_blocks_distance,
+            end_blocks_length=end_blocks_length,
+            end_blocks_distance=end_blocks_distance,
+            name=name, **kwargs)
+
+
 class HybridAPU(APU):
     """Hybrid APU undulador."""
 

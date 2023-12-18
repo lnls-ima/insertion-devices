@@ -3,23 +3,17 @@ import time
 
 t = time.time()
 import sys
-dt = time.time()-t
-print('imports menores =',dt*1000,'ms')
 
-t = time.time()
 from  PyQt6.QtWidgets import   (QApplication,
                                 QMainWindow,
                                 QMessageBox)
 from   PyQt6.QtCore   import    Qt
-dt = time.time()-t
-print('imports pyqt =',dt*1000,'ms')
 
-t = time.time()
 from widgets import analysis, model_dialog, projects, window_bars, data_dialog, shortcuts_dialog
 from widgets.visual_elements import Canvas, Table
 from widgets.explore_window import ExploreItem
 dt = time.time()-t
-print('imports widgets =',dt*1000,'ms')
+print('all imports:',dt*1000,'ms')
 
 
 class MainWindow(QMainWindow):
@@ -199,7 +193,7 @@ class MainWindow(QMainWindow):
 
     def edit_analysis_parameters(self):
         project = self.projects.currentWidget()
-        analysis.AnalysisDialog.updateParameters(params_kwargs=project.params, parent=self)
+        analysis.EditAnalysisDialog.updateParameters(params_kwargs=project.params, parent=self)
         #project.params = parameters_dict
 
     ## view slots
@@ -322,12 +316,29 @@ class MainWindow(QMainWindow):
 
             project.modelToData(item)
 
+
+        # ---------------------------- solvemodel ---------------------------- #
+        if  self.toolbar.actionSolveModel.isChecked() and \
+            item.flag() is ExploreItem.IDType.IDModel:
+
+            project.solveModel(item)
+
         # ----------------------------- summary ----------------------------- #
         #*: A principio poderia apresentar resumo para o modelo, mas precisa calcular alguns
-        #*:   parametros tais como amplitude do campo e outros, o que demora um tanto, por isso
-        #*:   o resumo foi restringido a dados
-        if item.flag() is not ExploreItem.IDType.IDModel:
-            project.update_summary(item)
+        #*: parametros tais como amplitude do campo e outros, o que demora um tanto, por isso
+        #*: o resumo foi restringido a dados
+
+        # prevent items from operation window update the summary
+        # prevent items of models (including analysis and results) update the summary
+        id_info = project.treeItemInfo(item)
+        ctn_flag = id_info["ctn_item"].flag()
+        isFromOperation = ctn_flag in [ExploreItem.ContainerType.ContainerAnalyses,
+                                       ExploreItem.ContainerType.ContainerResults]
+        if  not isFromOperation and \
+            (item.type() is ExploreItem.ContainerType or \
+             id_info.get("id_item").flag() is not ExploreItem.IDType.IDModel):
+
+            project.summary.update(id_info.get("id_dict"))
 
     def tree_items_returned(self, items):
         plot_button = self.toolbar.buttonPlot
@@ -342,7 +353,7 @@ class MainWindow(QMainWindow):
         if self.toolbar.buttonOperation.isChecked():
             
             selected = self.toolbar.buttonOperation.selectedAction.text()
-            sign = {"Plus Analysis": "+", "Minus Analysis": "-"}[selected]
+            sign = {"Plus Analyses": "+", "Minus Analyses": "-"}[selected]
             operation = f"{sign}".join([f"A{i}" for i in range(len(items))])
 
             if len(items) == 0:

@@ -1,5 +1,5 @@
 import os
-import typing
+from typing import List, Dict, Literal
 
 from  PyQt6.QtWidgets import   (QMainWindow,
                                 QLineEdit,
@@ -145,7 +145,7 @@ class ProjectWidget(QMainWindow):
 
         self.dockCommand = QDockWidget("Command Line",self)
         self.command_line = QLineEdit()
-        self.command_line.setContentsMargins(4, 0, 4, 0)
+        self.command_line.setContentsMargins(3, 0, 3, 3)
         self.dockCommand.setWidget(self.command_line)
 
         #todo: tentar depois deixar visuals dentro de dockwidget tambem, mas sem dar bugs
@@ -158,10 +158,14 @@ class ProjectWidget(QMainWindow):
 
 
 
-    def treeItemInfo(self, item: ExploreItem):
+    def treeItemInfo(self, item: ExploreItem) -> Dict[Literal['ctn_item',
+                                                              'id_item','id_name','id_dict',
+                                                              'analysis_item','analysis','analysis_dict',
+                                                              'result_item','result','result_arraynum'],object]:
         """
         Give all necessary information about an Explore Item:
-            {id_item, id_name, id_dict,
+            {ctn_item,
+             id_item, id_name, id_dict,
              analysis_item, analysis, analysis_dict,
              result_item, result, result_arraynum}
         """
@@ -169,13 +173,16 @@ class ProjectWidget(QMainWindow):
         #todo: fazer com que isso retorne dicionario, nao todos os items um, dois, tres
         
         if item.type() is ExploreItem.ContainerType:
-            return {}
+            return {"ctn_item": item}
         
         elif item.type() is ExploreItem.IDType:
+            info = self.treeItemInfo(item.parent())
 
             id_name = item.text(0)
             id_dict = self.insertiondevices[id(item)]
-            return {"id_item": item, "id_name": id_name, "id_dict": id_dict}
+
+            info.update({"id_item": item, "id_name": id_name, "id_dict": id_dict})
+            return info
         
         elif item.type() is ExploreItem.AnalysisType:
             info = self.treeItemInfo(item.parent())
@@ -266,7 +273,7 @@ class ProjectWidget(QMainWindow):
                 [item.setTextAlignment(1,Qt.AlignmentFlag.AlignRight) for item in result_items]
 
     #todo: implementar delecao de analise customizada
-    def operateItems(self, operation: str, items: typing.List[ExploreItem]):
+    def operateItems(self, operation: str, items: List[ExploreItem]):
         sign = "+" if "+" in operation else "-"
         infos = [self.treeItemInfo(item) for item in items]
 
@@ -366,7 +373,7 @@ class ProjectWidget(QMainWindow):
 
         self.tree.dockOperations.setVisible(True)
 
-    def drawItems(self, items: typing.List[ExploreItem]):
+    def drawItems(self, items: List[ExploreItem]):
 
         visuals = self.visuals
 
@@ -498,6 +505,15 @@ class ProjectWidget(QMainWindow):
         # colocando tabela no visuals
         self.visuals.addTab(tabela, "Table")
 
+    def solveModel(self, item: ExploreItem):
+        id_dict = self.treeItemInfo(item)["id_dict"]
+        ID = id_dict["InsertionDeviceObject"]
+
+        ID.solve()
+        print('model solved')
+
+        item.setIcon(0,QIcon(get_path('icons','model-tick.png')))
+
     #todo: passar pra tree
     def open_context(self, pos):
 
@@ -547,7 +563,7 @@ class ProjectWidget(QMainWindow):
         file = id_dict.get("filename")
 
         correct = id_dict.get("Cross Talk")
-        if file and correct:
+        if file and correct and ("Corrected" not in file):
             i = file.find("Fieldmap")+len("Fieldmap")
             file = file[:i]+"Corrected"+file[i:]
 
@@ -647,32 +663,9 @@ class ProjectWidget(QMainWindow):
             dialog.summary.update_integrals(integrals)
         dialog.exec()
 
-    #todo: passar para summary widget
-    def update_summary(self, item: ExploreItem):
-        id_dict = self.treeItemInfo(item).get("id_dict")
-        if id_dict is None:
-            if self.summary.ID is not None:
-                self.summary.set_insertion_device(None)
-                self.summary.update_phaserr(None)
-                self.summary.update_integrals(None)
-        else:
-            ID = id_dict["InsertionDeviceObject"]
-            if ID != self.summary.ID:
-                self.summary.set_insertion_device(ID)
-                phaserr_dict = id_dict.get("Phase Error")
-                integrals_dict = id_dict.get("Cumulative Integrals")
-
-                self.summary.update_phaserr(phaserr_dict["RMS [deg]"] if phaserr_dict else None)
-
-                if integrals_dict:
-                    _, *integrals = integrals_dict.values()
-                    self.summary.update_integrals(integrals)
-                else:
-                    self.summary.update_integrals(None)
-
     def tree_clicked_not_item(self):
         if self.summary.ID is not None:
-            self.summary.set_insertion_device(None)
+            self.summary.update_ID(None)
             self.summary.update_phaserr(None)
             self.summary.update_integrals(None)
 

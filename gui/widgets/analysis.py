@@ -243,7 +243,7 @@ class AnalysisMenu(QFrame):
         return super().eventFilter(obj, event)
 
 
-class AnalysisPushButton(QPushButton):
+class AnalysisButton(QPushButton):
 
     modeChanged = pyqtSignal(bool)
 
@@ -289,7 +289,7 @@ class AnalysisPushButton(QPushButton):
             self.modeChanged.emit(False)
 
 
-class AnalysisDialog(QDialog):
+class EditAnalysisDialog(QDialog):
 
     default_params = {
         "Magnetic Field": {"x": 0,

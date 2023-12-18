@@ -73,8 +73,8 @@ class DataLayout(QVBoxLayout):
         
         self.button_browse = QToolButton(text="...")
 
-        self.checkbox_valuesforall = QCheckBox("Use geometry values change for all")
-        self.checkbox_valuesforall.setChecked(True)
+        self.checkValuesForAll = QCheckBox("Use geometry values change for all")
+        self.checkValuesForAll.setChecked(True)
         
 
         hbox_browse = QHBoxLayout()
@@ -82,7 +82,7 @@ class DataLayout(QVBoxLayout):
         hbox_browse.addWidget(self.button_browse)
 
         self.gridFiles.addLayout(hbox_browse,0,0,Qt.AlignmentFlag.AlignLeft)
-        self.gridFiles.addWidget(self.checkbox_valuesforall,0,2,1,2)
+        self.gridFiles.addWidget(self.checkValuesForAll,0,2,1,2)
         self.gridFiles.addWidget(label_files,1,0)
         self.gridFiles.addWidget(label_names,1,1)
         self.gridFiles.addWidget(label_nr_periods,1,2)
@@ -108,9 +108,9 @@ class DataLayout(QVBoxLayout):
         label_file = QLabel(filename)
         line_name = QLineEdit()
         spin_nr_periods = QSpinBox()
-        spin_nr_periods.setRange(1,1000)
+        spin_nr_periods.setRange(0,1000)
         spin_period_length = QDoubleSpinBox()
-        spin_period_length.setRange(1,10000)
+        spin_period_length.setRange(0,10000)
         spin_period_length.setSuffix(" mm")
         spin_gap = QDoubleSpinBox()
         spin_gap.setRange(0,1000)

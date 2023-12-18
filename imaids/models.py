@@ -1783,6 +1783,7 @@ class PAPU(APU):
 
         self.shift([-1.7, 0, 0])
 
+
 class HybridAPU(APU):
     """Hybrid APU undulador."""
 

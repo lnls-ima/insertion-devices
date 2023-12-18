@@ -16,6 +16,7 @@ class DataDialog(QDialog):
 
         self.setWindowTitle("Data Manager")
 
+        self.lines_names = []
         self.spins_nr_periods = []
         self.spins_period_length = []
         self.spins_gap = []
@@ -24,7 +25,6 @@ class DataDialog(QDialog):
         self.oldfiles = filenames
         #novos arquivos
         self.newfiles = []
-        self.lines_names = []
 
         self.layoutData = DataLayout(parent=self)
 
@@ -150,6 +150,24 @@ class DataDialog(QDialog):
 
     # SLOTS
 
+    def _setTabOrder_column(self):
+
+        self.setTabOrder(self.layoutData.button_browse,self.layoutData.checkValuesForAll)
+        self.setTabOrder(self.layoutData.checkValuesForAll,self.lines_names[0])
+        inputWidgetLists = [self.lines_names,self.spins_nr_periods,
+                            self.spins_period_length,self.spins_gap,
+                            self.checks_correction]
+        for L in range(len(inputWidgetLists)):
+            widgetLst = inputWidgetLists[L]
+            for i in range(1,len(widgetLst)):
+                self.setTabOrder(widgetLst[i-1],widgetLst[i])
+            if L < len(inputWidgetLists)-1:
+                self.setTabOrder(widgetLst[-1],inputWidgetLists[L+1][0])
+        bboxButtons = self.layoutData.buttonBox.buttons()
+        self.setTabOrder(self.checks_correction[-1],bboxButtons[0])
+        self.setTabOrder(bboxButtons[0],bboxButtons[1])
+        self.setTabOrder(bboxButtons[1],self.layoutData.button_browse)
+
     def accept(self) -> None:
         
         invalid_spin = 0 in [spin.value() for spin in self.spins_nr_periods] + \
@@ -187,11 +205,7 @@ class DataDialog(QDialog):
         
         #todo: criar maneira de poder excluir uma linha depois de importa-la
         nr_oldfiles = len(self.oldfiles)
-        # name_fmt = "{0} Phase {1}{2}"
-        # names_oldfiles = [self.getUndulatorName(oldfile)+\
-        #                   f"Phase {self.getUndulatorPhase(oldfile)}"+
-        #                   self.getUndulatorCorrection(oldfile)
-        #                   for oldfile in self.oldfiles]
+
         rows = self.layoutData.gridFiles.rowCount()
 
         for i, file in enumerate(loaded_files):
@@ -227,7 +241,9 @@ class DataDialog(QDialog):
             self.spins_period_length.append(spin_period_length)
             self.spins_gap.append(spin_gap)
             self.checks_correction.append(check_correction)
-    
+
+            self._setTabOrder_column()
+
     def resize_to_content(self):
         lineedit = self.sender()
         lineedit.setMinimumWidth(10+lineedit.fontMetrics().boundingRect(lineedit.text()).width())
@@ -235,7 +251,7 @@ class DataDialog(QDialog):
     def spin_all(self, value):
 
         # realizar o spin all somente quando a checkbox estiver marcada
-        if self.layoutData.checkbox_valuesforall.isChecked():
+        if self.layoutData.checkValuesForAll.isChecked():
         
             # QObject which the signal was sent
             spinbox = self.sender()

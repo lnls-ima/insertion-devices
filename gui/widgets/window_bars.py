@@ -59,8 +59,8 @@ class ToolBar(QToolBar):
         self.addSeparator()
 
         ## tool bar - analysis button: executar analise de dados
-        self.buttonAnalysis = analysis.AnalysisPushButton(text="Analysis  ",
-                                                                 parent=self)
+        self.buttonAnalysis = analysis.AnalysisButton(text="Analysis  ",
+                                                      parent=self)
         self.buttonAnalysis.setObjectName("Analysis")
         self.buttonAnalysis.setToolTip("<b>Analysis</b> (Ctrl+A)<br>"+
                                        "Click to open the menu.<br>"+
@@ -150,6 +150,17 @@ class ToolBar(QToolBar):
         self.actionModelData.setCheckable(True)
         self.actionModelData.triggered.connect(self.mode_swap)
         self.addAction(self.actionModelData)
+
+        ## tool bar - solve_model action: aplicar solve do radia a um modelo
+        self.actionSolveModel = QAction(icon=QIcon(get_path('icons','puzzle.png')),
+                                        text="<b>SolveModel</b> (B)<br>"+
+                                             "Select Model ID item",
+                                        parent=self)
+        self.actionSolveModel.setObjectName("SolveModel")
+        self.actionSolveModel.setShortcut("B")
+        self.actionSolveModel.setCheckable(True)
+        self.actionSolveModel.triggered.connect(self.mode_swap)
+        self.addAction(self.actionSolveModel)
 
     def swap_apply(self,for_all):
         self.buttonAnalysis.Menu.apply.setText(

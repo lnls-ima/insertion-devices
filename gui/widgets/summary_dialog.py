@@ -1,11 +1,13 @@
-from PyQt6.QtWidgets import (QWidget,
+from PyQt6.QtWidgets import (QApplication,
+                             QWidget,
                              QDialog,
                              QScrollArea,
                              QLabel,
                              QVBoxLayout,
                              QDialogButtonBox,
                              QFormLayout,
-                             QSizePolicy)
+                             QSizePolicy,
+                             QMenu)
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
 
@@ -33,6 +35,9 @@ class SummaryWidget(QScrollArea):
         self._phaserr = None
         self._integrals = None
 
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.open_context)
+
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setWidgetResizable(True)
@@ -42,8 +47,8 @@ class SummaryWidget(QScrollArea):
         self.setWidget(widget)
 
         self.vbox = QVBoxLayout(widget)
-        self.vbox.setSpacing(0) #!
-        self.vbox.setContentsMargins(0,6,0,0) #!
+        self.vbox.setSpacing(0)
+        self.vbox.setContentsMargins(0,6,0,0)
 
 
 
@@ -58,6 +63,7 @@ class SummaryWidget(QScrollArea):
         boxUnd.setContentExpanded(True)
 
         self.formUnd = QFormLayout(boxUnd.widget())
+        self.formUnd.setObjectName("Undulator Geometry")
 
         #label_dp
         #label_dcp
@@ -70,7 +76,7 @@ class SummaryWidget(QScrollArea):
             self.label_period_length = QLabel("-", font=font10, alignment=alignRight)
             self.label_gap = QLabel("-", font=font10, alignment=alignRight)
         else:
-            self.label_nr_periods = QLabel(f"{ID.nr_periods:.3f}", font=font10, alignment=alignRight)
+            self.label_nr_periods = QLabel(f"{ID.nr_periods}", font=font10, alignment=alignRight)
             self.label_period_length = QLabel(f"{ID.period_length:.3f}", font=font10, alignment=alignRight)
             self.label_gap = QLabel(f"{ID.gap:.3f}", font=font10, alignment=alignRight)
 
@@ -88,6 +94,7 @@ class SummaryWidget(QScrollArea):
 
         
         self.formAmp = QFormLayout(boxAmp.widget())
+        self.formAmp.setObjectName("Field Amplitudes and Phase")
 
         if ID is None:
             self.label_bxamp = QLabel("-", font=font10, alignment=alignRight)
@@ -116,6 +123,7 @@ class SummaryWidget(QScrollArea):
         
         
         self.formK = QFormLayout(boxK.widget())
+        self.formK.setObjectName("Deflection Parameter")
         
         if ID is None:
             self.label_kh = QLabel("-", font=font10, alignment=alignRight)
@@ -135,10 +143,11 @@ class SummaryWidget(QScrollArea):
         boxPhasErr.setContentExpanded(True)
 
         self.formPhasErr = QFormLayout(boxPhasErr.widget())
+        self.formPhasErr.setObjectName("Phase Error")
         
         self.label_rms = QLabel("-", font=font10, alignment=alignRight)
 
-        self.formPhasErr.insertRow(0,"RMS [deg]:",self.label_rms)
+        self.formPhasErr.insertRow(0,"RMS P.E. [deg]:",self.label_rms)
         
 
 
@@ -148,20 +157,16 @@ class SummaryWidget(QScrollArea):
         boxIntegrals.setContentExpanded(True)
 
         self.formIntegrals = QFormLayout(boxIntegrals.widget())
+        self.formIntegrals.setObjectName("Field Integrals")
         
-        self.label_ibx = QLabel("-", font=font10, alignment=alignRight)
-        self.label_iby = QLabel("-", font=font10, alignment=alignRight)
-        self.label_ibz = QLabel("-", font=font10, alignment=alignRight)
-        self.label_iibx = QLabel("-", font=font10, alignment=alignRight)
-        self.label_iiby = QLabel("-", font=font10, alignment=alignRight)
-        self.label_iibz = QLabel("-", font=font10, alignment=alignRight)
+        self.labels_integrals = []
+        for i in range(6):
+            self.labels_integrals.append(QLabel("-", font=font10, alignment=alignRight))
 
-        self.formIntegrals.insertRow(0,"IBx [G.cm]:",self.label_ibx)
-        self.formIntegrals.insertRow(1,"IBy [G.cm]:",self.label_iby)
-        self.formIntegrals.insertRow(2,"IBz [G.cm]:",self.label_ibz)
-        self.formIntegrals.insertRow(3,"IIBx [kG.cm2]:",self.label_iibx)
-        self.formIntegrals.insertRow(4,"IIBy [kG.cm2]:",self.label_iiby)
-        self.formIntegrals.insertRow(5,"IIBz [kG.cm2]:",self.label_iibz)
+        for i, label in enumerate(["IBx [G.cm]:","IBy [G.cm]:","IBz [G.cm]:",
+                                   "IIBx [kG.cm2]:","IIBy [kG.cm2]:","IIBz [kG.cm2]:"]):
+            
+            self.formIntegrals.insertRow(i,label,self.labels_integrals[i])
 
         self.vbox.addWidget(self.label_IDname)
         self.vbox.addWidget(boxUnd)
@@ -182,147 +187,123 @@ class SummaryWidget(QScrollArea):
     @property
     def integrals(self):
         return self._integrals
-
-    def clean_default_labels(self):
-
-        self.vbox.removeWidget(self.label_IDname)
-        self.label_IDname.deleteLater()
-        
-        self.formUnd.removeWidget(self.label_nr_periods)
-        self.formUnd.removeWidget(self.label_period_length)
-        self.formUnd.removeWidget(self.label_gap)
-        self.label_nr_periods.deleteLater()
-        self.label_period_length.deleteLater()
-        self.label_gap.deleteLater()
-
-        self.formAmp.removeWidget(self.label_bxamp)
-        self.formAmp.removeWidget(self.label_byamp)
-        self.formAmp.removeWidget(self.label_bzamp)
-        self.formAmp.removeWidget(self.label_bxyphase)
-        self.label_bxamp.deleteLater()
-        self.label_byamp.deleteLater()
-        self.label_bzamp.deleteLater()
-        self.label_bxyphase.deleteLater()
-
-        self.formK.removeWidget(self.label_kh)
-        self.formK.removeWidget(self.label_kv)
-        self.label_kh.deleteLater()
-        self.label_kv.deleteLater()
-
-    def clean_phaserr_label(self):
-        self.formPhasErr.removeWidget(self.label_rms)
-        self.label_rms.deleteLater()
-
-    def clean_integrals_labels(self):
-        self.formIntegrals.removeWidget(self.label_ibx)
-        self.formIntegrals.removeWidget(self.label_iby)
-        self.formIntegrals.removeWidget(self.label_ibz)
-        self.formIntegrals.removeWidget(self.label_iibx)
-        self.formIntegrals.removeWidget(self.label_iiby)
-        self.formIntegrals.removeWidget(self.label_iibz)
-        self.label_ibx.deleteLater()
-        self.label_iby.deleteLater()
-        self.label_ibz.deleteLater()
-        self.label_iibx.deleteLater()
-        self.label_iiby.deleteLater()
-        self.label_iibz.deleteLater()
     
-    def set_insertion_device(self, ID):
+    def get_forms(self):
+        return [self.formUnd,self.formAmp,self.formK,self.formPhasErr,self.formIntegrals]
+    
+    def open_context(self, pos):
+
+        menu = QMenu(self)
+        menu.addAction("Copy")
+        action = menu.exec(self.mapToGlobal(pos))
+        if action and action.text()=="Copy":
+
+            cb = QApplication.clipboard()
+
+            cbText = ''
+            for form in self.get_forms():
+                # cbText += f'\n{form.objectName()}'
+                for row in range(form.rowCount()):
+                    label = form.itemAt(row,roleLabel).widget().text()
+                    field = form.itemAt(row,roleField).widget().text()
+                    cbText += f'\n{label}\t{field}'
+            cbText = cbText.lstrip('\n')
+
+            cb.setText(cbText)
+
+
+    def update(self, id_dict):
+        if id_dict is None:
+            if self.ID is not None:
+                self.update_ID(None)
+                self.update_phaserr(None)
+                self.update_integrals(None)
+        else:
+            ID = id_dict["InsertionDeviceObject"]
+
+            isPhasErrAdded = id_dict.get("Phase Error") and \
+                             not self.phaserr
+            isIntegralsAdded = (id_dict.get("Cumulative Integrals") or \
+                                id_dict.get("Field Integrals vs X")) and \
+                                not self.integrals
+
+            if ID != self.ID or isPhasErrAdded or isIntegralsAdded:
+
+                self.update_ID(ID)
+                phaserr_dict = id_dict.get("Phase Error")
+                self.update_phaserr(phaserr_dict)
+
+                integrals_dict, idx = None, None
+                if "Cumulative Integrals" in id_dict:
+                    integrals_dict, idx = id_dict["Cumulative Integrals"], -1
+                elif "Field Integrals vs X" in id_dict:
+                    integrals_dict = id_dict["Field Integrals vs X"]
+                    coord, *_ = integrals_dict.values()
+                    idxarray_zero = np.where(coord == 0)[0]
+                    if idxarray_zero.size!=0:
+                        idx = idxarray_zero[0]
+                    else:
+                        integrals_dict = None
+                
+                self.update_integrals(integrals_dict,idx)
+    
+    def update_ID(self, ID):
 
         self._ID = ID
 
-        #todo: colocar condicao pra saber se ja foi inserido widgets na form
-        self.clean_default_labels()
-        
-
-
         if ID is None:
-            self.label_IDname = QLabel("ID Name", font=font10, alignment=alignHCenter)
 
-            self.label_bxamp = QLabel("-", font=font10, alignment=alignRight)
-            self.label_byamp = QLabel("-", font=font10, alignment=alignRight)
-            self.label_bzamp = QLabel("-", font=font10, alignment=alignRight)
-            self.label_bxyphase = QLabel("-", font=font10, alignment=alignRight)
+            self.label_IDname.setText("ID Name")
 
-            self.label_kh = QLabel("-", font=font10, alignment=alignRight)
-            self.label_kv = QLabel("-", font=font10, alignment=alignRight)
+            self.label_bxamp.setText("-")
+            self.label_byamp.setText("-")
+            self.label_bzamp.setText("-")
+            self.label_bxyphase.setText("-")
 
-            self.label_nr_periods = QLabel("-", font=font10, alignment=alignRight)
-            self.label_period_length = QLabel("-", font=font10, alignment=alignRight)
-            self.label_gap = QLabel("-", font=font10, alignment=alignRight)
+            self.label_kh.setText("-")
+            self.label_kv.setText("-")
+
+            self.label_nr_periods.setText("-")
+            self.label_period_length.setText("-")
+            self.label_gap.setText("-")
 
         else:
-            self.label_IDname = QLabel(str(ID.name), font=font10, alignment=alignHCenter)
+            self.label_IDname.setText(str(ID.name))
 
             bxamp, byamp, bzamp, bxyphase = ID.calc_field_amplitude()
-            self.label_bxamp = QLabel(f"{bxamp:.3f}", font=font10, alignment=alignRight)
-            self.label_byamp = QLabel(f"{byamp:.3f}", font=font10, alignment=alignRight)
-            self.label_bzamp = QLabel(f"{bzamp:.3f}", font=font10, alignment=alignRight)
-            self.label_bxyphase = QLabel(f"{bxyphase*180/np.pi:.3f}", font=font10, alignment=alignRight)
+            self.label_bxamp.setText(f"{bxamp:.3f}")
+            self.label_byamp.setText(f"{byamp:.3f}")
+            self.label_bzamp.setText(f"{bzamp:.3f}")
+            self.label_bxyphase.setText(f"{bxyphase*180/np.pi:.3f}")
 
             kh, kv = ID.calc_deflection_parameter(bxamp, byamp)
-            self.label_kh = QLabel(f"{kh:.3f}", font=font10, alignment=alignRight)
-            self.label_kv = QLabel(f"{kv:.3f}", font=font10, alignment=alignRight)
+            self.label_kh.setText(f"{kh:.3f}")
+            self.label_kv.setText(f"{kv:.3f}")
 
-            self.label_nr_periods = QLabel(f"{ID.nr_periods:.3f}", font=font10, alignment=alignRight)
-            self.label_period_length = QLabel(f"{ID.period_length:.3f}", font=font10, alignment=alignRight)
-            self.label_gap = QLabel(f"{ID.gap:.3f}", font=font10, alignment=alignRight)
+            self.label_nr_periods.setText(f"{ID.nr_periods:.3f}")
+            self.label_period_length.setText(f"{ID.period_length:.3f}")
+            self.label_gap.setText(f"{ID.gap:.3f}")
 
-        self.vbox.insertWidget(0,self.label_IDname)
-        
-        self.formUnd.setWidget(0,roleField,self.label_nr_periods)
-        self.formUnd.setWidget(1,roleField,self.label_period_length)
-        self.formUnd.setWidget(2,roleField,self.label_gap)
+    def update_phaserr(self, phaserr_dict):
 
-        self.formAmp.setWidget(0,roleField,self.label_bxamp)
-        self.formAmp.setWidget(1,roleField,self.label_byamp)
-        self.formAmp.setWidget(2,roleField,self.label_bzamp)
-        self.formAmp.setWidget(3,roleField,self.label_bxyphase)
+        self._phaserr = phaserr_dict
 
-        self.formK.setWidget(0,roleField,self.label_kh)
-        self.formK.setWidget(1,roleField,self.label_kv)
+        self.label_rms.setText(f"{phaserr_dict['RMS [deg]']:.3f}"
+                               if phaserr_dict
+                               else "-")
+    
+    def update_integrals(self, integrals_dict, idx=-1):
 
+        self._integrals = integrals_dict
 
+        for i in range(6):
+            label = self.labels_integrals[i]
 
-    def update_phaserr(self, rms):
-        self.clean_phaserr_label()
-        
-        if rms:
-            self.label_rms = QLabel(f"{rms:.3f}", font=font10, alignment=alignRight)
-        else:
-            self.label_rms = QLabel(f"-", font=font10, alignment=alignRight)
-        
-        self.formPhasErr.setWidget(0,roleField,self.label_rms)
-
-
-    def update_integrals(self, integrals):
-        self.clean_integrals_labels()
-
-        if integrals:
-            ibx, iby, ibz, iibx, iiby, iibz = integrals
-            self.label_ibx = QLabel(f"{ibx[-1]:.3f}", font=font10, alignment=alignRight)
-            self.label_iby = QLabel(f"{iby[-1]:.3f}", font=font10, alignment=alignRight)
-            self.label_ibz = QLabel(f"{ibz[-1]:.3f}", font=font10, alignment=alignRight)
-            self.label_iibx = QLabel(f"{iibx[-1]:.3f}", font=font10, alignment=alignRight)
-            self.label_iiby = QLabel(f"{iiby[-1]:.3f}", font=font10, alignment=alignRight)
-            self.label_iibz = QLabel(f"{iibz[-1]:.3f}", font=font10, alignment=alignRight)
-        else:
-            self.label_ibx = QLabel(f"-", font=font10, alignment=alignRight)
-            self.label_iby = QLabel(f"-", font=font10, alignment=alignRight)
-            self.label_ibz = QLabel(f"-", font=font10, alignment=alignRight)
-            self.label_iibx = QLabel(f"-", font=font10, alignment=alignRight)
-            self.label_iiby = QLabel(f"-", font=font10, alignment=alignRight)
-            self.label_iibz = QLabel(f"-", font=font10, alignment=alignRight)
-
-        self.formIntegrals.setWidget(0,roleField,self.label_ibx)
-        self.formIntegrals.setWidget(1,roleField,self.label_iby)
-        self.formIntegrals.setWidget(2,roleField,self.label_ibz)
-        self.formIntegrals.setWidget(3,roleField,self.label_iibx)
-        self.formIntegrals.setWidget(4,roleField,self.label_iiby)
-        self.formIntegrals.setWidget(5,roleField,self.label_iibz)
-
-        
-
+            if integrals_dict:
+                _, *integrals = integrals_dict.values()
+                label.setText(f"{integrals[i][idx]:.3f}")
+            else:
+                label.setText("-")
 
 
 

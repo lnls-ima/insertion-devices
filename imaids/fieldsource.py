@@ -1022,6 +1022,272 @@ class SinusoidalFieldSource(FieldSource):
             0, _np.cumsum(_np.sqrt(_np.sum(traj_diff**2, axis=1))))
         return traj_len
 
+    def calc_harmonic_energy(self,energy,harmonic):
+        """
+        Calculate the photon energy of some harmonic.
+
+        Parameters
+        ----------
+        energy : float, required
+            Electron energy at the beam, in GeV.
+        harmonic : float, required
+            Radiation harmonic number.
+
+        Returns
+        ----------
+        harm_energy : float
+            Harmonic photon energy, in eV.
+        """
+
+        c, e, h = _utils.get_radiation_constants()
+        bxamp, byamp, *_ = self.calc_field_amplitude()
+        lambd = 1e-3*self.calc_radiation_wavelength(
+            energy=energy,harmonic=harmonic,
+            bx_amp=bxamp,by_amp=byamp
+        )
+        harm_energy = h*c/lambd/e
+
+        return harm_energy
+
+    def get_spectra_light_source(self):
+        """
+        Returns dict of spectra parameters for the "Light Source" (undulator with
+        Bx and By fields).
+        """
+        bxamp, byamp, *_ = self.calc_field_amplitude()
+        Ky, Kx = self.calc_deflection_parameter(bxamp,byamp)
+
+        source = {
+            "Type": "Elliptic Undulator",
+            "&lambda;<sub>u</sub> (mm)": self.period_length,
+            "Device Length (m)": self.nr_periods*self.period_length/1000,
+            "K<sub>x,y</sub>": [Kx,Ky],
+            "Options": {
+                "Gap-Field Relation": "None",
+                "APPLE Configuration": False,
+                "Field Structure": "Antisymmetric",
+                "End Correction Magnet": False,
+                "Segmentation": "None"
+            }
+        }
+
+        return source
+
+    def calc_radiation_tuning(self,harm_lim,K_lim,nr_points=100,
+                              I_b=100,beta=[17.2,3.6],
+                              dist=25,ret_slit=[0.05,0.05]):
+        """
+        Compute the insertion device radiation harmonics flux tuning (i.e.
+        with K dependence).
+
+        Parameters
+        ----------
+        harm_lim : list of ints, required
+            Limits of target harmonic: [harm_min,harm_max]; ex.: [1,5].
+        K_lim : list of floats, required
+            Limits of K, deflection parameter, range: [K_min,K_max]; ex.: [0,2].
+        nr_points : int, optional
+            Number of points in K range.
+        I_b : float, optional
+            Accelerator beam current, in mA.
+        beta : list of floats, optional
+            Twiss parameters, in m, at the center of the light source: [beta_x,beta_y].
+            Default values are for a high beta section of the storage ring. Values
+            can be found in "Table 1: Sirius SR main parameters" of [1]. Sections:
+            - High beta: beta_x=17.2, beta_y=3.6;
+            - Low  beta: beta_x=1.5 , beta_y=1.4.
+        
+        dist : float, optional
+            Distance from the light source, in m.
+        ret_slit : list of floats, optional
+            Angular lengths, in mrad, from the light source, for the retangular
+            slit illuminated: [Delta theta_x, Delta theta_y].
+
+        Returns
+        ----------
+        harm_energy: array_like
+            Harmonic energies for each harmonic targed, in eV.
+        flux: array_like
+            Radiation flux of photons for 0.1% unit of relative bandwidth for
+            each harmonic targed, in ph/s/0.1%BW or photons/s/0.1%bandwidth.
+
+        Reference
+        ----------
+        [1] https://wiki-sirius.lnls.br/mediawiki/index.php/Machine:Storage_Ring#Design_parameters
+        """
+        import spectra as _spectra
+
+        if type(K_lim) != list:
+            raise TypeError("Type of K_range must be 'list'.")
+        elif len(K_lim) != 2:
+            raise ValueError("K_range must have two elements.")
+
+        if type(harm_lim) != list:
+            raise TypeError("Type of harm_range must be 'list'.")
+        elif len(harm_lim) != 2:
+            raise ValueError("harm_range must have two elements.")
+
+
+        accel = _utils.get_spectra_accel(I_b,beta)
+        source = self.get_spectra_light_source()
+        config = _utils.get_spectra_calc_tuning(harm_lim,K_lim,nr_points,
+                                                dist,ret_slit)
+        prmdict = {"Accelerator":accel,"Light Source":source,"Configurations":config}
+        prmstr = _json.dumps(prmdict)
+
+        solver = _spectra.Solver(prmstr)
+        if solver.IsReady() == False:
+            raise ValueError("Parameters load failed.")
+        solver.Run()
+
+        captions = solver.GetCaptions()
+        ctndata = [solver.GetDetailData(i) for i in range(len(captions['details']))]
+
+        harm_energy = _np.array([data['variables'][0][1:] for data in ctndata]).T
+        flux = _np.array([data['data'][3][1:] for data in ctndata]).T
+
+        return harm_energy, flux
+
+    def calc_radiation_brilliance(self,harm_lim,K_lim,nr_points=100,
+                                   I_b=100,beta=[17.2,3.6],
+                                   dist=25):
+        """
+        Compute the insertion device radiation harmonics brilliance or
+        brigthness, with K dependence.
+
+        Parameters
+        ----------
+        harm_lim : list of ints, required
+            Limits of target harmonic: [harm_min,harm_max]; ex.: [1,5].
+        K_lim : list of floats, required
+            Limits of K, deflection parameter, range: [K_min,K_max]; ex.: [0,2].
+        nr_points : int, optional
+            Number of points in K range.
+        I_b : float, optional
+            Accelerator beam current, in mA.
+        beta : list of floats, optional
+            Twiss parameters, in m, at the center of the light source: [beta_x,beta_y].
+            Default values are for a high beta section of the storage ring. Values
+            can be found in "Table 1: Sirius SR main parameters" of [1]. Sections:
+            - High beta: beta_x=17.2, beta_y=3.6;
+            - Low  beta: beta_x=1.5 , beta_y=1.4.
+
+        dist : float, optional
+            Distance from the light source, in m.
+
+        Returns
+        ----------
+        harm_energy: array_like
+            Harmonic energies for each harmonic targed, in eV.
+        brilliance or brightness: array_like
+            Radiation brilliance or brightness considering the gaussian
+            approximation for the photon beam for each harmonic targed,
+            in ph/s/mm^2/mr^2/0.1%BW or photons/s/mm^2/mrad^2/0.1%bandwidth.
+        
+        Reference
+        ----------
+        [1] https://wiki-sirius.lnls.br/mediawiki/index.php/Machine:Storage_Ring#Design_parameters
+        """
+        import spectra as _spectra
+
+        if type(K_lim) != list:
+            raise TypeError("Type of K_range must be 'list'.")
+        elif len(K_lim) != 2:
+            raise ValueError("K_range must have two elements.")
+
+        if type(harm_lim) != list:
+            raise TypeError("Type of harm_range must be 'list'.")
+        elif len(harm_lim) != 2:
+            raise ValueError("harm_range must have two elements.")
+
+        accel = _utils.get_spectra_accel(I_b,beta)
+        source = self.get_spectra_light_source()
+        config = _utils.get_spectra_calc_brilliance(harm_lim,K_lim,nr_points,dist)
+        prmdict = {"Accelerator":accel,"Light Source":source,"Configurations":config}
+        prmstr = _json.dumps(prmdict)
+
+        solver = _spectra.Solver(prmstr)
+        if solver.IsReady() == False:
+            raise ValueError("Parameters load failed.")
+        solver.Run()
+
+        captions = solver.GetCaptions()
+        ctndata = [solver.GetDetailData(i) for i in range(len(captions['details']))]
+
+        harm_energy = _np.array([data['variables'][0][1:] for data in ctndata]).T
+        brilliance = _np.array([data['data'][4][1:] for data in ctndata]).T
+
+        return harm_energy, brilliance
+
+    def calc_radiation_flux_density(self,energy_lim='default',energy_step=1,
+                                    I_b=100,beta=[17.2,3.6],
+                                    dist=25):
+        """
+        Compute the on axis insertion device radiation flux density.
+
+        Parameters
+        ----------
+        energy_lim : list of floats, optional
+            Limits of photon energies range to compute the density flux, in eV:
+            [energy_min,energy_max]; ex.: [0,8000]. The default value 'default'
+            defines the limits as 0 to the 10th harmonic plus 1/2 harmonic
+            energy interval.
+        energy_step : float, optional
+            Step of photon energies range, in eV.
+        I_b : float, optional
+            Accelerator beam current, in mA.
+        beta : list of floats, optional
+            Twiss parameters, in m, at the center of the light source: [beta_x,beta_y].
+            Default values are for a high beta section of the storage ring. Values
+            can be found in "Table 1: Sirius SR main parameters" of [1]. Sections:
+            - High beta: beta_x=17.2, beta_y=3.6;
+            - Low  beta: beta_x=1.5 , beta_y=1.4.
+            
+        dist : float, optional
+            Distance from the light source, in m.
+
+        Returns
+        ----------
+        energy: array_like
+            Energy range, in eV.
+        flux_density: array_like
+            Radiation spectral angular density flux of photons,
+            in ph/s/mr^2/0.1%BW or photons/s/mrad^2/0.1%bandwidth.
+        
+        Reference
+        ----------
+        [1] https://wiki-sirius.lnls.br/mediawiki/index.php/Machine:Storage_Ring#Design_parameters
+        """
+        
+        import spectra as _spectra
+
+        if energy_lim == 'default':
+            # first 10 harmonics (5 odd and 5 even) and half of one
+            energy_lim = [0,self.calc_harmonic_energy(energy=3,harmonic=10.5)]
+        else:
+            if type(energy_lim) != list:
+                raise TypeError("Type of energy_lim must be 'list'.")
+            elif len(energy_lim) != 2:
+                raise ValueError("energy_lim must have two elements.")
+        
+        accel = _utils.get_spectra_accel(I_b,beta)
+        source = self.get_spectra_light_source()
+        config = _utils.get_spectra_calc_flux_density(energy_lim,energy_step,dist)
+        prmdict = {"Accelerator":accel,"Light Source":source,"Configurations":config}
+        prmstr = _json.dumps(prmdict)
+
+        solver = _spectra.Solver(prmstr)
+        if solver.IsReady() == False:
+            raise ValueError("Parameters load failed.")
+        solver.Run()
+
+        data = solver.GetData()
+
+        energy = data['variables'][0]
+        flux_density = data['data'][0]
+
+        return energy, flux_density
+
     def calc_radiation_phase(self, energy, trajectory, wavelength):
         """Calculate radiation phase in rad.
 

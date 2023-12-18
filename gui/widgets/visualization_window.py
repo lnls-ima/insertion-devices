@@ -135,6 +135,12 @@ class VisualizationTabWidget(BasicTabWidget):
         y_label = y_info["result"]
         y = y_info["result_arraynum"]
 
+        if len(x) != len(y):
+            QMessageBox.warning(self,
+                                "Plot Error",
+                                "Lengths of result arrays are not the same!")
+            return False
+
         line = chart.ax.plot(x,y)
 
         if addMode:
@@ -150,6 +156,8 @@ class VisualizationTabWidget(BasicTabWidget):
             chart.ax.set_title(f"{y_label} vs {x_label}")
             if len(line)==1:
                 line[0].set_label(f"{y_label} vs {x_label} of {id_name}")
+            
+        return True
 
     def plotAnalysis(self, chart: Canvas, analysis_info, addMode=False):
 
@@ -322,6 +330,44 @@ class VisualizationTabWidget(BasicTabWidget):
             rop_lines[0].set_label(f"ROPeak 1 of {id_name}")
             rop_lines[N-1].set_label(f"ROPeak {N} of {id_name}")
             title_y_x.extend(["Roll Off (%)","x (mm)"])
+
+        elif analysis_item.flag() is ExploreItem.AnalysisType.HarmTuning:
+
+            brilliance_values = list(analysis_dict.values())
+            i_max = int(len(brilliance_values)/2)
+            energy = np.array(brilliance_values[:i_max]).T
+            flux = np.array(brilliance_values[i_max:]).T
+
+            chart.ax.plot(energy,flux,label=[f"Harmonic {i}" for i in range(1,2*i_max,2)])
+            chart.ax.set_yscale('log')
+
+            title_y_x.extend(["Harmonics Tuning Curve",
+                              "Flux (photons/s/0.1%BW)",
+                              "Harmonic Energy (eV)"])
+        
+        elif analysis_item.flag() is ExploreItem.AnalysisType.Brilliance:
+
+            brilliance_values = list(analysis_dict.values())
+            i_max = int(len(brilliance_values)/2)
+            energy = np.array(brilliance_values[:i_max]).T
+            brilliance = np.array(brilliance_values[i_max:]).T
+
+            chart.ax.plot(energy,brilliance,label=[f"Harmonic {i}" for i in range(1,2*i_max,2)])
+            chart.ax.set_yscale('log')
+
+            title_y_x.extend(["Harmonics Brilliance Curve",
+                              r"Brilliance (photons/s/mm$^2$/mrad$^2$/0.1%BW)",
+                              "Harmonic Energy (eV)"])
+            
+        elif analysis_item.flag() is ExploreItem.AnalysisType.FluxDensity:
+
+            energy, fluxD = list(analysis_dict.values())
+
+            chart.ax.plot(energy,fluxD,label=str(id_name))
+
+            title_y_x.extend(["Flux Density Spectrum",
+                              r"Flux Density (photons/s/mrad$^2$/0.1%BW)",
+                              "Energy (eV)"])
 
     
         if addMode:

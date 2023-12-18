@@ -1,6 +1,7 @@
 
 import os
-import json
+# import json
+import inspect
 # from pathlib import Path
 
 def get_path(file_dir,filename):
@@ -17,38 +18,28 @@ def get_path(file_dir,filename):
     return os.path.join(basedir,file_dir,filename)
 
 
-with open(get_path('','models_parameters.json')) as f:
-    models_parameters = json.load(f)
+# with open(get_path('','models_parameters.json')) as f:
+#     models_parameters = json.load(f)
 
-#todo: trocar undulator por ID
-def getUndulatorName(filename):
-    models = list(models_parameters.keys())
-    
-    acertos = []
-    possible_names = ["Delta","Prototype","Sabia"]
-    
-    for modelname in possible_names+models:
-        if modelname in filename:
-            acertos.append(modelname)
-    if acertos:
-        return acertos[-1]
-    else:
-        return ""
+from imaids import models
 
-def getUndulatorPhase(filename):
-    phase_idx = filename.find("Phase")
-    if phase_idx!=-1:
-        phase = filename[phase_idx:].lstrip("Phase")[:3]
-        phase = "".join([char for char in list(phase) if char.isdigit()])
-        return phase
-    else:
-        return "N"
+models_dict = {}
+for name in dir(models):
+    obj = getattr(models, name)
+    # deixar apenas modelos especificos no dicionario de modelos
+    if isinstance(obj, type) and obj.__bases__[0].__name__!="InsertionDeviceModel":
+        models_dict[name] = obj
 
-def isUndulatorCorrected(filename):
-    corrected = False
-    if "Corrected" in filename:
-        corrected = True
-    return corrected
+models_parameters = {}
+for model_name, model_cls in models_dict.items():
+    sig = inspect.signature(model_cls.__init__)
+    models_parameters[model_name] = {param:sig.parameters[param].default
+                                        for param in ["nr_periods",
+                                                      "period_length",
+                                                      "gap",
+                                                      "mr",
+                                                      "longitudinal_distance"]}
+
 
 from . import basics
 from . import _mpl_layout_mod, _mpl_options_mod, visual_elements

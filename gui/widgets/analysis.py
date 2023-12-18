@@ -82,6 +82,9 @@ class AnalysisMenu(QFrame):
         # multipolos e multipolos dinamicos em avaliacao
         self.itemRollOffPeaks = AnalysisItem(text="Roll Off Peaks",parent=self.list)
         self.itemRollOffAmp = AnalysisItem(text="Roll Off Amplitude",parent=self.list)
+        self.itemTuning = AnalysisItem(text="Harmonics Tuning",parent=self.list)
+        self.itemBrilliance = AnalysisItem(text="Brilliance",parent=self.list)
+        self.itemFluxDensity = AnalysisItem(text="Flux Density",parent=self.list)
         # shimming fora, pois e' um calculo muito personalizado e que exige cuidado
         #self.Shimming = AnalysisItem(text="Shimming",parent=self.list)
         
@@ -240,7 +243,7 @@ class AnalysisMenu(QFrame):
         return super().eventFilter(obj, event)
 
 
-class AnalysisPushButton(QPushButton):
+class AnalysisButton(QPushButton):
 
     modeChanged = pyqtSignal(bool)
 
@@ -275,7 +278,7 @@ class AnalysisPushButton(QPushButton):
             if not self.Menu.timerHide.isActive():
                 # positionate the menu
                 corner = self.parent().mapToGlobal(self.geometry().bottomLeft())
-                self.Menu.setGeometry(corner.x()+1, corner.y(), 180, 240)
+                self.Menu.setGeometry(corner.x()+1, corner.y(), 180, 285)
                 self.Menu.show()
 
             # restaura valor padrao de changed
@@ -286,7 +289,7 @@ class AnalysisPushButton(QPushButton):
             self.modeChanged.emit(False)
 
 
-class AnalysisDialog(QDialog):
+class EditAnalysisDialog(QDialog):
 
     default_params = {
         "Magnetic Field": {"x": 0,

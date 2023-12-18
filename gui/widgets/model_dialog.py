@@ -1,8 +1,7 @@
 from PyQt6.QtWidgets import QDialog, QFormLayout, QMessageBox
 
-from imaids import models
 from .dialog_layouts import ModelLayout
-from . import models_parameters
+from . import models_dict, models_parameters
 
 # todo: ter opcao de carregar arquivo com o conjunto de pontos para ter forma dos blocos
 class ModelDialog(QDialog):
@@ -12,17 +11,7 @@ class ModelDialog(QDialog):
 
         self.setWindowTitle("Generate Model")
 
-        self.models_dict = {}
-        for name in dir(models):
-            obj = getattr(models, name)
-            if isinstance(obj, type):
-                self.models_dict[name] = obj
-
-        # deixar apenas modelos especificos no dicionario de modelos
-        #todo: colocar condicao na criacao do models dict que checa se classe e' subclassed
-        #todo: com isso, pegaremos apenas os modelos especificos
-        for model_type in ["Delta","AppleX","AppleII","APU","Planar"]:
-            self.models_dict.pop(model_type)
+        self.models_dict = models_dict
 
         self.layoutModel = ModelLayout(models_parameters=models_parameters,parent=self)
         self.layoutModel.comboboxModels.currentIndexChanged.connect(self.model_chose)

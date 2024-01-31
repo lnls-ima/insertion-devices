@@ -840,7 +840,8 @@ class Planar(_insertiondevice.InsertionDeviceModel):
             self,
             block_names_dict=None,
             magnetization_dict=None,
-            position_err_dict=None):
+            position_err_dict=None,
+            is_pole_list=None):
         """Create Planar radia model.
 
         Args:
@@ -870,7 +871,8 @@ class Planar(_insertiondevice.InsertionDeviceModel):
         cs.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            position_err=position_err_dict.get(name))
+            position_err=position_err_dict.get(name),
+            is_pole_list=is_pole_list)
         if self.trf_on_blocks:
             for block in cs.blocks:
                 block.shift([0, -self._gap/2, 0])
@@ -888,7 +890,8 @@ class Planar(_insertiondevice.InsertionDeviceModel):
         ci.create_radia_object(
             block_names=block_names_dict.get(name),
             magnetization_list=magnetization_dict.get(name),
-            position_err=position_err_dict.get(name))
+            position_err=position_err_dict.get(name),
+            is_pole_list=is_pole_list)
         if self.trf_on_blocks:
             for block in ci.blocks:
                 block.shift([0, -self._gap/2, 0])

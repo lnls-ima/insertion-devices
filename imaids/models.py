@@ -1839,7 +1839,7 @@ class PAPU21(APU):
 
         block_len = period_length/4 - longitudinal_distance
         lenghts = [
-            block_len, block_len, block_len,
+            block_len/2, block_len, block_len/2,
             block_len, block_len]
         distances = [
             block_len/4, block_len/4, block_len/4,
@@ -1868,6 +1868,22 @@ class PAPU21(APU):
             end_blocks_length=end_blocks_length,
             end_blocks_distance=end_blocks_distance,
             name=name, **kwargs)
+
+        magnetizations = _np.array(
+            [[0, -mr, 0],
+             [0, mr, 0], [0, 0, -mr],
+             [0, -mr, 0], [0, 0, mr]]
+            + nr_periods*[[0, mr, 0],
+                          [0, 0, -mr],
+                          [0, -mr, 0],
+                          [0, 0, mr]]
+            + [[0, mr, 0], [0, 0, -mr],
+               [0, -mr, 0], [0, mr, 0]])
+
+        magnetization_dict = {'cs': -1*magnetizations, 'ci': magnetizations}
+
+        self.create_radia_object(
+                    magnetization_dict=magnetization_dict)
 
 
 class HybridAPU(APU):

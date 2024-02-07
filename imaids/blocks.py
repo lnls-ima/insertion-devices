@@ -218,7 +218,7 @@ class Block(_fieldsource.FieldModel):
         'kyma_22': [[6, 3, 3]],
         'kyma_58': [[6, 3, 3]],
         'papu': [[3,3,2], [3,3,2]],
-        'papu_21': [[4, 2, 3], [3, 1, 3], [4, 2, 3]],
+        'papu_21': [[3, 2, 2], [3, 1, 2], [3, 2, 2]],
         'hybrid_block': [[3, 3, 3]],
         'hybrid_pole': [[6, 6, 3]],
         'delta_sabia_smooth': [[3, 3, 2], [1, 1, 2],
